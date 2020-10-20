@@ -1,0 +1,5 @@
+lm:
+  pretrained_model: "bert-base-chinese"
+  max_length: 120
+classifier:
+  dropout_rate: 0.1

@@ -1,0 +1,6 @@
+data_path:
+  subfolder: ""
+  train: "train.json"
+  dev: "dev.json"
+  test: "test.json"
+  label: "label.txt"

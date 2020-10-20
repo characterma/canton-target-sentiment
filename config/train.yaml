@@ -1,0 +1,17 @@
+seed: 42
+log:
+  logging_steps: 500
+optim:
+  train_batch_size: 16
+  eval_batch_size: 32
+  learning_rate: 2e-5
+  num_train_epochs: 2
+  weight_decay: 0.0
+  gradient_accumulation_steps: 1
+  adam_epsilon: 1e-8
+  max_grad_norm: 1.0
+  max_steps: -1
+  warmup_steps: 0
+output:
+  subfolder: "20201020"
+  save_steps: 500
