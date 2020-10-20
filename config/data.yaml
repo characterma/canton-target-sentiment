@@ -1,6 +1,6 @@
 data_path:
-  subfolder: ""
+  subfolder: "acl14_twitter"
   train: "train.json"
   dev: "dev.json"
   test: "test.json"
-  label: "label.txt"
+  label_map: "label_map.json"

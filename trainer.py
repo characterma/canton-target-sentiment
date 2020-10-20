@@ -10,13 +10,13 @@ from tqdm import tqdm, trange
 from transformers import AdamW, get_linear_schedule_with_warmup
 
 from model import SAModel
-from utils import compute_metrics, get_label, write_eval_details
+from utils import compute_metrics, get_label_map, write_eval_details
 
 logger = logging.getLogger(__name__)
 
 
 class Trainer(object):
-    def __init__(self, train_config, model_config, data_config, pretrained_model, model_dir, train_dataset=None, dev_dataset=None, test_dataset=None, 
+    def __init__(self, train_config, model_config, data_config, pretrained_model, label_map, model_dir, train_dataset=None, dev_dataset=None, test_dataset=None, 
                 train_details=None, dev_details=None, test_details=None):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.train_config = train_config
@@ -34,8 +34,8 @@ class Trainer(object):
         self.dev_details = dev_details
         self.test_details = test_details
 
-        self.label_lst = get_label(data_config)
-        self.num_labels = len(self.label_lst)
+        self.label_map = label_map
+        self.num_labels = len(self.label_map.values())
 
         self.model = SAModel(model_config, self.num_labels, self.pretrained_model, device=self.device)
 

@@ -13,14 +13,22 @@ from sklearn import metrics
 from ruamel.yaml import YAML
 
 
-def get_label(data_config):
-    label_path = Path(os.environ['CANTON_SA_DIR']) / "data" / data_config["data_path"]["subfolder"] / data_config["data_path"]["label"]
-    return [
-        label.strip()
-        for label in open(
-            label_path, "r", encoding="utf-8"
-        )
-    ]
+SENTI_ID_MAP = {
+    # "unknown": -1, 
+    "neutral": 0,
+    "negative": 1, 
+    "positive": 2
+}
+
+SENTI_ID_MAP_INV = {}
+for k,v in SENTI_ID_MAP.items():
+    SENTI_ID_MAP_INV[v] = k
+
+
+def get_label_map(label_map_path):
+    with open(label_map_path, encoding='utf-8') as json_file:
+        data = json.load(json_file)
+        return data
 
 
 def write_eval_details(data_config, eval_details_path, details, preds, keys):
@@ -29,9 +37,9 @@ def write_eval_details(data_config, eval_details_path, details, preds, keys):
     :param output_file: prediction_file_path (e.g. eval/proposed_answers.txt)
     :param preds: [0,1,0,2,18,...]
     """
-    relation_labels = get_label(data_config)
+    # relation_labels = get_label(data_config)
     preds = pd.DataFrame(data={"key": keys, 
-                               "pred": [relation_labels[p] for p in preds]
+                               "pred": [SENTI_ID_MAP_INV[p] for p in preds]
                                })
     details = details.set_index("key")
     preds = preds.set_index("key")

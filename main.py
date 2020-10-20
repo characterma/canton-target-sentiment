@@ -3,7 +3,7 @@ import argparse
 from data_loader import load_dataset
 from trainer import Trainer
 from pretrained_model import PretrainedML
-from utils import init_logger, set_seed, load_yaml
+from utils import init_logger, set_seed, load_yaml, get_label_map
 from pathlib import Path
 import os, shutil
 
@@ -27,14 +27,17 @@ def main(args):
 
     # load pretrained language model
     pretrained_model = PretrainedML(model_config['lm']['pretrained_model'])
+    label_map = get_label_map(data_dir / data_config['data_path']['label_map'])
 
     # load and preprocess data
     if args.do_train:
         train_dataset, train_details = load_dataset(data_dir / data_config['data_path']['train'], 
+                                    label_map, 
                                     pretrained_model.tokenizer, 
                                     model_config['lm']["max_length"], 
                                     details=True)
         dev_dataset, dev_details = load_dataset(data_dir / data_config['data_path']['dev'], 
+                                label_map, 
                                 pretrained_model.tokenizer, 
                                 model_config['lm']["max_length"], 
                                 details=True)
@@ -44,6 +47,7 @@ def main(args):
 
     if args.do_eval:
         test_dataset, test_details = load_dataset(data_dir / data_config['data_path']['test'], 
+                                    label_map, 
                                     pretrained_model.tokenizer, 
                                     model_config['lm']["max_length"], 
                                     details=True)
@@ -52,7 +56,7 @@ def main(args):
 
     # start training
     trainer = Trainer(train_config, model_config, data_config, 
-                      pretrained_model, model_dir, 
+                      pretrained_model, label_map, model_dir, 
                       train_dataset=train_dataset, 
                       dev_dataset=dev_dataset, 
                       test_dataset=test_dataset, 

@@ -7,24 +7,11 @@ import pandas as pd
 import torch
 from torch.utils.data import TensorDataset, Dataset
 from pathlib import Path
-from utils import get_label
+from utils import get_label_map, SENTI_ID_MAP
 from transformers import AutoTokenizer
 
 
 logger = logging.getLogger(__name__)
-
-TARGET_SENTI_MAP = {
-    "主體-中性": "neutral", 
-    "主體-負面": "negative", 
-    "主體-正面": "positive"
-}
-
-SENTI_ID_MAP = {
-    "unknown": -1, 
-    "neutral": 0,
-    "negative": 1, 
-    "positive": 2
-}
 
 
 class SingleTargetExample(object):
@@ -101,34 +88,39 @@ class SingleTargetExample(object):
         return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
 
 
-def load_dataset(data_path, tokenizer, max_length, details=False):
+def load_examples(data_path, label_map, to_feature=False, tokenizer=None, max_length=None):
+    examples = []
+    # label_map = get_label_map(label_map_path)
+    key = 0
+    for line in open(data_path, "rb").readlines():
+        doc = json.loads(line)
+        for t in doc['labels']:
+            label = t['label_name']
+            if label not in label_map:
+                continue
+
+            example = SingleTargetExample(
+                    text = doc['content'], 
+                    label = label_map[label], 
+                    start_idx = t['start_ind'], 
+                    end_idx = t['end_ind'], 
+                    docid = doc['docid'], 
+                    key = key, 
+            )
+            if to_feature and example.converted_to_features(tokenizer, max_length):
+                examples.append(example)
+            key += 1   
+    return examples 
+
+
+def load_dataset(data_path, label_map_path, tokenizer, max_length, details=False):
     """
     Args:
         data_path (Path object): a list of paths to .json (format of internal label tool)
     Output:
         examples: a list of SingleTargetExample instances.
     """
-    examples = []
-
-    key = 0
-    for line in open(data_path, "rb").readlines():
-        doc = json.loads(line)
-        for t in doc['labels']:
-            label = t['label_name']
-            if label not in TARGET_SENTI_MAP:
-                continue
-            example = SingleTargetExample(
-                    text = doc['content'], 
-                    label = TARGET_SENTI_MAP[label], 
-                    start_idx = t['start_ind'], 
-                    end_idx = t['end_ind'], 
-                    docid = doc['docid'], 
-                    key = key, 
-            )
-            if example.converted_to_features(tokenizer, max_length):
-                examples.append(example)
-            key += 1
-
+    examples = load_examples(data_path, label_map_path, to_feature=True, tokenizer=tokenizer, max_length=max_length)
     all_keys = torch.tensor([f.key for f in examples], dtype=torch.long)
     all_input_ids = torch.tensor([f.input_ids for f in examples], dtype=torch.long)
     all_attention_mask = torch.tensor(

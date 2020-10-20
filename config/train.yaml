@@ -13,5 +13,5 @@ optim:
   max_steps: -1
   warmup_steps: 0
 output:
-  subfolder: "20201020"
+  subfolder: "20201020_twitter"
   save_steps: 500

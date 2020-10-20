@@ -10,6 +10,7 @@ CONFIG_CLASS_MAP = {
     "xlm-roberta-base": XLMRobertaConfig, 
     "xlm-roberta-large": XLMRobertaConfig, 
     "bert-base-multilingual-cased": BertConfig, 
+    "bert-base-multilingual-uncased": BertConfig, 
     "bert-base-chinese": BertConfig, 
     "denpa92/bert-base-cantonese": BertConfig, 
 }
@@ -20,6 +21,7 @@ MODEL_CLASS_MAP = {
     "xlm-roberta-base": XLMRobertaModel, # XLMRobertaForMaskedLM
     "xlm-roberta-large": XLMRobertaModel, # XLMRobertaForMaskedLM
     "bert-base-multilingual-cased": BertModel, # BertForMaskedLM
+    "bert-base-multilingual-uncased": BertModel, 
     "bert-base-chinese": BertModel, # BertForMaskedLM
     "denpa92/bert-base-cantonese": BertModel
 }
