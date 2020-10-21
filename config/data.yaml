@@ -1,5 +1,5 @@
 data_path:
-  subfolder: "acl14_twitter"
+  subfolder: "semeval14_restaurants"
   train: "train.json"
   dev: "dev.json"
   test: "test.json"

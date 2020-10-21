@@ -1,11 +1,11 @@
 seed: 42
 log:
-  logging_steps: 500
+  logging_steps: -1
 optim:
   train_batch_size: 16
-  eval_batch_size: 32
+  eval_batch_size: 16
   learning_rate: 2e-5
-  num_train_epochs: 2
+  num_train_epochs: 6
   weight_decay: 0.0
   gradient_accumulation_steps: 1
   adam_epsilon: 1e-8
@@ -13,5 +13,5 @@ optim:
   max_steps: -1
   warmup_steps: 0
 output:
-  subfolder: "20201020_twitter"
+  subfolder: "20201021_restaurant_bert"
   save_steps: 500

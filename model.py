@@ -2,7 +2,9 @@ import torch
 import torch.nn as nn
 import os
 from pathlib import Path
-    
+from transformers import (AlbertModel, BertModel, BertPreTrainedModel,
+                          RobertaModel)
+
 
 class FCLayer(nn.Module):
     def __init__(self, input_dim, output_dim, dropout_rate=0., use_activation=True):
@@ -19,18 +21,19 @@ class FCLayer(nn.Module):
         return self.linear(x)
 
 
-class SAModel(nn.Module):
+class SAModel(BertPreTrainedModel):
     def __init__(self, model_config, num_labels, pretrained_model, device='cpu'):
-        super(SAModel, self).__init__()
+        super(SAModel, self).__init__(pretrained_model.config)
         self.model_config = model_config
-        self.pretrained_model = pretrained_model
+        self.pretrained_model = pretrained_model.model
+        self.pretrained_model_config = pretrained_model.config
         self.num_labels = num_labels
 
-        self.cls_fc_layer = FCLayer(pretrained_model.config.hidden_size, 
-                                    pretrained_model.config.hidden_size, 
+        self.cls_fc_layer = FCLayer(self.pretrained_model_config.hidden_size, 
+                                    self.pretrained_model_config.hidden_size, 
                                     model_config['classifier']["dropout_rate"])
-        self.t_fc_layer = FCLayer(pretrained_model.config.hidden_size, 
-                                  pretrained_model.config.hidden_size, 
+        self.t_fc_layer = FCLayer(self.pretrained_model_config.hidden_size, 
+                                  self.pretrained_model_config.hidden_size, 
                                   model_config['classifier']["dropout_rate"])
         
         self.label_classifier = FCLayer(
@@ -39,9 +42,9 @@ class SAModel(nn.Module):
             model_config['classifier']["dropout_rate"], 
             use_activation=False)
 
-        self.device = device
+        # self.device = device
         self.to(device)
-        self.pretrained_model.to(device)
+        # self.pretrained_model.to(device)
 
     @staticmethod
     def target_average(hidden_output, t_mask):
@@ -63,7 +66,7 @@ class SAModel(nn.Module):
         # print(input_ids.shape)
         # print(attention_mask.shape)
         # print(token_type_ids.shape)
-        outputs = self.pretrained_model.model(input_ids=input_ids, 
+        outputs = self.pretrained_model(input_ids=input_ids, 
                                               attention_mask=attention_mask,
                                               token_type_ids=token_type_ids, 
                                               return_dict=True)['last_hidden_state']

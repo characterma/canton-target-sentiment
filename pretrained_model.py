@@ -7,8 +7,10 @@ import torch.nn as nn
 CONFIG_CLASS_MAP = {
     "toastynews/electra-hongkongese-large-discriminator": ElectraConfig, 
     "toastynews/xlnet-hongkongese-base": XLNetConfig, 
+    "xlnet-base-cased": XLNetConfig, 
     "xlm-roberta-base": XLMRobertaConfig, 
     "xlm-roberta-large": XLMRobertaConfig, 
+    "bert-base-cased": BertConfig, 
     "bert-base-multilingual-cased": BertConfig, 
     "bert-base-multilingual-uncased": BertConfig, 
     "bert-base-chinese": BertConfig, 
@@ -18,8 +20,10 @@ CONFIG_CLASS_MAP = {
 MODEL_CLASS_MAP = {
     "toastynews/electra-hongkongese-large-discriminator": ElectraModel, # ElectraForPreTraining
     "toastynews/xlnet-hongkongese-base": XLNetModel, # XLNetLMHeadModel
+    "xlnet-base-cased": XLNetModel, 
     "xlm-roberta-base": XLMRobertaModel, # XLMRobertaForMaskedLM
     "xlm-roberta-large": XLMRobertaModel, # XLMRobertaForMaskedLM
+    "bert-base-cased": BertModel, 
     "bert-base-multilingual-cased": BertModel, # BertForMaskedLM
     "bert-base-multilingual-uncased": BertModel, 
     "bert-base-chinese": BertModel, # BertForMaskedLM
@@ -44,8 +48,8 @@ class PretrainedML(object):
         print(self.config)
         self.model = MODEL_CLASS_MAP[model_name].from_pretrained(model_name)
         
-    def to(self, device):
-        self.model.to(device)
+    # def to(self, device):
+    #     self.model.to(device)
 
 
         

@@ -1,5 +1,5 @@
 lm:
-  pretrained_model: "bert-base-multilingual-cased"
+  pretrained_model: "bert-base-cased"
   max_length: 120
 classifier:
   dropout_rate: 0.1

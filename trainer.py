@@ -115,6 +115,7 @@ class Trainer(object):
         all_eval_scores = []
         for epoch, _ in enumerate(train_iterator):
             epoch_iterator = tqdm(train_dataloader, desc="Iteration")
+            last_step = len(epoch_iterator)
             for step, batch in enumerate(epoch_iterator):
                 self.model.train()
                 batch = tuple(t.to(self.device) for t in batch)  # GPU or CPU
@@ -151,13 +152,24 @@ class Trainer(object):
                         eval_scores = self.evaluate("dev", f"epoch{epoch}_step{step}")
                         eval_scores["epoch"] = epoch
                         eval_scores["step"] = step
-                        all_eval_scores.append(all_eval_scores)
+                        all_eval_scores.append(eval_scores)
 
                         if best_eval_score is None:
                             best_eval_score = eval_scores['loss']
                         elif best_eval_score > eval_scores['loss']:
                             best_eval_score = eval_scores['loss']
                             self.model.save_state(self.model_dir, suffix=f"epoch{epoch}_step{step}")
+
+                    elif (self.train_config["log"]["logging_steps"] < 0 
+                          and step==(last_step-1)):
+                        eval_scores = self.evaluate("dev", f"epoch{epoch}")
+                        eval_scores["epoch"] = epoch
+                        all_eval_scores.append(eval_scores)
+
+                        if best_eval_score is None:
+                            best_eval_score = eval_scores['loss']
+                        elif best_eval_score > eval_scores['loss']:
+                            best_eval_score = eval_scores['loss']                          
 
                 if 0 < self.train_config["optim"]["max_steps"] < global_step:
                     epoch_iterator.close()
