@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 from torch.utils.data import TensorDataset, Dataset
 from pathlib import Path
-from utils import get_label_map, SENTI_ID_MAP
+from cantonsa.utils import get_label_map, SENTI_ID_MAP
 from transformers import AutoTokenizer
 
 

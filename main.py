@@ -1,9 +1,9 @@
 import argparse
 
-from data_loader import load_dataset
-from trainer import Trainer
-from pretrained_model import PretrainedML
-from utils import init_logger, set_seed, load_yaml, get_label_map
+from cantonsa.data import load_dataset
+from cantonsa.trainer import Trainer
+from cantonsa.model import PretrainedML
+from cantonsa.utils import init_logger, set_seed, load_yaml, get_label_map
 from pathlib import Path
 import os, shutil
 

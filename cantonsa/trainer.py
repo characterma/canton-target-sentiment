@@ -9,8 +9,8 @@ from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from tqdm import tqdm, trange
 from transformers import AdamW, get_linear_schedule_with_warmup
 
-from model import SAModel
-from utils import compute_metrics, get_label_map, write_eval_details
+from cantonsa.model import SAModel
+from cantonsa.utils import compute_metrics, get_label_map, write_eval_details
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +112,7 @@ class Trainer(object):
 
         train_iterator = trange(int(self.train_config["optim"]["num_train_epochs"]), desc="Epoch")
         best_eval_score = None
+        best_eval_epoch = None
         all_eval_scores = []
         for epoch, _ in enumerate(train_iterator):
             epoch_iterator = tqdm(train_dataloader, desc="Iteration")
@@ -156,8 +157,10 @@ class Trainer(object):
 
                         if best_eval_score is None:
                             best_eval_score = eval_scores['loss']
-                        elif best_eval_score > eval_scores['loss']:
+                            best_eval_epoch = epoch
+                        elif best_eval_score < eval_scores['loss']:
                             best_eval_score = eval_scores['loss']
+                            best_eval_epoch = epoch
                             self.model.save_state(self.model_dir, suffix=f"epoch{epoch}_step{step}")
 
                     elif (self.train_config["log"]["logging_steps"] < 0 
@@ -168,8 +171,11 @@ class Trainer(object):
 
                         if best_eval_score is None:
                             best_eval_score = eval_scores['loss']
-                        elif best_eval_score > eval_scores['loss']:
-                            best_eval_score = eval_scores['loss']                          
+                            best_eval_epoch = epoch
+                        elif best_eval_score < eval_scores['loss']:
+                            best_eval_score = eval_scores['loss']
+                            best_eval_epoch = epoch 
+                            self.model.mark_as_best()                      
 
                 if 0 < self.train_config["optim"]["max_steps"] < global_step:
                     epoch_iterator.close()
@@ -178,6 +184,8 @@ class Trainer(object):
             if 0 < self.train_config["optim"]["max_steps"] < global_step:
                 train_iterator.close()
                 break
+        if best_eval_score is not None and best_eval_epoch is not None:
+            self.model.save_state(self.model_dir, suffix=f"epoch{best_eval_epoch}_loss{round(best_eval_score, 4)}")
         pd.DataFrame(data = all_eval_scores).to_csv(self.model_dir / "eval_scores.csv")
         return global_step, tr_loss / global_step
 
