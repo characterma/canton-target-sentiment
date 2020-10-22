@@ -1,6 +1,10 @@
 # Cantonese SA
 
 # Usage
+## Installation
+```
+python setup.py develop
+```
 ## Train Model
 1. Edit configuations under `./config/`
 1. Run the following command in terminal. (install any needed library missing)
