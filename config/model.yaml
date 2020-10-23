@@ -1,5 +1,5 @@
 lm:
-  pretrained_model: "bert-base-cased"
+  pretrained_model: "toastynews/electra-hongkongese-large-discriminator"
   max_length: 120
 classifier:
   dropout_rate: 0.1

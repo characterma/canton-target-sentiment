@@ -1,5 +1,5 @@
 data_path:
-  subfolder: "semeval14_restaurants"
+  subfolder: "beauty_cantonese_merged"
   train: "train.json"
   dev: "dev.json"
   test: "test.json"

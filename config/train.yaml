@@ -13,5 +13,5 @@ optim:
   max_steps: -1
   warmup_steps: 0
 output:
-  subfolder: "20201021_restaurant_bert"
+  subfolder: "20201023_beauty_electra_hk"
   save_steps: 500
