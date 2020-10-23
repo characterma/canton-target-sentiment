@@ -107,7 +107,10 @@ def load_examples(data_path, label_map, to_feature=False, tokenizer=None, max_le
                     docid = doc['docid'], 
                     key = key, 
             )
-            if to_feature and example.converted_to_features(tokenizer, max_length):
+            if to_feature:
+                if example.converted_to_features(tokenizer, max_length):
+                    examples.append(example)
+            else:
                 examples.append(example)
             key += 1   
     return examples 

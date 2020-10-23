@@ -19,11 +19,16 @@ def main(args):
     set_seed(train_config['seed'])
     data_dir = Path(os.environ['CANTON_SA_DIR']) / "data" / data_config['data_path']['subfolder']
     model_dir = Path(os.environ['CANTON_SA_DIR']) / "model" / train_config['output']['subfolder']
+
     if not os.path.exists(model_dir):
         if args.do_train:
             os.makedirs(model_dir)
         elif args.do_eval:
             raise("no model.")
+
+    shutil.copy(config_dir / "model.yaml", model_dir)
+    shutil.copy(config_dir / "train.yaml", model_dir)
+    shutil.copy(config_dir / "data.yaml", model_dir)
 
     # load pretrained language model
     pretrained_model = PretrainedML(model_config['lm']['pretrained_model'])
@@ -69,9 +74,7 @@ def main(args):
     if args.do_eval:
         trainer.evaluate("test")
 
-    shutil.copy(config_dir / "model.yaml", model_dir)
-    shutil.copy(config_dir / "train.yaml", model_dir)
-    shutil.copy(config_dir / "data.yaml", model_dir)
+
 
 if __name__ == "__main__":
     """
