@@ -116,3 +116,6 @@ result.txt
 
 .DS_Store
 sample_pred_out.txt
+
+# large sized data
+*.gz

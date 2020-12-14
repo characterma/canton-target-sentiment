@@ -17,18 +17,18 @@ def get_device(pred_config):
 
 
 def get_args(pred_config):
-    return torch.load(os.path.join(pred_config.model_dir, "training_args.bin"))
+    return torch.load(os.path.join(pred_config.output_dir, "training_args.bin"))
 
 
 def load_model(pred_config, args, device):
     # Check whether model exists
-    if not os.path.exists(pred_config.model_dir):
+    if not os.path.exists(pred_config.output_dir):
         raise Exception("Model doesn't exists! Train first!")
 
     try:
-        config = MODEL_CLASSES[args.model_type][0].from_pretrained(args.model_dir)
+        config = MODEL_CLASSES[args.model_type][0].from_pretrained(args.output_dir)
         model = MODEL_CLASSES[args.model_type][1].from_pretrained(
-            args.model_dir, config=config, args=args
+            args.output_dir, config=config, args=args
         )
         model.to(device)
         model.eval()
