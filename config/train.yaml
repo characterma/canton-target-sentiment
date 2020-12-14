@@ -1,17 +1,7 @@
+model_class: "TDBERT"
+grid_search: False
 seed: 42
-log:
-  logging_steps: -1
-optim:
-  train_batch_size: 16
-  eval_batch_size: 16
-  learning_rate: 2e-5
-  num_train_epochs: 6
-  weight_decay: 0.0
-  gradient_accumulation_steps: 1
-  adam_epsilon: 1e-8
-  max_grad_norm: 1.0
-  max_steps: -1
-  warmup_steps: 0
-output:
-  subfolder: "20201023_beauty_electra_hk"
-  save_steps: 500
+logging_steps: -1
+state_file: ""
+output_dir: "20201208_TDBERT_DECOUPLE/decouple_rus_bal_dev" # 20201125_TDBERT_HK_BEAUTY_CLASS_IMBAL/nn2_s0_up 20201125_TDBERT_HK_BEAUTY_TEXT_PREP/text_prep_max_len_150
+

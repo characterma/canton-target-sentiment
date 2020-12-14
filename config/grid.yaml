@@ -1,0 +1,59 @@
+TDLSTM:
+  body:
+    hidden_dim: [150, 200]
+  optim:
+    train_batch_size: [64, 128]
+    learning_rate: [0.005, 0.01, 0.02]
+    weight_decay: [0.05, 0.1, 0.5, 0.8]
+TGSAN:
+  body:
+    r: [2, 3]
+    embedding_dropout: [0.1, 0.5, 0.8]
+    rnn_hidden_dim: [150, 200]
+  optim:
+    train_batch_size: [64, 128]
+    learning_rate: [0.001, 0.005, 0.01]
+    weight_decay: [0.05, 0.1, 0.5, 0.8]
+TNET_LF:
+  body:
+    hidden_dim: [150, 200]  
+  optim:
+    train_batch_size: [32, 64, 128]
+    learning_rate: [0.001, 0.005, 0.01]
+    weight_decay: [0.05, 0.1, 0.5, 0.8]
+IAN:
+  body:
+    hidden_dim: [150, 200]  
+  optim:
+    train_batch_size: [32, 64, 128]
+    learning_rate: [0.001, 0.005, 0.01]
+    weight_decay: [0.05, 0.1, 0.5, 0.8]
+MEMNET:
+  body:
+    hops: [2, 3, 4]
+  optim:
+    train_batch_size: [32, 64, 128]
+    learning_rate: [0.001, 0.005, 0.01]
+    weight_decay: [0.05, 0.1, 0.5, 0.8]
+RAM:
+  body:
+    hops: [2, 3, 4]
+  optim:
+    train_batch_size: [32, 64, 128]
+    learning_rate: [0.001, 0.005, 0.01]
+    weight_decay: [0.05, 0.1, 0.5, 0.8]
+ATAE_LSTM:
+  body:
+    hidden_dim: [150, 200]
+  optim:
+    train_batch_size: [32, 64, 128]
+    learning_rate: [0.001, 0.005, 0.01]
+    weight_decay: [0.05, 0.1, 0.5, 0.8]
+TDBERT:
+  body:
+    target_pooling: ["max"]
+    dropout_rate: [0.1, 0.8]
+  optim:
+    train_batch_size: [32, 64, 128]
+    learning_rate: [2e-5, 1e-4, 2e-4]
+    weight_decay: [0.05, 0.1, 0.5, 0.8]
