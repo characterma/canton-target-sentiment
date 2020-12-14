@@ -1,0 +1,73 @@
+0:
+  name: "ros_1_no_cls"
+  model:
+    TDBERT:
+      body:
+        use_cls: False
+      optim:
+        max_stage: 1
+        0:
+          num_train_epochs: 0
+        1:
+          sampler: "ROS"
+          freeze_lm: True
+          reset_classifier: True
+          batch_size: 64
+          num_train_epochs: 10
+  train:
+    state_file: "class_imbalance_stage_one/imbal_no_cls/id0_stage0_dev_imbalanced_epoch6_step1020.pt"
+1:
+  name: "ros_2_no_cls"
+  model:
+    TDBERT:
+      body:
+        use_cls: False
+      optim:
+        max_stage: 1
+        0:
+          num_train_epochs: 0
+        1:
+          sampler: "ROS"
+          freeze_lm: True
+          reset_classifier: True
+          batch_size: 64
+          num_train_epochs: 10
+  train:
+    state_file: "class_imbalance_stage_one/imbal_no_cls/id0_stage0_dev_balanced_epoch2_step1020.pt"
+
+# 0:
+#   name: "ros_1"
+#   model:
+#     TDBERT:
+#       body:
+#         use_cls: True
+#       optim:
+#         max_stage: 1
+#         0:
+#           num_train_epochs: 0
+#         1:
+#           sampler: "ROS"
+#           freeze_lm: True
+#           reset_classifier: True
+#           batch_size: 64
+#           num_train_epochs: 10
+#   train:
+#     state_file: "class_imbalance_stage_one/imbal/id0_stage0_dev_imbalanced_epoch5_step1020.pt"
+# 1:
+#   name: "ros_2"
+#   model:
+#     TDBERT:
+#       body:
+#         use_cls: True
+#       optim:
+#         max_stage: 1
+#         0:
+#           num_train_epochs: 0
+#         1:
+#           sampler: "ROS"
+#           freeze_lm: True
+#           reset_classifier: True
+#           batch_size: 64
+#           num_train_epochs: 10
+#   train:
+#     state_file: "class_imbalance_stage_one/imbal/id0_stage0_dev_balanced_epoch7_step1020.pt"

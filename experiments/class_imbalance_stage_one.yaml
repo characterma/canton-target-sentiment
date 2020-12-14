@@ -1,0 +1,60 @@
+0:
+  name: ros_no_cls
+  model:
+    TDBERT:
+      body:
+        use_cls: False
+      optim:
+        max_stage: 0
+        0:
+          num_train_epochs: 10
+          sampler: "ROS"
+1:
+  name: rus_no_cls
+  model:
+    TDBERT:
+      body:
+        use_cls: False
+      optim:
+        max_stage: 0
+        0:
+          num_train_epochs: 10
+          sampler: "RUS"
+# 0:
+#   name: imbal
+#   model:
+#     TDBERT:
+#       body:
+#         use_cls: True
+#       optim:
+#         0:
+#           num_train_epochs: 10
+#         max_stage: 0
+# 1:
+#   name: imbal_no_cls
+#   model:
+#     TDBERT:
+#       body:
+#         use_cls: False
+#       optim:
+#         0:
+#           num_train_epochs: 10
+#         max_stage: 0
+# 2:
+#   name: ros
+#   model:
+#     TDBERT:
+#       optim:
+#         max_stage: 0
+#         0:
+#           num_train_epochs: 10
+#           sampler: "ROS"
+# 3:
+#   name: rus
+#   model:
+#     TDBERT:
+#       optim:
+#         max_stage: 0
+#         0:
+#           num_train_epochs: 10
+#           sampler: "RUS"
