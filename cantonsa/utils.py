@@ -1,3 +1,4 @@
+# coding=utf-8
 import logging
 import os
 from pathlib import Path
@@ -9,7 +10,6 @@ import numpy as np
 import pandas as pd
 import torch
 
-from sklearn import metrics
 from ruamel.yaml import YAML
 from cantonsa.constants import SENTI_ID_MAP_INV
 from sklearn.model_selection import ParameterGrid
@@ -52,44 +52,7 @@ def set_seed(seed):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
-
-
-def compute_metrics(preds, labels, docids=None):
-    assert len(preds) == len(labels)
-    acc_rep = metrics.classification_report(
-        labels, preds, labels=["neutral", "negative", "positive"], output_dict=True
-    )
-    output = {
-        "acc": (preds == labels).mean(),
-        "macro_f1": metrics.f1_score(
-            labels, preds, labels=["neutral", "negative", "positive"], average="macro"
-        ),
-        "micro_f1": metrics.f1_score(
-            labels, preds, labels=["neutral", "negative", "positive"], average="micro"
-        ),
-        "ars": ars(preds, labels, docids) if docids is not None else None,
-    }
-    # print(acc_rep)
-    for class_name, v1 in acc_rep.items():
-        if class_name in ["neutral", "negative", "positive"]:
-            for score_name, v2 in v1.items():
-                output[f"{class_name}-{score_name}"] = v2
-    return output
-
-
-def ars(preds, labels, docids):
-    """
-    ARS from https://arxiv.org/abs/2009.07964
-    keys: the unique id of each example
-    """
-    df = pd.DataFrame(data={"pred": preds, "label": labels, "docid": docids})
-    df["correct"] = (df["pred"] == df["label"]).astype(int)
-    df["count"] = 1
-    df = df.groupby(by="docid").agg({"correct": sum, "count": sum})
-
-    df["correct_ars"] = (df["correct"] == df["count"]).astype(int)
-    return df["correct_ars"].sum() / df["correct_ars"].shape[0]
-
+        
 
 def save_yaml(data, file_path):
     yaml = YAML()

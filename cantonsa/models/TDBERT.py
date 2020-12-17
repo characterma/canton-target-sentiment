@@ -20,6 +20,7 @@ class FCLayer(nn.Module):
 
 
 class TDBERT(BertPreTrainedModel, BaseModel):
+    INPUT_COLS = ["raw_text", "attention_mask", "token_type_ids", "target_mask", "label"]
     def __init__(
         self,
         model_config,
@@ -39,7 +40,7 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         self.num_labels = num_labels
         self.target_pooling = target_pooling
         self.init_classifier()
-        self._caches = dict()
+        self.loss_func = nn.CrossEntropyLoss(reduction='none')
         self.to(self._device)
 
     def init_classifier(self):
@@ -115,7 +116,7 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         attention_mask,
         token_type_ids,
         label=None,
-        cache=""
+        return_reps=False
     ):
         outputs = self.pretrained_lm(
             input_ids=raw_text,
@@ -129,11 +130,9 @@ class TDBERT(BertPreTrainedModel, BaseModel):
             outputs, target_mask
         )  # outputs: [B, S, Dim], target_mask: [B, S]
 
-        # cache target feature
         tgt_h = self.tgt_fc_layer(tgt_h)
 
         if self.model_config.get("use_cls", False):
-            # cache cls feature
             cls_h = self.cls_fc_layer(outputs[:, :1, :]).squeeze(1)
             # Concat -> fc_layer
             h = torch.cat([cls_h, tgt_h], dim=-1)
@@ -142,17 +141,10 @@ class TDBERT(BertPreTrainedModel, BaseModel):
 
         logits = self.label_classifier(h)
 
-        # Compute loss
-        # TODO: move loss to train??
         if label is not None:
-            loss_fct = nn.CrossEntropyLoss()
-            loss = loss_fct(logits.view(-1, self.num_labels), label.view(-1))
+            losses = self.loss_func(logits.view(-1, self.num_labels), label.view(-1))
 
-        if cache:
-            self.cache(cache_name=cache, tensor_name="tgt_h", tensor=tgt_h)
-            if self.model_config.get("use_cls", False):
-                self.cache(cache_name=cache, tensor_name="cls_h", tensor=cls_h)
-            self.cache(cache_name=cache, tensor_name="loss", tensor=loss)
-            self.cache(cache_name=cache, tensor_name="label", tensor=label)
-
-        return loss, logits
+        if return_reps:
+            return losses, logits, tgt_h
+        else:
+            return losses, logits
