@@ -1,0 +1,10 @@
+0:
+  name: bert_baseline
+  do_train: True
+  do_eval: True
+  model:
+    TDBERT:
+      body:
+        use_cls: False
+      optim:
+        num_train_epochs: 5

@@ -88,6 +88,8 @@ def apply_overwriting_config(overwriting_config, config):
                 config[k] = apply_overwriting_config(v, config[k])
             else:
                 config[k] = v
+        else:
+            config[k] = v
     return config
 
 

@@ -29,16 +29,28 @@ def run_multiple(args, log_path=None):
     experiment = load_yaml(exp_dir / f"{args.experiment}.yaml")
     for exp_idx, exp_config in experiment.items():
         exp_name = "{0}/{1}".format(args.experiment, exp_config["name"])
+        do_train = exp_config.get("do_train", False)
+        do_eval = exp_config.get("do_eval", False)
         logger.info("***** Running experiment %d: %s *****", exp_idx, exp_name)
-        if "train" in exp_config:
-            exp_config["train"]["output_dir"] = exp_name
-        else:
-            exp_config["train"] = {"output_dir": exp_name}
+        logger.info("  do_train = %r", do_train)
+        logger.info("  do_eval = %r", do_eval)
+
+        if do_train:
+            if "train" in exp_config:
+                exp_config["train"]["output_dir"] = exp_name
+            else:
+                exp_config["train"] = {"output_dir": exp_name}
+        elif do_eval:
+            if "eval" in exp_config:
+                exp_config["eval"]["output_dir"] = exp_name
+            else:
+                exp_config["eval"] = {"output_dir": exp_name}
+
         save_yaml(exp_config, config_dir / "overwrite_tmp.yaml")
 
         run(
-            do_train=True,
-            do_eval=True,
+            do_train=do_train,
+            do_eval=do_eval,
             data_config_file="data.yaml",
             train_config_file="train.yaml",
             eval_config_file="eval.yaml",
@@ -48,6 +60,7 @@ def run_multiple(args, log_path=None):
             log_path=log_path, 
             device=args.device,
         )
+
     if log_path is not None:
         os.remove(log_path)
 

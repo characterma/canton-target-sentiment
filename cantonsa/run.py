@@ -21,6 +21,7 @@ from cantonsa.dataset import TDSADataset
 from cantonsa.trainer import Trainer
 from cantonsa.evaluater import Evaluater
 from cantonsa.transformers_utils import PretrainedLM
+from cantonsa.timer import Timer
 from cantonsa.utils import (
     init_logger,
     set_seed,
@@ -117,6 +118,8 @@ def run(
 
         if not os.path.exists(train_output_dir):
             os.makedirs(train_output_dir)
+    else:
+        train_state_path = None
 
     if do_eval:
         if do_train:
@@ -127,18 +130,29 @@ def run(
             )
         else:
             eval_input_dir = eval_config["input_dir"]
+
             if eval_config["use_train_data_config"]:
                 data_config = load_yaml(
-                    base_dir / "output" / "train" / eval_input_dir / data_config_file
+                    base_dir / "output" / "train" / eval_input_dir / data_config_file, 
+                    overwriting_config=overwriting_config.get("data", dict()),
                 )
             else:
-                data_config = load_yaml(config_dir / data_config_file)
+                data_config = load_yaml(config_dir / data_config_file, 
+                                        overwriting_config=overwriting_config.get("data", dict()),)
+
             train_config = load_yaml(
-                base_dir / "output" / "train" / eval_input_dir / train_config_file
+                base_dir / "output" / "train" / eval_input_dir / train_config_file, 
+                overwriting_config=overwriting_config.get("train", dict()),
             )
             model_config = load_yaml(
-                base_dir / "output" / "train" / eval_input_dir / model_config_file
+                base_dir / "output" / "train" / eval_input_dir / model_config_file, 
+                overwriting_config=overwriting_config.get("model", dict()),
             )
+            grid_config = load_yaml(
+                base_dir / "output" / "train" / eval_input_dir / grid_config_file, 
+                overwriting_config=overwriting_config.get("grid", dict()),
+            )
+
             eval_state_path = (
                 base_dir
                 / "output"
@@ -217,7 +231,7 @@ def run(
         num_emb=len(word2idx) if word2idx else None, 
         pretrained_lm=pretrained_lm, 
         device=device, 
-        state_path=train_state_path
+        state_path=train_state_path if train_state_path else (None if do_train else eval_state_path)
     )
 
     # load and preprocess data
@@ -278,11 +292,13 @@ def run(
             shutil.copy(log_path, train_output_dir)
 
     if do_eval:
+        timer = Timer(output_dir=eval_output_dir)
         eval_results = dict()
         test_evaluators = []
         for _, test_info in data_config["test"].items():
             test_name = test_info["name"]
             test_file = test_info["file"]
+
             test_dataset = TDSADataset(
                 dataset_dir / test_file,
                 label_map,
@@ -293,7 +309,9 @@ def run(
                 to_df=True,
                 show_statistics=True,
                 name=f"test_{test_name}",
+                timer=timer
             )
+
             test_evaluator = Evaluater(
                     model=model, 
                     eval_config=eval_config,
@@ -302,11 +320,13 @@ def run(
                     save_preds=True,
                     save_reps=True,
                     return_losses=False, 
+                    timer=timer, 
                     device=device,
                     )
 
             test_evaluator.evaluate()
             test_evaluator.save_scores()
+            timer.save_timer()
 
         if log_path is not None:
             shutil.copy(log_path, eval_output_dir)

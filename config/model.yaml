@@ -11,34 +11,17 @@ TDBERT:
     use_cls: True
     dropout_rate: 0.1
   optim:
-    max_stage: -1
-    0:
-      optimizer: "AdamW"
-      sampler: "random"
-      batch_size: 16
-      learning_rate: 2e-5
-      num_train_epochs: 6
-      weight_decay: 0.0
-      gradient_accumulation_steps: 1
-      adam_epsilon: 1e-8
-      max_grad_norm: 1.0
-      max_steps: -1
-      warmup_steps: 0
-    1:
-      optimizer: "AdamW"
-      sampler: "RUS"
-      freeze_lm: True
-      reset_classifier: True
-      use_best_state: True
-      batch_size: 16
-      learning_rate: 2e-5
-      num_train_epochs: 1
-      weight_decay: 0.0
-      gradient_accumulation_steps: 1
-      adam_epsilon: 1e-8
-      max_grad_norm: 1.0
-      max_steps: -1
-      warmup_steps: 0
+    optimizer: "AdamW"
+    sampler: "random"
+    batch_size: 16
+    learning_rate: 2e-5
+    num_train_epochs: 6
+    weight_decay: 0.0
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8
+    max_grad_norm: 1.0
+    max_steps: -1
+    warmup_steps: 0
 TGSAN:
   preprocess:
     sentence_length: 180

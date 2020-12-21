@@ -15,6 +15,7 @@ from cantonsa.utils import get_label_map
 from cantonsa.constants import SENTI_ID_MAP, SENTI_ID_MAP_INV, SPEC_TOKEN
 from cantonsa.preprocess import preprocess_text_hk_beauty, mask_target
 from transformers import AutoTokenizer
+from sklearn.utils import resample
 
 
 logger = logging.getLogger(__name__)
@@ -444,6 +445,7 @@ class TDSADataset(Dataset):
         add_special_tokens=True,
         to_df=True,  # set False to accelerate
         show_statistics=True,  # set False to accelerate
+        timer=None, 
         name="",
     ):
         """
@@ -455,11 +457,13 @@ class TDSADataset(Dataset):
         self.add_special_tokens = add_special_tokens
         self.data_path = data_path
         self.tokenizer = tokenizer
+        self.preprocess_config = preprocess_config
         self.max_length = preprocess_config["max_length"]
         self.text_preprocessing = preprocess_config.get("text_preprocessing", None)
         self.mask_target = preprocess_config.get("mask_target", False)
         self.label_map = label_map
         self._add_new_word = False
+        self.timer = timer
 
         if word2idx is not None and len(self.word2idx) == 0:
             self.word2idx[None] = 0
@@ -493,6 +497,7 @@ class TDSADataset(Dataset):
         logger.info("  Number of lines = %d", len(lines))
         failed_prep = 0
         failed_max_len = 0
+        examples = []
         for line in tqdm(lines):
             doc = json.loads(line)
             for t in doc["labels"]:
@@ -538,7 +543,7 @@ class TDSADataset(Dataset):
                         tgt_sent, start_idx, end_idx
                     )
 
-                example = TDSAExample(
+                e = TDSAExample(
                     raw_text=doc["content"],
                     hl_sent=hl_sent,
                     tgt_sent=tgt_sent,
@@ -554,19 +559,31 @@ class TDSADataset(Dataset):
                     key=key,
                 )
 
-                if example.convert_to_features(
-                    self.tokenizer,
-                    self.max_length,
-                    word2idx=self.word2idx,
-                    add_special_tokens=self.add_special_tokens,
-                    add_new_word=self._add_new_word,
-                    mask_target=self.mask_target
-                ):
-                    data.append(example)
-                else:
-                    failed_max_len += 1
-                key += 1
+                examples.append(e)
 
+        # resample
+        if self.preprocess_config.get("resample_size", None):
+            examples = resample(examples, replace=True, n_samples=int(self.preprocess_config["resample_size"]))
+
+        if self.timer is not None:
+            self.timer.on_preprocessing_start()
+        for e in examples:
+            if e.convert_to_features(
+                self.tokenizer,
+                self.max_length,
+                word2idx=self.word2idx,
+                add_special_tokens=self.add_special_tokens,
+                add_new_word=self._add_new_word,
+                mask_target=self.mask_target
+            ):
+                data.append(e)
+            else:
+                failed_max_len += 1
+            key += 1
+        if self.timer is not None:
+            self.timer.on_preprocessing_end()
+
+        # logger.info("  Loaded data = %d", len(data))
         logger.info("  Loaded data = %d", len(data))
         logger.info("  Failed preprocessing = %d", failed_prep)
         logger.info("  Failed max len = %d", failed_max_len)

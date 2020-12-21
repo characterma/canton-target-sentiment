@@ -10,6 +10,7 @@ import sklearn
 from torch.utils.data import (
     DataLoader,
     SequentialSampler,
+    RandomSampler
 )
 from tqdm import tqdm, trange
 from cantonsa.constants import SENTI_ID_MAP_INV
@@ -30,6 +31,7 @@ class Evaluater():
         save_preds=False,
         save_reps=False,
         return_losses=False, 
+        timer=None, 
         device=0,
     ):
         self.device = device if torch.cuda.is_available() else "cpu"
@@ -41,6 +43,7 @@ class Evaluater():
         self.save_reps = save_reps
         self.return_losses = return_losses
         self.scores = OrderedDict()
+        self.timer = timer
 
     def evaluation_step(self, batch):
         self.model.eval()
@@ -94,6 +97,18 @@ class Evaluater():
     def dataset_name(self):
         return self.dataset.name 
 
+    # def _get_eval_sampler(self):
+    #     resample_size = self.eval_config.get("resample_size", None)
+    #     if not resample_size:
+    #         eval_sampler = SequentialSampler(self.dataset)
+    #     else:
+    #         eval_sampler = RandomSampler(
+    #             self.dataset, 
+    #             replacement=True, 
+    #             num_samples=resample_size
+    #         )
+    #     return eval_sampler
+
     def evaluate(self, identifier=""):
         
         dataloader = DataLoader(
@@ -114,6 +129,9 @@ class Evaluater():
         losses = []
         representations = []
         
+        if self.timer is not None:
+            self.timer.on_inference_start()
+
         for batch in tqdm(dataloader, desc="Evaluating"):
 
             outputs = self.evaluation_step(batch)
@@ -121,6 +139,9 @@ class Evaluater():
             predictions.append(outputs[1])
             labels.append(batch["label"].detach().cpu().numpy())
             representations.append(outputs[2])
+
+        if self.timer is not None:
+            self.timer.on_inference_end()
 
         labels = np.concatenate(labels, axis=None)
         predictions = np.concatenate(predictions, axis=None)
