@@ -1,16 +1,13 @@
-name: bert_base_chinese
-do_train: true
+do_train: false
 do_eval: true
+name: bert_base_chinese_5000_256
 model:
   TDBERT:
     preprocess:
-      mask_target: false
-      tokenizer_source: transformers
-      tokenizer_name: bert-base-chinese      # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
-    body:
-      pretrained_lm: bert-base-chinese
-      use_cls: false
-    optim:
-      num_train_epochs: 10
-train:
-  output_dir: light_bert_2/bert_base_chinese
+      resample_size: 5000
+eval:
+  batch_size: 256
+  input_dir: light_bert_2/bert_base_chinese
+  state_file: '*.pt'
+  output_dir: inference_time_bert_base_chinese/bert_base_chinese_5000_256
+  use_train_data_config: false

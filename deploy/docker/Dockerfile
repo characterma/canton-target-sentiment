@@ -10,6 +10,7 @@ COPY ailab/requirements.txt /ailab/requirements.txt
 VOLUME /ailab
 WORKDIR /ailab
 
+ENV CANTON_SA_DIR="/ailab"
 RUN pip install --upgrade --ignore-installed pip && pip install -r requirements.txt
 
 EXPOSE 8080
