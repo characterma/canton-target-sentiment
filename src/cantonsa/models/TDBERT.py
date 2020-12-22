@@ -143,6 +143,8 @@ class TDBERT(BertPreTrainedModel, BaseModel):
 
         if label is not None:
             losses = self.loss_func(logits.view(-1, self.num_labels), label.view(-1))
+        else:
+            losses = None
 
         if return_reps:
             return losses, logits, tgt_h

@@ -174,7 +174,7 @@ def preprocess_text_hk_beauty(
         )
 
 
-def mask_target(tgt_sent, tgt_st_idx, tgt_ed_idx):
+def get_mask_target(tgt_sent, tgt_st_idx, tgt_ed_idx):
     tgt_sent = tgt_sent[:tgt_st_idx] + SPEC_TOKEN.TARGET + tgt_sent[tgt_ed_idx:]
     tgt_ed_idx = tgt_st_idx + len(SPEC_TOKEN.TARGET)
     return tgt_sent, (tgt_st_idx, tgt_ed_idx)

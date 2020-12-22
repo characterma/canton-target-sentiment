@@ -1,0 +1,454 @@
+***** Running experiment 0: light_bert_2/bert_base_chinese *****
+  do_train = True
+  do_eval = True
+***** Loading tokenizer *****
+  Source = 'transformers'
+  Tokenizer = 'bert-base-chinese'
+Lock 139960140118224 acquired on /root/.cache/torch/transformers/bef972c6d660dc726c9a6faae8afe9b19723dc7ceb07722b61b7056e14f40282.ed68fb103094cc3b80c60abd90eabdf666602cd97f0a2403407da56763c131c9.lock
+Lock 139960140118224 released on /root/.cache/torch/transformers/bef972c6d660dc726c9a6faae8afe9b19723dc7ceb07722b61b7056e14f40282.ed68fb103094cc3b80c60abd90eabdf666602cd97f0a2403407da56763c131c9.lock
+***** Loading pretrained language model *****
+  Pretrained language model = 'bert-base-chinese'
+***** Loading data *****
+  Path = /root/canton-target-sentiment/data/datasets/hk_beauty/split_by_neu_to_neg_up_down/train_s0_nn0.json
+  Number of lines = 16337
+  Loaded data = 16336
+  Failed preprocessing = 1
+  Failed max len = 0
+  Number of 'neutral' = 13620
+  Number of 'positive' = 1462
+  Number of 'negative' = 1254
+***** Loading data *****
+  Path = /root/canton-target-sentiment/data/datasets/hk_beauty/split_by_neu_to_neg_up_down/dev_s0_bal.json
+  Number of lines = 471
+  Loaded data = 471
+  Failed preprocessing = 0
+  Failed max len = 0
+  Number of 'neutral' = 157
+  Number of 'positive' = 157
+  Number of 'negative' = 157
+***** Loading data *****
+  Path = /root/canton-target-sentiment/data/datasets/hk_beauty/split_by_neu_to_neg_up_down/dev_s0.json
+  Number of lines = 2042
+  Loaded data = 2042
+  Failed preprocessing = 0
+  Failed max len = 0
+  Number of 'neutral' = 1703
+  Number of 'negative' = 157
+  Number of 'positive' = 182
+***** Running training *****
+  Num examples = 16336
+  Num Epochs = 10
+  Sampler = random
+  Batch size = 16
+  Gradient Accumulation steps = 1
+  Logging steps = -1
+***** Running evaluation on dev_balanced*****
+  Num examples = 471
+  Batch size = 64
+***** Eval results *****
+  acc = 0.6921
+  avg_loss = 0.8902
+  macro_f1 = 0.6944
+  micro_f1 = 0.6921
+  negative-f1-score = 0.7181
+  negative-precision = 0.9118
+  negative-recall = 0.5924
+  negative-support = 157.0000
+  neutral-f1-score = 0.6818
+  neutral-precision = 0.5300
+  neutral-recall = 0.9554
+  neutral-support = 157.0000
+  positive-f1-score = 0.6831
+  positive-precision = 0.9651
+  positive-recall = 0.5287
+  positive-support = 157.0000
+***** Running evaluation on dev_imbalanced*****
+  Num examples = 2042
+  Batch size = 64
+***** Eval results *****
+  acc = 0.8888
+  avg_loss = 0.3010
+  macro_f1 = 0.7248
+  micro_f1 = 0.8888
+  negative-f1-score = 0.6159
+  negative-precision = 0.6414
+  negative-recall = 0.5924
+  negative-support = 157.0000
+  neutral-f1-score = 0.9366
+  neutral-precision = 0.9196
+  neutral-recall = 0.9542
+  neutral-support = 1703.0000
+  positive-f1-score = 0.6218
+  positive-precision = 0.7462
+  positive-recall = 0.5330
+  positive-support = 182.0000
+  Average time per epoch = 239
+***** Running evaluation on dev_balanced*****
+  Num examples = 471
+  Batch size = 64
+***** Eval results *****
+  acc = 0.8110
+  avg_loss = 0.6764
+  macro_f1 = 0.8145
+  micro_f1 = 0.8110
+  negative-f1-score = 0.8421
+  negative-precision = 0.9375
+  negative-recall = 0.7643
+  negative-support = 157.0000
+  neutral-f1-score = 0.7835
+  neutral-precision = 0.6580
+  neutral-recall = 0.9682
+  neutral-support = 157.0000
+  positive-f1-score = 0.8178
+  positive-precision = 0.9821
+  positive-recall = 0.7006
+  positive-support = 157.0000
+***** Running evaluation on dev_imbalanced*****
+  Num examples = 2042
+  Batch size = 64
+***** Eval results *****
+  acc = 0.9148
+  avg_loss = 0.2752
+  macro_f1 = 0.8044
+  micro_f1 = 0.9148
+  negative-f1-score = 0.7143
+  negative-precision = 0.6704
+  negative-recall = 0.7643
+  negative-support = 157.0000
+  neutral-f1-score = 0.9510
+  neutral-precision = 0.9496
+  neutral-recall = 0.9524
+  neutral-support = 1703.0000
+  positive-f1-score = 0.7478
+  positive-precision = 0.8129
+  positive-recall = 0.6923
+  positive-support = 182.0000
+  Average time per epoch = 239
+***** Running evaluation on dev_balanced*****
+  Num examples = 471
+  Batch size = 64
+***** Eval results *****
+  acc = 0.7941
+  avg_loss = 0.7169
+  macro_f1 = 0.7977
+  micro_f1 = 0.7941
+  negative-f1-score = 0.7833
+  negative-precision = 0.9717
+  negative-recall = 0.6561
+  negative-support = 157.0000
+  neutral-f1-score = 0.7669
+  neutral-precision = 0.6322
+  neutral-recall = 0.9745
+  neutral-support = 157.0000
+  positive-f1-score = 0.8429
+  positive-precision = 0.9593
+  positive-recall = 0.7516
+  positive-support = 157.0000
+***** Running evaluation on dev_imbalanced*****
+  Num examples = 2042
+  Batch size = 64
+***** Eval results *****
+  acc = 0.9104
+  avg_loss = 0.2921
+  macro_f1 = 0.7930
+  micro_f1 = 0.9104
+  negative-f1-score = 0.6844
+  negative-precision = 0.7153
+  negative-recall = 0.6561
+  negative-support = 157.0000
+  neutral-f1-score = 0.9479
+  neutral-precision = 0.9451
+  neutral-recall = 0.9507
+  neutral-support = 1703.0000
+  positive-f1-score = 0.7466
+  positive-precision = 0.7405
+  positive-recall = 0.7527
+  positive-support = 182.0000
+  Average time per epoch = 239
+***** Running evaluation on dev_balanced*****
+  Num examples = 471
+  Batch size = 64
+***** Eval results *****
+  acc = 0.7792
+  avg_loss = 0.9941
+  macro_f1 = 0.7838
+  micro_f1 = 0.7792
+  negative-f1-score = 0.7774
+  negative-precision = 0.9537
+  negative-recall = 0.6561
+  negative-support = 157.0000
+  neutral-f1-score = 0.7506
+  neutral-precision = 0.6129
+  neutral-recall = 0.9682
+  neutral-support = 157.0000
+  positive-f1-score = 0.8235
+  positive-precision = 0.9739
+  positive-recall = 0.7134
+  positive-support = 157.0000
+***** Running evaluation on dev_imbalanced*****
+  Num examples = 2042
+  Batch size = 64
+***** Eval results *****
+  acc = 0.9138
+  avg_loss = 0.3467
+  macro_f1 = 0.7950
+  micro_f1 = 0.9138
+  negative-f1-score = 0.6754
+  negative-precision = 0.6959
+  negative-recall = 0.6561
+  negative-support = 157.0000
+  neutral-f1-score = 0.9500
+  neutral-precision = 0.9402
+  neutral-recall = 0.9601
+  neutral-support = 1703.0000
+  positive-f1-score = 0.7596
+  positive-precision = 0.8258
+  positive-recall = 0.7033
+  positive-support = 182.0000
+  Average time per epoch = 239
+***** Running evaluation on dev_balanced*****
+  Num examples = 471
+  Batch size = 64
+***** Eval results *****
+  acc = 0.8047
+  avg_loss = 1.0525
+  macro_f1 = 0.8074
+  micro_f1 = 0.8047
+  negative-f1-score = 0.7820
+  negative-precision = 0.9541
+  negative-recall = 0.6624
+  negative-support = 157.0000
+  neutral-f1-score = 0.7752
+  neutral-precision = 0.6522
+  neutral-recall = 0.9554
+  neutral-support = 157.0000
+  positive-f1-score = 0.8651
+  positive-precision = 0.9470
+  positive-recall = 0.7962
+  positive-support = 157.0000
+***** Running evaluation on dev_imbalanced*****
+  Num examples = 2042
+  Batch size = 64
+***** Eval results *****
+  acc = 0.9148
+  avg_loss = 0.3927
+  macro_f1 = 0.8029
+  micro_f1 = 0.9148
+  negative-f1-score = 0.6667
+  negative-precision = 0.6710
+  negative-recall = 0.6624
+  negative-support = 157.0000
+  neutral-f1-score = 0.9507
+  neutral-precision = 0.9501
+  neutral-recall = 0.9513
+  neutral-support = 1703.0000
+  positive-f1-score = 0.7912
+  positive-precision = 0.7912
+  positive-recall = 0.7912
+  positive-support = 182.0000
+  Average time per epoch = 239
+***** Running evaluation on dev_balanced*****
+  Num examples = 471
+  Batch size = 64
+***** Eval results *****
+  acc = 0.7898
+  avg_loss = 1.0228
+  macro_f1 = 0.7936
+  micro_f1 = 0.7898
+  negative-f1-score = 0.7710
+  negative-precision = 0.9619
+  negative-recall = 0.6433
+  negative-support = 157.0000
+  neutral-f1-score = 0.7576
+  neutral-precision = 0.6276
+  neutral-recall = 0.9554
+  neutral-support = 157.0000
+  positive-f1-score = 0.8521
+  positive-precision = 0.9528
+  positive-recall = 0.7707
+  positive-support = 157.0000
+***** Running evaluation on dev_imbalanced*****
+  Num examples = 2042
+  Batch size = 64
+***** Eval results *****
+  acc = 0.9109
+  avg_loss = 0.3789
+  macro_f1 = 0.7924
+  micro_f1 = 0.9109
+  negative-f1-score = 0.6601
+  negative-precision = 0.6779
+  negative-recall = 0.6433
+  negative-support = 157.0000
+  neutral-f1-score = 0.9482
+  neutral-precision = 0.9446
+  neutral-recall = 0.9518
+  neutral-support = 1703.0000
+  positive-f1-score = 0.7688
+  positive-precision = 0.7797
+  positive-recall = 0.7582
+  positive-support = 182.0000
+  Average time per epoch = 238
+***** Running evaluation on dev_balanced*****
+  Num examples = 471
+  Batch size = 64
+***** Eval results *****
+  acc = 0.8217
+  avg_loss = 1.0402
+  macro_f1 = 0.8248
+  micro_f1 = 0.8217
+  negative-f1-score = 0.8118
+  negative-precision = 0.9649
+  negative-recall = 0.7006
+  negative-support = 157.0000
+  neutral-f1-score = 0.7906
+  neutral-precision = 0.6711
+  neutral-recall = 0.9618
+  neutral-support = 157.0000
+  positive-f1-score = 0.8720
+  positive-precision = 0.9545
+  positive-recall = 0.8025
+  positive-support = 157.0000
+***** Running evaluation on dev_imbalanced*****
+  Num examples = 2042
+  Batch size = 64
+***** Eval results *****
+  acc = 0.9153
+  avg_loss = 0.4402
+  macro_f1 = 0.8103
+  micro_f1 = 0.9153
+  negative-f1-score = 0.6984
+  negative-precision = 0.6962
+  negative-recall = 0.7006
+  negative-support = 157.0000
+  neutral-f1-score = 0.9504
+  neutral-precision = 0.9555
+  neutral-recall = 0.9454
+  neutral-support = 1703.0000
+  positive-f1-score = 0.7822
+  positive-precision = 0.7487
+  positive-recall = 0.8187
+  positive-support = 182.0000
+  Average time per epoch = 238
+***** Running evaluation on dev_balanced*****
+  Num examples = 471
+  Batch size = 64
+***** Eval results *****
+  acc = 0.8110
+  avg_loss = 1.1156
+  macro_f1 = 0.8142
+  micro_f1 = 0.8110
+  negative-f1-score = 0.7910
+  negative-precision = 0.9550
+  negative-recall = 0.6752
+  negative-support = 157.0000
+  neutral-f1-score = 0.7815
+  neutral-precision = 0.6552
+  neutral-recall = 0.9682
+  neutral-support = 157.0000
+  positive-f1-score = 0.8702
+  positive-precision = 0.9688
+  positive-recall = 0.7898
+  positive-support = 157.0000
+***** Running evaluation on dev_imbalanced*****
+  Num examples = 2042
+  Batch size = 64
+***** Eval results *****
+  acc = 0.9153
+  avg_loss = 0.4409
+  macro_f1 = 0.8061
+  micro_f1 = 0.9153
+  negative-f1-score = 0.6773
+  negative-precision = 0.6795
+  negative-recall = 0.6752
+  negative-support = 157.0000
+  neutral-f1-score = 0.9506
+  neutral-precision = 0.9512
+  neutral-recall = 0.9501
+  neutral-support = 1703.0000
+  positive-f1-score = 0.7902
+  positive-precision = 0.7838
+  positive-recall = 0.7967
+  positive-support = 182.0000
+  Average time per epoch = 238
+***** Running evaluation on dev_balanced*****
+  Num examples = 471
+  Batch size = 64
+***** Eval results *****
+  acc = 0.8025
+  avg_loss = 1.2661
+  macro_f1 = 0.8058
+  micro_f1 = 0.8025
+  negative-f1-score = 0.7774
+  negative-precision = 0.9537
+  negative-recall = 0.6561
+  negative-support = 157.0000
+  neutral-f1-score = 0.7747
+  neutral-precision = 0.6429
+  neutral-recall = 0.9745
+  neutral-support = 157.0000
+  positive-f1-score = 0.8652
+  positive-precision = 0.9760
+  positive-recall = 0.7771
+  positive-support = 157.0000
+***** Running evaluation on dev_imbalanced*****
+  Num examples = 2042
+  Batch size = 64
+***** Eval results *****
+  acc = 0.9153
+  avg_loss = 0.4836
+  macro_f1 = 0.8028
+  micro_f1 = 0.9153
+  negative-f1-score = 0.6688
+  negative-precision = 0.6821
+  negative-recall = 0.6561
+  negative-support = 157.0000
+  neutral-f1-score = 0.9508
+  neutral-precision = 0.9480
+  neutral-recall = 0.9536
+  neutral-support = 1703.0000
+  positive-f1-score = 0.7889
+  positive-precision = 0.7978
+  positive-recall = 0.7802
+  positive-support = 182.0000
+  Average time per epoch = 238
+***** Running evaluation on dev_balanced*****
+  Num examples = 471
+  Batch size = 64
+***** Eval results *****
+  acc = 0.7983
+  avg_loss = 1.2832
+  macro_f1 = 0.8018
+  micro_f1 = 0.7983
+  negative-f1-score = 0.7774
+  negative-precision = 0.9537
+  negative-recall = 0.6561
+  negative-support = 157.0000
+  neutral-f1-score = 0.7708
+  neutral-precision = 0.6375
+  neutral-recall = 0.9745
+  neutral-support = 157.0000
+  positive-f1-score = 0.8571
+  positive-precision = 0.9756
+  positive-recall = 0.7643
+  positive-support = 157.0000
+***** Running evaluation on dev_imbalanced*****
+  Num examples = 2042
+  Batch size = 64
+***** Eval results *****
+  acc = 0.9143
+  avg_loss = 0.4937
+  macro_f1 = 0.8004
+  micro_f1 = 0.9143
+  negative-f1-score = 0.6667
+  negative-precision = 0.6776
+  negative-recall = 0.6561
+  negative-support = 157.0000
+  neutral-f1-score = 0.9503
+  neutral-precision = 0.9469
+  neutral-recall = 0.9536
+  neutral-support = 1703.0000
+  positive-f1-score = 0.7843
+  positive-precision = 0.8000
+  positive-recall = 0.7692
+  positive-support = 182.0000
+  Average time per epoch = 237

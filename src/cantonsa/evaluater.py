@@ -97,18 +97,6 @@ class Evaluater():
     def dataset_name(self):
         return self.dataset.name 
 
-    # def _get_eval_sampler(self):
-    #     resample_size = self.eval_config.get("resample_size", None)
-    #     if not resample_size:
-    #         eval_sampler = SequentialSampler(self.dataset)
-    #     else:
-    #         eval_sampler = RandomSampler(
-    #             self.dataset, 
-    #             replacement=True, 
-    #             num_samples=resample_size
-    #         )
-    #     return eval_sampler
-
     def evaluate(self, identifier=""):
         
         dataloader = DataLoader(

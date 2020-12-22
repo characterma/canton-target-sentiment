@@ -1,0 +1,4 @@
+batch_size: 128
+model_dir: ""
+state_file: "*.pt"
+use_train_data_config: True

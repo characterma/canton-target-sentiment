@@ -1,0 +1,177 @@
+TDBERT:
+  preprocess:
+    text_preprocessing: hk_beauty   # "", hk_beauty
+    mask_target: false
+    max_length: 180
+    tokenizer_source: transformers
+    tokenizer_name: bert-base-chinese                                     # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+  body:
+    pretrained_lm: bert-base-chinese                                    # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+    target_pooling: max
+    use_cls: false
+    dropout_rate: 0.1
+  optim:
+    optimizer: AdamW
+    sampler: random
+    batch_size: 16
+    learning_rate: 2e-5
+    num_train_epochs: 10
+    weight_decay: 0.0
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8
+    max_grad_norm: 1.0
+    max_steps: -1
+    warmup_steps: 0
+TGSAN:
+  preprocess:
+    sentence_length: 180
+    tokenizer: huggingface:::bert-base-uncased    # source:::tokenizer_type
+  body:
+    use_pretrained: true
+    pretrained_word_emb: glove_twitter_27B_100d_vectors.txt   # gensim format
+    emb_dim: 150
+    embedding_trainable: false
+    embedding_dropout: 0.5
+    rnn_hidden_dim: 150
+    r: 2
+    tgt_san_dim: 64
+    san_dropout: 0.1
+    san_penal_coeff: 0.1
+    ffn_dim: 16
+    ffn_dropout: 0.1
+    att_dropout: 0.1
+  optim:
+    optimizer: AdamW
+    train_batch_size: 64
+    eval_batch_size: 128
+    learning_rate: 0.0015
+    num_train_epochs: 25
+    weight_decay: 0.9
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8
+    max_grad_norm: 1.0
+    max_steps: -1
+    warmup_steps: 0
+TDLSTM:
+  preprocess:
+    sentence_length: 180
+    tokenizer: huggingface:::bert-base-uncased    # source:::tokenizer_type
+  body:
+    use_pretrained: false
+    pretrained_word_emb: glove_twitter_27B_100d_vectors.txt   # gensim format
+    emb_dim: 100
+    embedding_trainable: false
+    hidden_dim: 200
+  optim:
+    optimizer: AdamW
+    train_batch_size: 32
+    eval_batch_size: 128
+    learning_rate: 0.005
+    num_train_epochs: 25
+    weight_decay: 0.8
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
+    max_grad_norm: 0.8
+    max_steps: -1
+    warmup_steps: 0
+RAM:
+  preprocess:
+    sentence_length: 180
+    tokenizer: huggingface:::bert-base-uncased    # source:::tokenizer_type
+  body:
+    pretrained_word_emb: glove_twitter_27B_100d_vectors.txt   # gensim format
+    embedding_trainable: false
+    hops: 3
+    hidden_dim: 150
+  optim:
+    optimizer: AdamW
+    train_batch_size: 32
+    eval_batch_size: 128
+    learning_rate: 0.005
+    num_train_epochs: 25
+    weight_decay: 0.8
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
+    max_grad_norm: 0.8
+    max_steps: -1
+    warmup_steps: 0
+TNET_LF:
+  preprocess:
+    sentence_length: 180
+    tokenizer: huggingface:::bert-base-uncased    # source:::tokenizer_type
+  body:
+    pretrained_word_emb: glove_twitter_27B_100d_vectors.txt   # gensim format
+    embedding_trainable: false
+    hidden_dim: 150
+  optim:
+    optimizer: AdamW
+    train_batch_size: 32
+    eval_batch_size: 128
+    learning_rate: 0.005
+    num_train_epochs: 25
+    weight_decay: 0.8
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
+    max_grad_norm: 0.8
+    max_steps: -1
+    warmup_steps: 0
+MEMNET:
+  preprocess:
+    sentence_length: 180
+    tokenizer: huggingface:::bert-base-uncased    # source:::tokenizer_type 
+  body:
+    pretrained_word_emb: glove_twitter_27B_100d_vectors.txt   # gensim format
+    embedding_trainable: false
+    hops: 3
+  optim:
+    optimizer: AdamW
+    train_batch_size: 32
+    eval_batch_size: 128
+    learning_rate: 0.005
+    num_train_epochs: 25
+    weight_decay: 0.8
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
+    max_grad_norm: 0.8
+    max_steps: -1
+    warmup_steps: 0
+IAN:
+  preprocess:
+    sentence_length: 180
+    tokenizer: huggingface:::bert-base-uncased    # source:::tokenizer_type 
+  body:
+    pretrained_word_emb: glove_twitter_27B_100d_vectors.txt   # gensim format
+    embedding_trainable: false
+    hidden_dim: 150
+  optim:
+    optimizer: AdamW
+    train_batch_size: 32
+    eval_batch_size: 128
+    learning_rate: 0.005
+    num_train_epochs: 25
+    weight_decay: 0.8
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
+    max_grad_norm: 0.8
+    max_steps: -1
+    warmup_steps: 0
+ATAE_LSTM:
+  preprocess:
+    sentence_length: 180
+    tokenizer: huggingface:::bert-base-uncased    # source:::tokenizer_type 
+  body:
+    pretrained_word_emb: glove_twitter_27B_100d_vectors.txt
+    embedding_trainable: false
+    hidden_dim: 150
+  optim:
+    optimizer: AdamW
+    train_batch_size: 32
+    eval_batch_size: 128
+    learning_rate: 0.005
+    num_train_epochs: 25
+    weight_decay: 0.8
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
+    max_grad_norm: 0.8
+    max_steps: -1
+    warmup_steps: 0

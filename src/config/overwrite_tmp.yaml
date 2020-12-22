@@ -1,0 +1,13 @@
+do_train: false
+do_eval: true
+name: bert_base_chinese_5000_256
+model:
+  TDBERT:
+    preprocess:
+      resample_size: 5000
+eval:
+  batch_size: 256
+  input_dir: light_bert_2/bert_base_chinese
+  state_file: '*.pt'
+  output_dir: inference_time_bert_base_chinese/bert_base_chinese_5000_256
+  use_train_data_config: false
