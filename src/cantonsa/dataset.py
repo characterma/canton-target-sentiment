@@ -32,8 +32,8 @@ class TargetDependentExample(object):
         raw_start_idx,
         raw_end_idx,
         tokenizer, 
-        label="unknown",
-        preprocess_config=preprocess_config,
+        preprocess_config,
+        label=None,
         required_features=[]
     ):
 
@@ -123,8 +123,8 @@ class TargetDependentExample(object):
                 arrays[i] = np.concatenate((arrays[i], [0] * space), axis=None)
         return arrays
 
+    @staticmethod
     def get_features(
-        self,
         tgt_sent, 
         start_idx, 
         end_idx, 
@@ -136,6 +136,7 @@ class TargetDependentExample(object):
         max_length, 
         mask_target, 
         required_features, 
+        label=None
     ):
         features = {}
 
@@ -237,7 +238,7 @@ class TargetDependentExample(object):
                         add_special_tokens=True,
                     )
                     next_sents_encoded = tokenizer(
-                        self.next_sents,
+                        next_sents,
                         padding=False,
                         add_special_tokens=True,
                     )

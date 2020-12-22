@@ -5,16 +5,21 @@ import os, shutil, sys
 import uuid
 import argparse
 import pandas as pd
-from cantonsa.dataset import TDSADataset
 from cantonsa.trainer import Trainer
 from cantonsa.evaluater import Evaluater
 from cantonsa.transformers_utils import PretrainedLM
+from cantonsa.constants import SENTI_ID_MAP_INV
 # from cantonsa.timer import Timer
 from cantonsa.utils import load_yaml
 from cantonsa.tokenizer import get_tokenizer
 from cantonsa.models import *
+from cantonsa.dataset import TargetDependentExample
+import traceback
+import torch
 
-device="cuda"
+from aiohttp import web
+
+device=2
 
 def init_model(
         model_class, 
@@ -41,10 +46,10 @@ def init_model(
     return model
 
 base_dir = Path(os.environ["CANTON_SA_DIR"])
-config_dir = base_dir / "src/config"
+config_dir = base_dir / "config"
 deploy_config = load_yaml(config_dir / "deploy.yaml")
 
-model_dir = base_dir / "src/models" / deploy_config["model_dir"]
+model_dir = base_dir / "models" / deploy_config["model_dir"]
 
 model_config = load_yaml(model_dir / "model.yaml")
 train_config = load_yaml(model_dir / "train.yaml")
@@ -83,6 +88,8 @@ async def get_target_sentiment(request):
     try:
         data = await request.json()
 
+        # print(data)
+
         content = data.get('content', None)
         start_ind = data.get('start_ind', None)
         end_ind = data.get('end_ind', None)
@@ -93,25 +100,28 @@ async def get_target_sentiment(request):
             return web.json_response({"data": {}, "message": "MissingValueException"}, status=status)
 
         e = TargetDependentExample(
-            raw_text,
-            raw_start_idx,
-            raw_end_idx,
-            tokenizer, 
-            label="unknown",
+            raw_text=content,
+            raw_start_idx=start_ind,
+            raw_end_idx=end_ind,
+            tokenizer=tokenizer, 
+            label=None,
             preprocess_config=preprocess_config,
             required_features=model.INPUT_COLS
         )
 
         if e.feature_succeeded and e.preprocess_succeeded:
             with torch.no_grad():
-                inputs = dict()
+                input = dict()
                 for col in model.INPUT_COLS:
-                    inputs[col] = torch.unsqueeze(e.features[col]).to(device)
+                    if col in e.features:
+                        input[col] = torch.unsqueeze(e.features[col], dim=0).to(device)
 
-                output = self.model(**inputs, return_reps=False)
-                prediction = torch.argmax(outputs[1], dim=1).detach().cpu().numpy()
+                output = model(**input, return_reps=False)
+                prediction = torch.argmax(output[1], dim=1).detach().cpu().numpy()
+                prediction = SENTI_ID_MAP_INV[prediction[0]]
+                print(prediction)
         else:
-            prediction = 0
+            prediction = "neutral"
 
         return web.json_response({"data": prediction, "message":"OK"}, status=status)
 
