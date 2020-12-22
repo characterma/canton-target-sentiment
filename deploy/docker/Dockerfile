@@ -3,6 +3,7 @@ FROM ess-repos01.wisers.com:8888/python:3.6-slim-stretch
 COPY ailab/src /ailab/src
 COPY ailab/config /ailab/config
 COPY ailab/models ailab/models 
+COPY ailab/setup.py /ailab/setup.py
 COPY ailab/start.sh /ailab/start.sh
 COPY ailab/requirements.txt /ailab/requirements.txt
 
