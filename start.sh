@@ -1,1 +1,1 @@
-python cantonsa/serve_aiohttp.py
+python src/cantonsa/serve_aiohttp.py
