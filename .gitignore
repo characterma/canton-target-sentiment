@@ -119,3 +119,7 @@ sample_pred_out.txt
 
 # large sized data
 *.gz
+
+*.pt
+*.csv
+*.npy

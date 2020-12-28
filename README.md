@@ -1,36 +1,48 @@
-# Cantonese SA
+# Cantonese Target Dependent Sentiment Analysis
 
-# Usage
-## Installation
-```
-python setup.py develop
-```
-## Train Model
-1. Edit configuations under `./config/`
-1. Run the following command in terminal. (install any needed library missing)
-```
-python main.py --do_train
-```
-# Using Docker image
+## Deployment Guide
 
-## Starting a container
-1. ssh a GPU server 
-1. cd to your directory (such as `/home/developer/Users/tonychan`)
-1. Pull image `canton-sa-gpu` (not yet there)
-1. Run the follwing command:
+### Setup API with Docker
+
+1. Build docker image.
+```bash
+cd ./deploy/docker
+sh build_docker.sh
+docker build -t IMAGE_NAME . 
 ```
-docker run --itd --name <container_name> -p 28080:8080 -p 28885:8885 -p 28886:8886 -p 28887:8887 -p 28888:8888 -p 28889:8889 -v -v "$PWD":/root --privileged canton-sa-gpu 
+2. Start a container.
+```bash
+docker run --name CONTAINER_NAME -m 8GB -cpus 4 -p PORT:8080 -td IMAGE_NAME
 ```
 
-## Entering a container
+3. Start API. (**!!!!!**) API_NAME needs to be 'sanic' or 'aiohttp'.
 ```
-docker attach <container_name>
+docker exec -d CONTAINER_NAME sh start.sh API_NAME
 ```
 
-## Exiting a container (without stopping it)
-`Ctrl+P` + `Ctrl+Q`
+### Load Testing 
+1. Setup API with docker
+2. Run Locust.
+```bash
+docker exec -d CONTAINER_NAME python ./deploy/test/locustfile.py -u=CONCORRENT_USERS --api=API_NAME
+docker cp CONTAINER_NAME:./deploy/test/ ./
+```
 
+### An Example of API Usage 
 
-# Reference
-- Some functions and program designs are borrowed from https://github.com/monologg/R-BERT.
-- Model is similar to TDBERT in "Target-Dependent Sentiment Classification with BERT".
+1. POST to `http://HOST:PORT/target_sentiment` with body as:
+```json
+{
+    "content": "## Headline ##\n大家最近買左D乜 分享下?\n## Content ##\n引用:\n原帖由 綠茶寶寶 於 2018-12-31 08:40 PM 發表\n買左3盒胭脂\nFit me 胭脂睇youtuber推介話好用，用完覺得麻麻\n原來fit me麻麻 我買左YSL 支定妝噴霧 用完覺得無想像咁好\n\n", 
+    "start_ind": 141, 
+    "end_ind": 144
+}
+```
+2. Response:
+```json
+{
+    "data": "negative",
+    "message": "OK"
+}
+
+```

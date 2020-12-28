@@ -16,8 +16,8 @@ app = Sanic(__name__)
 
 # we only run 1 inference run at any time (one could schedule between several runners if desired)
 # MAX_QUEUE_SIZE = 64  # we accept a backlog of MAX_QUEUE_SIZE before handing out "Too busy" errors
-MAX_BATCH_SIZE = 128  # we put at most MAX_BATCH_SIZE things in a single batch
-MAX_WAIT = 0.25        # we wait at most MAX_WAIT seconds before running for more inputs to arrive in batching
+MAX_BATCH_SIZE = 32  # we put at most MAX_BATCH_SIZE things in a single batch
+MAX_WAIT = 0.1        # we wait at most MAX_WAIT seconds before running for more inputs to arrive in batching
 
 import logging
 from pathlib import Path

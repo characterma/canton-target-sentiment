@@ -63,9 +63,9 @@ if __name__ == '__main__':
     
     file = "stress_test_u{}_r{}_t{}_{}".format(u, r, t, args.api)
 
-    subprocess.Popen("python ./log_cpu_mem.py '{}'".format(args.api, str(int(u / r + 60) + 20)), shell=True, close_fds=False)
-    print("started logging")
-    time.sleep(10)
+    # subprocess.Popen("python ./log_cpu_mem.py '{}'".format(args.api, str(int(u / r + 60) + 20)), shell=True, close_fds=True)
+    # print("started logging")
+    # time.sleep(10)
     print("starting load test")
     runTest(u, r, file, t)
-    time.sleep(10)
+    # time.sleep(10)
