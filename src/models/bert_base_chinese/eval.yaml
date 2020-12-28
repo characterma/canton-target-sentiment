@@ -1,7 +1,0 @@
-seed: 42
-batch_size: 64
-logging_steps: -1
-input_dir: ''
-state_file: '*.pt'
-output_dir: ''
-use_train_data_config: true

@@ -9,13 +9,7 @@ echo $SRC_ROOT
 # Copy necessary deployment files to /ailab
 
 mkdir $FOLDER_NAME/
-rsync -av $SRC_ROOT/src $FOLDER_NAME/
-rsync -av $SRC_ROOT/config $FOLDER_NAME/
-rsync -av $SRC_ROOT/models $FOLDER_NAME/
-rsync -av $SRC_ROOT/setup.py $FOLDER_NAME/
-rsync -av $SRC_ROOT/start.sh $FOLDER_NAME/
-rsync -av $SRC_ROOT/requirements.txt $FOLDER_NAME/
-
+rsync -av $SRC_ROOT/ $FOLDER_NAME/
 
 # =====================
 

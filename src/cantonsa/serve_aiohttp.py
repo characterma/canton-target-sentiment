@@ -1,12 +1,7 @@
 # coding=utf-8
-import logging
 from pathlib import Path
-import os, shutil, sys
-import uuid
-import argparse
+import os, sys
 import pandas as pd
-from cantonsa.trainer import Trainer
-from cantonsa.evaluater import Evaluater
 from cantonsa.transformers_utils import PretrainedLM
 from cantonsa.constants import SENTI_ID_MAP_INV
 # from cantonsa.timer import Timer
@@ -16,7 +11,6 @@ from cantonsa.models import *
 from cantonsa.dataset import TargetDependentExample
 import traceback
 import torch
-
 from aiohttp import web
 
 device=2
@@ -88,8 +82,6 @@ async def get_target_sentiment(request):
     try:
         data = await request.json()
 
-        # print(data)
-
         content = data.get('content', None)
         start_ind = data.get('start_ind', None)
         end_ind = data.get('end_ind', None)
@@ -119,7 +111,6 @@ async def get_target_sentiment(request):
                 output = model(**input, return_reps=False)
                 prediction = torch.argmax(output[1], dim=1).detach().cpu().numpy()
                 prediction = SENTI_ID_MAP_INV[prediction[0]]
-                print(prediction)
         else:
             prediction = "neutral"
 

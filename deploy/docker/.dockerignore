@@ -1,0 +1,7 @@
+*/output/*
+*/notebooks/*
+*/experiments/*
+*/log/*
+*/.git/*
+*/config/*
+!*/config/deploy.yaml

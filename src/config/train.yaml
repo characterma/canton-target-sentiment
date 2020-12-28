@@ -1,7 +1,0 @@
-model_class: "TDBERT"
-grid_search: False
-seed: 42
-logging_steps: -1
-state_file: ""
-output_dir: "20201208_TDBERT_DECOUPLE/decouple_rus_bal_dev" # 20201125_TDBERT_HK_BEAUTY_CLASS_IMBAL/nn2_s0_up 20201125_TDBERT_HK_BEAUTY_TEXT_PREP/text_prep_max_len_150
-

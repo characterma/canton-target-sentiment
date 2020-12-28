@@ -1,18 +1,12 @@
-FROM ess-repos01.wisers.com:8888/python:3.6-slim-stretch
+FROM ess-repos01.wisers.com:8888/pytorch/pytorch:1.6.0-cuda10.1-cudnn7-runtime
 
-COPY ailab/src /ailab/src
-COPY ailab/config /ailab/config
-COPY ailab/models /ailab/models 
-COPY ailab/setup.py /ailab/setup.py
-COPY ailab/start.sh /ailab/start.sh
-COPY ailab/requirements.txt /ailab/requirements.txt
+COPY ailab/ /ailab/
 
 VOLUME /ailab
 WORKDIR /ailab
 
 ENV CANTON_SA_DIR="/ailab"
-RUN pip install --upgrade --ignore-installed pip && pip install -r requirements.txt
-RUN conda install -c conda-forge ruamel.yaml
+RUN pip install --upgrade --ignore-installed pip && pip install -r requirements.txt && conda install -c conda-forge ruamel.yaml && python setup.py develop
 
 EXPOSE 8080
-CMD [ "/bin/sh", "start.sh" ]
+# CMD [ "/bin/sh", "start.sh" ]
