@@ -25,7 +25,7 @@ class Testlen(TaskSet):
         # print("Response status code:", response.status_code)
         
 class HttpRequester(HttpUser):
-    wait_time = between(1, 2)
+    wait_time = between(0, 0)
     tasks = [Testlen]
 
 def runTest(u, r, file, t):
@@ -43,8 +43,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", type=int, default=1)
     parser.add_argument("-u", type=int, default=200)
-    parser.add_argument("--max_wait_time", type=int, default=0)
-    parser.add_argument("--min_wait_time", type=int, default=0)
+    # parser.add_argument("--max_wait_time", type=int, default=0)
+    # parser.add_argument("--min_wait_time", type=int, default=0)
     parser.add_argument("--api", type=str, default="")
     args = parser.parse_args()
 
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     r = args.r
     t = str(int(u / r + 60)) + "s"
 
-    HttpRequester = between(args.min_wait_time, args.max_wait_time)
+    # HttpRequester = between(args.min_wait_time, args.max_wait_time)
     
     file = "stress_test_u{}_r{}_t{}_{}".format(u, r, t, args.api)
 

@@ -33,8 +33,6 @@ from cantonsa.dataset import TargetDependentExample
 import traceback
 import torch
 
-from aiohttp import web
-
 device=2
 
 def init_model(
@@ -138,8 +136,7 @@ class ModelRunner:
     def run_model(self, input):  # runs in other thread
         with torch.no_grad():
             output = model(**input, return_reps=False)
-            prediction = torch.argmax(output[1], dim=1).detach().cpu().numpy()
-            prediction = [SENTI_ID_MAP_INV[p] for p in prediction]
+            prediction = torch.argmax(output[1], dim=1)
             return prediction
 
     async def model_runner(self):
@@ -181,6 +178,10 @@ class ModelRunner:
             result = await app.loop.run_in_executor(
                 None, functools.partial(self.run_model, input)
             )
+            # result = self.run_model(input)
+
+            result = [SENTI_ID_MAP_INV[p] for p in result.detach().cpu().numpy()]
+          
             for t, r in zip(to_process, result):
                 t["output"] = r
                 t["done_event"].set()
@@ -193,19 +194,21 @@ async def target_sentiment(request):
     try:
 
         body = await request.stream.read()
-        body = json.loads(body)
+        # body = json.loads(body)
 
-        e = TargetDependentExample(
-            raw_text=body["content"],
-            raw_start_idx=body["start_ind"],
-            raw_end_idx=body["end_ind"],
-            tokenizer=tokenizer, 
-            label=None,
-            preprocess_config=preprocess_config,
-            required_features=model.INPUT_COLS
-        )
+        # e = TargetDependentExample(
+        #     raw_text=body["content"],
+        #     raw_start_idx=body["start_ind"],
+        #     raw_end_idx=body["end_ind"],
+        #     tokenizer=tokenizer, 
+        #     label=None,
+        #     preprocess_config=preprocess_config,
+        #     required_features=model.INPUT_COLS
+        # )
 
-        output = await model_runner.process_input(e)
+        # output = await model_runner.process_input(e)
+        
+        output = "neutral"
         return sanic.response.json({"data": output, "message":"OK"}, status=200)
 
     except Exception as e:
