@@ -51,8 +51,8 @@ if __name__ == '__main__':
     
 
     # single user test
-    file = "normal_test_u1_r1_t10s_{}".format(args.api)
-    runTest(1, 1, file, "10s")
+    # file = "normal_test_u1_r1_t10s_{}".format(args.api)
+    # runTest(1, 1, file, "10s")
 
     # stress test
     u = args.u
