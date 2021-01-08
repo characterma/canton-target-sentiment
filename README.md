@@ -10,9 +10,10 @@ cd ./deploy/docker
 sh build_docker.sh
 docker build -t IMAGE_NAME . 
 ```
+
 2. Start a container.
 ```bash
-docker run --name CONTAINER_NAME -m 8GB -cpus 4 -p PORT:8080 -td IMAGE_NAME
+docker run --name CONTAINER_NAME -m 8GB --cpus 4 -p PORT:8080 -td IMAGE_NAME
 ```
 
 3. Start API. (**!!!!!**) API_NAME needs to be 'sanic' or 'aiohttp'.
@@ -26,10 +27,12 @@ docker exec -d CONTAINER_NAME sh start.sh API_NAME
 ```bash
 docker exec -d CONTAINER_NAME python ./deploy/test/locustfile.py -u=CONCORRENT_USERS --api=API_NAME
 ```
+
 3. Or, run pre-defined Locust tests.
 ```bash
 docker exec -d CONTAINER_NAME bash -c "cd ./deploy/test/ ; bash run_all_test.sh API_NAME ; cd ../.."
 ```
+
 4. Retrieve test results
 ```bash
 docker cp CONTAINER_NAME:./deploy/test/ ./
@@ -45,6 +48,7 @@ docker cp CONTAINER_NAME:./deploy/test/ ./
     "end_ind": 144
 }
 ```
+
 2. Response:
 ```json
 {
