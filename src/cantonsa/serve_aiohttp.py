@@ -13,7 +13,10 @@ import traceback
 import torch
 from aiohttp import web
 
-device=2
+if len(sys.argv) > 1:
+    device = int(sys.argv[1])
+else:
+    device = 1
 
 def init_model(
         model_class, 

@@ -15,7 +15,11 @@ from aiohttp import web
 from flask import Flask, request, jsonify
 import json
 
-device = 2
+if len(sys.argv) > 1:
+    device = int(sys.argv[1])
+else:
+    device = 1
+    
 app = Flask(__name__)
 
 def init_model(

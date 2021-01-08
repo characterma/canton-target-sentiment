@@ -16,7 +16,10 @@ import traceback
 import torch
 from pydantic import BaseModel
 
-device = 2
+if len(sys.argv) > 1:
+    device = int(sys.argv[1])
+else:
+    device = 1
 
 def init_model(
         model_class, 
@@ -96,12 +99,9 @@ class Item(BaseModel):
 
 # API caller - single predict for PI-HK
 @app.post('/target_sentiment')
-def pi_single(json_dict:Item):
-    # headline = json_dict.headline
-    # content = json_dict.content
-    # pi_score = single_pred(model, headline, content)
-    # score_res = {'score': pi_score}
+async def pi_single(json_dict:Item):
 
+    # await json_dict
     content = json_dict.content
     start_ind = json_dict.start_ind
     end_ind = json_dict.end_ind
@@ -142,4 +142,4 @@ def pi_single(json_dict:Item):
 
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port='8080')
+    uvicorn.run(app, host='0.0.0.0', port=8080)
