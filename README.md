@@ -22,13 +22,20 @@ docker exec -d CONTAINER_NAME sh start.sh API_NAME
 
 ### Load Testing 
 1. Setup API with docker
-2. Run Locust.
+2. Run Locust tests (for specific tests).
 ```bash
 docker exec -d CONTAINER_NAME python ./deploy/test/locustfile.py -u=CONCORRENT_USERS --api=API_NAME
+```
+3. Or, run pre-defined Locust tests.
+```bash
+docker exec -d CONTAINER_NAME bash -c "cd ./deploy/test/ ; bash run_all_test.sh API_NAME ; cd ../.."
+```
+4. Retrieve test results
+```bash
 docker cp CONTAINER_NAME:./deploy/test/ ./
 ```
 
-### An Example of API Usage 
+### API Usage 
 
 1. POST to `http://HOST:PORT/target_sentiment` with body as:
 ```json
