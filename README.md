@@ -13,7 +13,7 @@ docker build -t IMAGE_NAME .
 
 2. Start a container.
 ```bash
-docker run --name CONTAINER_NAME -m 8GB -cpus 4 -p PORT:8080 -td IMAGE_NAME
+docker run --name CONTAINER_NAME -m 8GB --cpus 4 -p PORT:8080 -td IMAGE_NAME
 ```
 
 3. Start API. (**!!!!!**) API_NAME needs to be 'sanic' or 'aiohttp'.
