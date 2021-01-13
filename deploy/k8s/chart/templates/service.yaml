@@ -1,0 +1,19 @@
+{{- if .Values.service.enabled -}}
+{{- $appName := .Values.appName -}}
+apiVersion: v1
+kind: Service
+metadata:
+{{- template "commonMeta" . }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ default 8080 .Values.service.internalPort }}
+      targetPort: {{ default 8080 .Values.service.internalPort }}
+      protocol: TCP
+      {{if eq .Values.service.type "NodePort"}}
+      nodePort: {{ .Values.service.externalPort }}
+      {{end}}
+  selector:
+    app: {{ $appName }}
+    release: {{ .Release.Name }}
+{{- end -}}

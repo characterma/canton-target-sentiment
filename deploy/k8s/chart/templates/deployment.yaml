@@ -1,0 +1,49 @@
+{{- $appName := .Values.appName -}}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+{{- template "commonMeta" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ $appName }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ $appName }}
+        image: {{ .Values.imageRepository }}:{{ .Values.imageTag }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+
+        # Change Accordingly ---------------
+        env:
+        - name: TZ
+          value: "Asia/Hong_Kong"
+        # ----------------------------------
+
+        ports:
+        - containerPort: {{ default 8080 .Values.service.internalPort }}
+
+        # Change Accordingly ---------------
+        volumeMounts:
+#        - name: configs
+#          mountPath: "/ailab/conf/gunicorn.conf"
+#          subPath: "gunicorn.conf"
+#        - name: configs
+#          mountPath: "/ailab/conf/logging.conf"
+#          subPath: "logging.conf"
+        - mountPath: "/etc/localtime"
+          name: localtime
+        # ----------------------------------
+
+      imagePullSecrets:
+      - name: docker-pub
+      volumes:
+#      - name: configs
+#        configMap:
+#          name: {{ $appName }}
+      - name: localtime
+        hostPath:
+          path: "/usr/share/zoneinfo/Asia/Hong_Kong"
+

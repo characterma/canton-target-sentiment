@@ -1,0 +1,71 @@
+{
+	"info": {
+		"_postman_id": "e74b4bf8-6db5-4fff-b815-e08745a81738",
+		"name": "canton-target-sentiment",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Test API",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"target sentiment label\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.data.label).to.eql(\"negative\");\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"headline\": \"大家最近買左D乜 分享下?\", \r\n    \"content\": \"ABC, 用完覺得無想像咁好\", \r\n    \"start_ind\": 0, \r\n    \"end_ind\": 3, \r\n    \"target_in_hl\": 0\r\n}"
+				},
+				"url": {
+					"raw": "http://{{server}}/target_sentiment",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"target_sentiment"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "server",
+			"value": ""
+		}
+	]
+}

@@ -1,0 +1,15 @@
+{{- if .Values.configmap.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+{{- template "commonMeta" . }}
+data:
+{{ $root := . }}
+{{ range $path, $_ := .Files.Glob "configs/*" }}
+{{ ($root.Files.Glob $path).AsConfig | indent 2 }}
+{{ end }}
+{{ range $path, $_ := .Files.Glob "configs/tpl/*" }}
+{{ base $path | trimSuffix ".tpl" | indent 2 }}: |
+{{ tpl ($root.Files.Get $path) $root | indent 4 }}
+{{ end }}
+{{- end -}}

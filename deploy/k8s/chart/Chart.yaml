@@ -1,0 +1,7 @@
+## This file specify Helm Chart information ##
+
+# Below will be replaced by environment varialbes defined in env.sh
+apiVersion: v1
+description: "$CHART_DESCRIPTION"
+name: "$CHART_NAME"
+version: "$CHART_VERSION"

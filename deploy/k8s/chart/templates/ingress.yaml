@@ -1,0 +1,22 @@
+{{- if .Values.ingress.enabled -}}
+{{- $appName := .Values.appName -}}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+{{- template "commonMeta" . }}
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    #ingress.kubernetes.io/rewrite-target: /
+    #ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+spec:
+  rules:
+    - http:
+        paths:
+        - path: /{{ .Release.Namespace }}/{{ $appName }}(/|$)(.*$)
+          backend:
+            serviceName: {{ $appName }}
+            servicePort: {{ default "rest-api" .Values.service.externalPort }}
+{{- end -}}
+

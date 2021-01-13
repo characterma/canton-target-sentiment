@@ -1,0 +1,30 @@
+## This file declares variables to be passed into your templates ##
+
+# Below will be replaced by environment variables defined in env.sh
+appName: "$APP_NAME"
+imageRepository: "$IMAGE_REPOS"
+imageTag: "$IMAGE_TAG"
+ciBuildRef: "$CI_REF"
+
+# Below set as Always or IfNotPresent
+imagePullPolicy: Always
+
+# By default, no changes required for below service settings
+service:
+  enabled: true
+  type: ClusterIP
+  externalPort: 8080
+  internalPort: 8080
+replicaCount: 1
+
+# Whether to enable ingress rule for external API access
+ingress:
+  enabled: true
+
+# Whether to load all files under /configs into a Configmap
+configmap:
+  enabled: false
+
+# Application Props
+#props:
+#  engNerUrl: "http://ner-english-api.res-comm:8080/ess/entityextr/analyse"
