@@ -8,7 +8,7 @@ echo $SRC_ROOT
 # =====================
 # Copy necessary deployment files to /ailab
 
-rsync -av $SRC_ROOT/src/ $FOLDER_NAME/
+rsync -av --exclude 'deploy' $SRC_ROOT $FOLDER_NAME/
 
 # =====================
 
