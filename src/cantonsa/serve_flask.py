@@ -16,7 +16,10 @@ from flask import Flask, request, jsonify
 import json
 
 if len(sys.argv) > 1:
-    device = int(sys.argv[1])
+    if type(device) is str:
+        device = device
+    else:
+        device = int(sys.argv[1])
 else:
     device = 1
     
