@@ -8,7 +8,7 @@ import os, sys
 import pandas as pd
 from cantonsa.transformers_utils import PretrainedLM
 from cantonsa.constants import SENTI_ID_MAP_INV
-from cantonsa.utils import load_yaml
+from cantonsa.utils import load_yaml, parse_api_req
 from cantonsa.tokenizer import get_tokenizer
 from cantonsa.models import *
 from cantonsa.dataset import TargetDependentExample
@@ -102,9 +102,12 @@ class Item(BaseModel):
 async def pi_single(json_dict:Item):
 
     # await json_dict
-    content = json_dict.content
-    start_ind = json_dict.start_ind
-    end_ind = json_dict.end_ind
+    
+    json_dict = parse_api_req(dict(json_dict))
+    
+    content = json_dict["content"]
+    start_ind = json_dict["start_ind"]
+    end_ind = json_dict["end_ind"]
 
     status = 200
 

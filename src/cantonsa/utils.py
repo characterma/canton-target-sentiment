@@ -106,3 +106,25 @@ def apply_grid_search_params(params, body_config, optim_config):
         else:
             assert False
     return body_config, optim_config
+
+
+def parse_api_req(req_dict):
+    left_sep = "## Headline ##\n"
+    right_sep = "\n## Content ##\n"
+
+    output_dict = {}
+    if req_dict["target_in_hl"] == 0: # target in content
+        hl_with_sep = left_sep + req_dict["headline"] + right_sep
+        output_dict["content"] = hl_with_sep + req_dict["content"]
+        output_dict["start_ind"] = req_dict["start_ind"] + len(hl_with_sep)
+        output_dict["end_ind"] = req_dict["end_ind"] + len(hl_with_sep)
+    else:
+        hl_with_sep = left_sep + req_dict["headline"] + right_sep
+        output_dict["content"] = hl_with_sep + req_dict["content"]
+        output_dict["start_ind"] = req_dict["start_ind"] + len(left_sep)
+        output_dict["end_ind"] = req_dict["end_ind"] + len(left_sep)       
+
+    return output_dict 
+
+
+

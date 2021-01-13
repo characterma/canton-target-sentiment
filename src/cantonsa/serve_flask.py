@@ -5,7 +5,7 @@ import pandas as pd
 from cantonsa.transformers_utils import PretrainedLM
 from cantonsa.constants import SENTI_ID_MAP_INV
 # from cantonsa.timer import Timer
-from cantonsa.utils import load_yaml
+from cantonsa.utils import load_yaml, parse_api_req
 from cantonsa.tokenizer import get_tokenizer
 from cantonsa.models import *
 from cantonsa.dataset import TargetDependentExample
@@ -96,6 +96,7 @@ model.eval()
 @app.route("/target_sentiment", methods=["POST"])
 def predict():
     data = json.loads(request.get_data())
+    data = parse_api_req(data)
     content = data.get('content', None)
     start_ind = data.get('start_ind', None)
     end_ind = data.get('end_ind', None)

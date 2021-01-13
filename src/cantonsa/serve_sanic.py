@@ -26,7 +26,7 @@ import pandas as pd
 from cantonsa.transformers_utils import PretrainedLM
 from cantonsa.constants import SENTI_ID_MAP_INV
 # from cantonsa.timer import Timer
-from cantonsa.utils import load_yaml
+from cantonsa.utils import load_yaml, parse_api_req
 from cantonsa.tokenizer import get_tokenizer
 from cantonsa.models import *
 from cantonsa.dataset import TargetDependentExample
@@ -198,6 +198,8 @@ async def target_sentiment(request):
 
         body = await request.stream.read()
         body = json.loads(body)
+        body = parse_api_req(body)
+        # print(body)
 
         e = TargetDependentExample(
             raw_text=body["content"],
