@@ -52,8 +52,6 @@ POSTMAN_VAR_FILE=
 
 # =====================
 
-
-
 # Below are predefined. Don't Change unless you know what to achieve
 CHART_NAME=$GROUP_NAME-$APP_NAME
 
@@ -100,3 +98,10 @@ fi
 DEPLOY_DIR=$(dirname $(find . -name env.sh))
 mkdir -p $DEPLOY_DIR/docker/ailab
 mkdir -p $DEPLOY_DIR/k8s/chart/configs/tpl/ 
+HARBOR_REPO="harbor.wisers.com"
+
+HARBOR_PROJECT_NAME="ailab"
+
+HARBOR_IMAGE_REPOS=$HARBOR_REPO/$HARBOR_PROJECT_NAME/$APP_NAME
+
+export HARBOR_REPO HARBOR_PROJECT_NAME HARBOR_IMAGE_REPOS
