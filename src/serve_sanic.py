@@ -28,7 +28,7 @@ from constants import SENTI_ID_MAP_INV
 # from cantonsa.timer import Timer
 from utils import load_yaml, parse_api_req
 from tokenizer import get_tokenizer
-from models import *
+from model import *
 from dataset import TargetDependentExample
 import traceback
 import torch

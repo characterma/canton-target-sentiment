@@ -107,7 +107,6 @@ venv.bak/
 ###################################
 .vscode/
 .idea/
-model/
 process.py
 
 data/cached*
