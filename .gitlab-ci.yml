@@ -30,8 +30,8 @@ package:docker:
   stage: package
   script:
   - cd deploy/docker
-  - mkdir -p ailab/models/
-  - cp -r /BigFiles/Models/canton-target-sentiment/* ailab/models/
+  - mkdir -p ailab/models/bert_base_chinese
+  - cp -r /BigFiles/Models/canton-target-sentiment/bert_base_chinese/* ailab/models/bert_base_chinese/
   - set -x
   - sh build_docker.sh
   # - rm -rf ailab/models/
