@@ -1,6 +1,6 @@
 # coding=utf-8
 import re
-from constants import SPEC_TOKEN
+from utils import SPEC_TOKEN
 
 
 def get_hl_content_spans(

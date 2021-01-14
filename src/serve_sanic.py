@@ -24,9 +24,7 @@ from pathlib import Path
 import os, sys
 import pandas as pd
 from transformers_utils import PretrainedLM
-from constants import SENTI_ID_MAP_INV
-# from cantonsa.timer import Timer
-from utils import load_yaml, parse_api_req
+from utils import load_yaml, parse_api_req, SENTI_ID_MAP_INV
 from tokenizer import get_tokenizer
 from model import *
 from dataset import TargetDependentExample

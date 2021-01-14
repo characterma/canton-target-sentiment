@@ -13,7 +13,7 @@ from torch.utils.data import (
     RandomSampler
 )
 from tqdm import tqdm, trange
-from cantonsa.constants import SENTI_ID_MAP_INV
+from utils import SENTI_ID_MAP_INV
 
 logger = logging.getLogger(__name__)
 

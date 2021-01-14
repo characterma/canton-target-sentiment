@@ -12,7 +12,7 @@ from tqdm import tqdm
 from torch.utils.data import TensorDataset, Dataset
 from pathlib import Path
 from utils import get_label_map
-from constants import SENTI_ID_MAP, SENTI_ID_MAP_INV, SPEC_TOKEN
+from utils import SENTI_ID_MAP, SENTI_ID_MAP_INV, SPEC_TOKEN
 from preprocess import preprocess_text_hk_beauty, get_mask_target
 from transformers import AutoTokenizer
 from sklearn.utils import resample

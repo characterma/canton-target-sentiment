@@ -11,7 +11,7 @@ from transformers import (
     BertModel,
     AlbertModel
 )
-from constants import SPEC_TOKEN
+from utils import SPEC_TOKEN
 import torch.nn as nn
 import logging
 
