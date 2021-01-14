@@ -34,7 +34,7 @@ package:docker:
   - cp -r /BigFiles/Models/canton-target-sentiment/* ailab/models/
   - set -x
   - sh build_docker.sh
-  - rm -rf ailab/models/
+  # - rm -rf ailab/models/
   tags:
   - bigfiles            # to use bigfiles runner, path /BigFiles accessible
   artifacts:
