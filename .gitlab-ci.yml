@@ -195,7 +195,7 @@ test:playground-k8s:
 
   # execute scripts:
   - cd deploy/test
-  - sleep 40                   # sleep 3 min waiting for k8s deployment to complete
+  - sleep 180                   # sleep 3 min waiting for k8s deployment to complete
   - sh run_newman.sh
   dependencies:
   - deploy:playground-k8s
