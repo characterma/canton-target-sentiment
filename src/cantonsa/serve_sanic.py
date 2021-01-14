@@ -34,10 +34,10 @@ import traceback
 import torch
 
 if len(sys.argv) > 1:
-    if type(device) is str:
-        device = device
-    else:
+    if sys.argv[1].isdigit():
         device = int(sys.argv[1])
+    else:
+        device = sys.argv[1]
 else:
     device = 1
 

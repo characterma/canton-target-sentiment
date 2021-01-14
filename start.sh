@@ -1,1 +1,1 @@
-python src/cantonsa/serve_$1.py $2
+python src/cantonsa/serve_sanic.py 2

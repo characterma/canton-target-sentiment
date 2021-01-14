@@ -9,4 +9,4 @@ ENV CANTON_SA_DIR="/ailab"
 RUN pip install --upgrade --ignore-installed pip && pip install -r requirements.txt && conda install -c conda-forge ruamel.yaml && python setup.py develop
 
 EXPOSE 8080
-CMD [ "/bin/sh", "start.sh", "sanic", "cuda"]
+CMD [ "/bin/sh", "start.sh"]
