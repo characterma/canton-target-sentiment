@@ -7,7 +7,7 @@ echo $(ls ailab/)
 # =====================
 # Copy necessary deployment files to /ailab
 
-rsync -av $SRC_ROOT/src/ ailab/
+rsync -av $SRC_ROOT/src/ ailab/src/
 echo $(ls ailab/)
 # =====================
 
