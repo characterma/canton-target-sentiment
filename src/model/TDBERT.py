@@ -90,7 +90,7 @@ class TDBERT(BertPreTrainedModel, BaseModel):
             return avg_vector
         elif self.target_pooling == "max":
             t_h = torch.max(
-                hidden_output * torch.unsqueeze(t_mask, -1), dim=1, keepdim=False
+                hidden_output.float() * torch.unsqueeze(t_mask.float(), -1), dim=1, keepdim=False
             )
             max_vector = t_h.values
             return max_vector
