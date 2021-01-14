@@ -11,7 +11,7 @@ from transformers import (
     BertModel,
     AlbertModel
 )
-from cantonsa.constants import SPEC_TOKEN
+from constants import SPEC_TOKEN
 import torch.nn as nn
 import logging
 

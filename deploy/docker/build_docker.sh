@@ -1,15 +1,14 @@
 #!/bin/sh
 
-SRC_ROOT="../.."
-FOLDER_NAME="ailab"
-echo $SRC_ROOT
+SRC_ROOT=../..
+echo $(ls ailab/)
 
 # !!Require Changes!!: 
 # =====================
 # Copy necessary deployment files to /ailab
 
-rsync -av --exclude 'deploy' $SRC_ROOT $FOLDER_NAME/
-
+rsync -av $SRC_ROOT/src/ ailab/
+echo $(ls ailab/)
 # =====================
 
 

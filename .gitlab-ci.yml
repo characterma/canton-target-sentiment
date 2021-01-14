@@ -29,9 +29,13 @@ stages:
 package:docker:
   stage: package
   script:
+  # copy bigfiles
   - cd deploy/docker
   - mkdir -p ailab/models/bert_base_chinese
+  - mkdir -p ailab/config/
   - cp -r /BigFiles/Models/canton-target-sentiment/bert_base_chinese/* ailab/models/bert_base_chinese/
+  - cp -r /BigFiles/Models/canton-target-sentiment/config/* ailab/config/
+  # run scripts
   - set -x
   - sh build_docker.sh
   # - rm -rf ailab/models/

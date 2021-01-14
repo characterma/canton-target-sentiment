@@ -2,7 +2,7 @@ from transformers import AutoTokenizer, BertTokenizer
 
 import torch.nn as nn
 import logging
-from cantonsa.constants import SPEC_TOKEN
+from constants import SPEC_TOKEN
 
 logger = logging.getLogger(__name__)
 

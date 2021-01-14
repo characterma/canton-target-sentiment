@@ -11,7 +11,7 @@ import pandas as pd
 import torch
 
 from ruamel.yaml import YAML
-from cantonsa.constants import SENTI_ID_MAP_INV
+from constants import SENTI_ID_MAP_INV
 from sklearn.model_selection import ParameterGrid
 
 

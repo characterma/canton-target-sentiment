@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from transformers import AlbertModel, BertModel, BertPreTrainedModel, RobertaModel
-from cantonsa.models.base import BaseModel
+from . base import BaseModel
 
 
 class FCLayer(nn.Module):
