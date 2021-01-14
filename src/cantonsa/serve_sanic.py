@@ -33,13 +33,15 @@ from cantonsa.dataset import TargetDependentExample
 import traceback
 import torch
 
-if len(sys.argv) > 1:
-    if sys.argv[1].isdigit():
-        device = int(sys.argv[1])
-    else:
-        device = sys.argv[1]
-else:
-    device = 1
+# if len(sys.argv) > 1:
+#     if sys.argv[1].isdigit():
+#         device = int(sys.argv[1])
+#     else:
+#         device = sys.argv[1]
+# else:
+#     device = 1
+
+device = 'cpu'
 
 def init_model(
         model_class, 
