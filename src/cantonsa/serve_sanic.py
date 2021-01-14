@@ -67,7 +67,7 @@ def init_model(
         model.load_state(state_path)
     return model
 
-base_dir = Path(os.environ["CANTON_SA_DIR"])
+base_dir = Path("./")
 config_dir = base_dir / "config"
 deploy_config = load_yaml(config_dir / "deploy.yaml")
 

@@ -95,6 +95,7 @@ if command -v dos2unix > /dev/null ; then
 fi
 
 # ensure some paths exist
+echo $(ls)
 echo $(find . -name env.sh)
 DEPLOY_DIR=$(dirname $(find . -name env.sh))
 mkdir -p $DEPLOY_DIR/docker/ailab
