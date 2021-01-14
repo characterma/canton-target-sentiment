@@ -39,7 +39,7 @@ import torch
 # else:
 #     device = 1
 
-device = 'cpu'
+device = 0
 
 def init_model(
         model_class, 
