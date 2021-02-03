@@ -250,8 +250,8 @@ class Trainer(object):
                 out_path = self.output_dir / f"best_state_{dataset_name}_epoch{epoch}.pt"
                 torch.save(self.best_model[dataset_name], out_path)
         
-        for e in self.dev_evaluaters:
-            e.save_scores()
+        # for e in self.dev_evaluaters:
+        #     e.save_scores()
 
 
     

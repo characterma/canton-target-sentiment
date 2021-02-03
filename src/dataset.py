@@ -71,7 +71,8 @@ class TargetDependentExample(object):
                 tokenizer=self.tokenizer,
                 max_length=self.preprocess_config.get('max_length', 180), 
                 mask_target=self.preprocess_config.get('mask_target', False), 
-                required_features=self.required_features
+                required_features=self.required_features,
+                label=label
             )
 
             if len(self.features) > 0:
@@ -138,7 +139,8 @@ class TargetDependentExample(object):
         required_features, 
         label=None
     ):
-        features = {}
+        assert(len(tgt_sent) > 0)
+        features = dict()
 
         tgt_sent_encoded = tokenizer(
             tgt_sent,
@@ -148,9 +150,11 @@ class TargetDependentExample(object):
             add_special_tokens=True,
         )
 
-        raw_text_ids = np.array(tgt_sent_encoded.input_ids)
-        attention_mask = np.array(tgt_sent_encoded.attention_mask)
-        token_type_ids = np.array(tgt_sent_encoded.token_type_ids)
+        # exclude CLS first, append at the end
+
+        raw_text_ids = np.array(tgt_sent_encoded.input_ids[1:max_length+1])
+        attention_mask = np.array(tgt_sent_encoded.attention_mask[1:max_length+1])
+        token_type_ids = np.array(tgt_sent_encoded.token_type_ids[1:max_length+1])
         target_mask = np.array([0] * len(raw_text_ids))
 
         tgt_token_ids = []
@@ -164,6 +168,7 @@ class TargetDependentExample(object):
             for char_idx in range(start_idx, end_idx):
                 token_idx = tgt_sent_encoded.char_to_token(char_idx)
                 if token_idx is not None:
+                    token_idx = token_idx - 1 # because CLS is removed
                     target_mask[token_idx] = 1
                     tgt_token_ids.append(token_idx)
 
@@ -172,154 +177,177 @@ class TargetDependentExample(object):
         cur_len = len(raw_text_ids)
         if max_length - len(raw_text_ids) > 0:
             if tgt_in_hl:
-                next_sents_encoded = tokenizer(
-                    tgt_sent,
-                    padding=False,
-                    add_special_tokens=True,
-                )
-                if len(next_sents_encoded.input_ids) > 0:
-                    raw_text_ids = np.concatenate(
-                        (
-                            raw_text_ids,
-                            next_sents_encoded.input_ids[1:][-(max_length - cur_len) :],
-                        ),
-                        axis=None,
-                    )
-                    attention_mask = np.concatenate(
-                        (
-                            attention_mask,
-                            next_sents_encoded.attention_mask[1:][
-                                -(max_length - cur_len) :
-                            ],
-                        ),
-                        axis=None,
-                    )
-                    token_type_ids = np.concatenate(
-                        (
-                            token_type_ids,
-                            next_sents_encoded.token_type_ids[1:][
-                                -(max_length - cur_len) :
-                            ],
-                        ),
-                        axis=None,
-                    )
-                    target_mask = np.concatenate(
-                        (
-                            target_mask,
-                            [0]
-                            * len(
-                                next_sents_encoded.input_ids[1:][
-                                    -(max_length - cur_len) :
-                                ]
+                # if it is in headline, only append next sentences
+                if len(next_sents) > 0:
+                        next_sents_encoded = tokenizer(
+                            next_sents,
+                            padding=False,
+                            add_special_tokens=True,
+                        )
+                        raw_text_ids = np.concatenate(
+                            (
+                                raw_text_ids,
+                                next_sents_encoded.input_ids[1:][-(max_length - cur_len) :],
                             ),
-                        ),
-                        axis=None,
-                    )
-                    assert (
-                        len(raw_text_ids)
-                        == len(attention_mask)
-                        == len(token_type_ids)
-                        == len(target_mask)
-                    )
+                            axis=None,
+                        )
+                        attention_mask = np.concatenate(
+                            (
+                                attention_mask,
+                                next_sents_encoded.attention_mask[1:][
+                                    -(max_length - cur_len) :
+                                ],
+                            ),
+                            axis=None,
+                        )
+                        token_type_ids = np.concatenate(
+                            (
+                                token_type_ids,
+                                next_sents_encoded.token_type_ids[1:][
+                                    -(max_length - cur_len) :
+                                ],
+                            ),
+                            axis=None,
+                        )
+                        target_mask = np.concatenate(
+                            (
+                                target_mask,
+                                [0]
+                                * len(
+                                    next_sents_encoded.input_ids[1:][
+                                        -(max_length - cur_len) :
+                                    ]
+                                ),
+                            ),
+                            axis=None,
+                        )
+                        assert (
+                            len(raw_text_ids)
+                            == len(attention_mask)
+                            == len(token_type_ids)
+                            == len(target_mask)
+                        )
             else:
-                tgt_token_ids = tgt_token_ids - 1 # Because [CLS] in tgt_sent will be removed
-                hl_sent_encoded = tokenizer(
-                    hl_sent,
-                    padding=False,
-                    add_special_tokens=True,
-                )
+                # it is not in headline, we need headline, previous sentences, and next sentences.
+                if len(hl_sent) > 0:
+                    hl_sent_encoded = tokenizer(
+                        hl_sent,
+                        padding=False,
+                        add_special_tokens=True,
+                    )
 
-                hl_sent_len = len(hl_sent_encoded.input_ids)
-                if max_length - cur_len + 1 > hl_sent_len:
-                    # hl + prev_sents + tgt_sent + next_sents
+                    hl_sent_len = len(hl_sent_encoded.input_ids)
+                else:
+                    hl_sent_encoded = None
+                    hl_sent_len = 0 # at least 1, because we need [CLS]
+
+                # if max_length - cur_len + 1 > hl_sent_len:
+
+                space = max_length - cur_len - hl_sent_len + 1
+                # hl + prev_sents + tgt_sent + next_sents
+                # if still has space, try previous sentences and next sentences
+                if len(prev_sents) > 0:
                     prev_sents_encoded = tokenizer(
                         prev_sents,
                         padding=False,
                         add_special_tokens=True,
                     )
+                    prev_sents_len = len(prev_sents_encoded.input_ids) - 1
+                else:
+                    prev_sents_encoded = None 
+                    prev_sents_len = 0
+
+                if len(next_sents) > 0:
                     next_sents_encoded = tokenizer(
                         next_sents,
                         padding=False,
                         add_special_tokens=True,
                     )
-
-                    prev_sents_len = len(prev_sents_encoded.input_ids) - 1
                     next_sents_len = len(next_sents_encoded.input_ids) - 1
-                    space = max_length - cur_len - hl_sent_len + 1
+                else:
+                    next_sents_encoded = None 
+                    next_sents_len = 0
 
-                    if prev_sents_len < int(space / 2):
-                        left = int(space / 2)
-                        right = space - prev_sents_len
-                    elif next_sents_len < int((space + 1) / 2):
-                        right = int((space + 1) / 2)
-                        left = space - next_sents_len
-                    else:
-                        left = int(space / 2)
-                        right = int((space + 1) / 2)
-                    # print(left + right , space, cur_len, hl_sent_len)
+                # # space excluding headline and target sentence (only previous sentences and next sentences)
+                # space = max_length - cur_len - hl_sent_len + 1
 
-                    # prev_sents + tgt_sent + next_sents
+                if prev_sents_len < int(space / 2):
+                    left_len = prev_sents_len
+                    right_len = min(space - prev_sents_len, next_sents_len)
+                elif next_sents_len < int((space + 1) / 2):
+                    right_len = next_sents_len
+                    left_len = min(space - next_sents_len, prev_sents_len)
+                else:
+                    left_len = min(int(space / 2), prev_sents_len)
+                    right_len = min(int((space + 1) / 2), next_sents_len)
+                # print(left + right , space, cur_len, hl_sent_len)
+
+                # prev_sents + tgt_sent + next_sents
+                if right_len > 0:
+                    # something on the right
                     raw_text_ids = np.concatenate(
-                        (raw_text_ids[1:], next_sents_encoded.input_ids[1 : right + 1]),
+                        (raw_text_ids, next_sents_encoded.input_ids[1 : right + 1]), # exclude CLS
                         axis=None,
                     )
                     attention_mask = np.concatenate(
                         (
-                            attention_mask[1:],
+                            attention_mask,
                             next_sents_encoded.attention_mask[1 : right + 1],
                         ),
                         axis=None,
                     )
                     token_type_ids = np.concatenate(
                         (
-                            token_type_ids[1:],
+                            token_type_ids,
                             next_sents_encoded.token_type_ids[1 : right + 1],
                         ),
                         axis=None,
                     )
                     target_mask = np.concatenate(
                         (
-                            target_mask[1:],
+                            target_mask,
                             [0] * len(next_sents_encoded.input_ids[1 : right + 1]),
                         ),
                         axis=None,
                     )
 
+                # print("--", len(raw_text_ids))
+
+                if left_len > 0:
+                    raw_text_ids = np.concatenate(
+                        (prev_sents_encoded.input_ids[1:][-left:], raw_text_ids), # exclude CLS & include SEP
+                        axis=None,
+                    )
+                    attention_mask = np.concatenate(
+                        (
+                            prev_sents_encoded.attention_mask[1:][-left:], 
+                            attention_mask,
+                        ),
+                        axis=None,
+                    )
+                    token_type_ids = np.concatenate(
+                        (
+                            prev_sents_encoded.token_type_ids[1:][-left:],
+                            token_type_ids,
+                        ),
+                        axis=None,
+                    )
+                    target_mask = np.concatenate(
+                        (
+                            [0]
+                            * len(prev_sents_encoded.token_type_ids[1:][-left:]),
+                            target_mask,
+                        ),
+                        axis=None,
+                    )
                     # print("--", len(raw_text_ids))
+                    tgt_token_ids = tgt_token_ids + len(
+                        prev_sents_encoded.token_type_ids[1:][-left:]
+                    )
 
-                    if left > 0:
-                        raw_text_ids = np.concatenate(
-                            (prev_sents_encoded.input_ids[1:][-left:], raw_text_ids),
-                            axis=None,
-                        )
-                        attention_mask = np.concatenate(
-                            (
-                                prev_sents_encoded.attention_mask[1:][-left:],
-                                attention_mask,
-                            ),
-                            axis=None,
-                        )
-                        token_type_ids = np.concatenate(
-                            (
-                                prev_sents_encoded.token_type_ids[1:][-left:],
-                                token_type_ids,
-                            ),
-                            axis=None,
-                        )
-                        target_mask = np.concatenate(
-                            (
-                                [0]
-                                * len(prev_sents_encoded.token_type_ids[1:][-left:]),
-                                target_mask,
-                            ),
-                            axis=None,
-                        )
-                        # print("--", len(raw_text_ids))
-                        tgt_token_ids = tgt_token_ids + len(
-                            prev_sents_encoded.token_type_ids[1:][-left:]
-                        )
+                # hl + prev_sents + tgt_sent + next_sents
 
-                    # hl + prev_sents + tgt_sent + next_sents
+                if hl_sent_len > 0:
                     raw_text_ids = np.concatenate(
                         (hl_sent_encoded.input_ids, raw_text_ids), axis=None
                     )
@@ -334,38 +362,23 @@ class TargetDependentExample(object):
                     )
                     tgt_token_ids = tgt_token_ids + hl_sent_len
                     # print("--", len(raw_text_ids))
+                # else: # only [CLS]
 
-                else:
-                    # hl + tgt_sent
-                    space = max_length - cur_len
-                    raw_text_ids = np.concatenate(
-                        (hl_sent_encoded.input_ids[: space + 1], raw_text_ids[1:]),
-                        axis=None,
-                    )
-                    attention_mask = np.concatenate(
-                        (
-                            hl_sent_encoded.attention_mask[: space + 1],
-                            attention_mask[1:],
-                        ),
-                        axis=None,
-                    )
-                    token_type_ids = np.concatenate(
-                        (
-                            hl_sent_encoded.token_type_ids[: space + 1],
-                            token_type_ids[1:],
-                        ),
-                        axis=None,
-                    )
-                    target_mask = np.concatenate(
-                        (
-                            [0] * len(hl_sent_encoded.token_type_ids[: space + 1]),
-                            target_mask[1:],
-                        ),
-                        axis=None,
-                    )
-                    tgt_token_ids = tgt_token_ids + len(
-                        hl_sent_encoded.token_type_ids[: space + 1]
-                    )
+            cls_id = tokenizer.convert_tokens_to_ids("[CLS]")
+            if raw_text_ids[0] != cls_id:
+                raw_text_ids = np.concatenate(
+                    ([cls_id], raw_text_ids), axis=None
+                )
+                attention_mask = np.concatenate(
+                    ([1], attention_mask), axis=None
+                )
+                token_type_ids = np.concatenate(
+                    ([token_type_ids[0]], token_type_ids), axis=None
+                )
+                target_mask = np.concatenate(
+                    ([0], target_mask), axis=None
+                )
+                tgt_token_ids = tgt_token_ids + 1                    
 
             raw_text_ids, attention_mask, token_type_ids, target_mask = TargetDependentExample.pad(
                 arrays=[raw_text_ids, attention_mask, token_type_ids, target_mask],
@@ -379,18 +392,14 @@ class TargetDependentExample(object):
                 == len(target_mask)
                 == max_length
             )
-        else:
-            raw_text_ids = raw_text_ids[:max_length]
-            attention_mask = attention_mask[:max_length]
-            token_type_ids = token_type_ids[:max_length]
-            target_mask = target_mask[:max_length]
-            assert (
-                len(raw_text_ids)
-                == len(attention_mask)
-                == len(token_type_ids)
-                == len(target_mask)
-                == max_length
-            )
+
+        assert (
+            len(raw_text_ids)
+            == len(attention_mask)
+            == len(token_type_ids)
+            == len(target_mask)
+            == max_length
+        )
 
         if label is not None:
             label_id = SENTI_ID_MAP[label]
@@ -420,8 +429,10 @@ class TargetDependentExample(object):
                 raw_text_without_target
             ).long()
 
+        # print(required_features)
         if "raw_text" in required_features:
             features["raw_text"] = torch.tensor(raw_text_ids).long()
+            features["tokens"]= tokenizer.convert_ids_to_tokens(features["raw_text"])
 
         if label_id is not None:
             features["label"] = torch.tensor(label_id).long()
@@ -475,7 +486,7 @@ class TargetDependentExample(object):
         if "target_span" in required_features:     
             features["target_span"] = torch.tensor([start_token_pos, end_token_pos]).long()
 
-        # self.tokens = tokenizer.convert_ids_to_tokens(raw_text_ids)
+        
         # self.tgt_tokens = tokenizer.convert_ids_to_tokens(raw_text_ids[start_token_pos : end_token_pos + 1])
 
         return features
@@ -491,7 +502,8 @@ class TargetDependentDataset(Dataset):
         word2idx=None,
         timer=None, 
         name="",
-        required_features=[]
+        required_features=[], 
+        add_special_tokens=True, 
     ):
         """
         Args:
@@ -561,6 +573,7 @@ class TargetDependentDataset(Dataset):
                     logger.warning("  Illegal label : %s", label)
                     continue
 
+                # print(self.label_map[label])
                 e = TargetDependentExample(
                     raw_text=doc['content'],
                     raw_start_idx=t['start_ind'],
@@ -597,7 +610,7 @@ class TargetDependentDataset(Dataset):
         return df["w"].tolist(), class_size.max(), class_size.min(), class_size.shape[0]
 
     def __getitem__(self, index):
-        return self.data[index].data
+        return self.data[index].features
 
     def __len__(self):
         return len(self.data)

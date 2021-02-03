@@ -9,13 +9,13 @@ from ruamel.yaml.comments import CommentedMap
 import numpy as np
 import pandas as pd
 import torch
+import time
 
 from ruamel.yaml import YAML
 from sklearn.model_selection import ParameterGrid
 
 
 SENTI_ID_MAP = {
-    # "unknown": -1,
     "neutral": 0,
     "negative": 1,
     "positive": 2,
@@ -151,6 +151,37 @@ def parse_api_req(req_dict):
         output_dict["end_ind"] = req_dict["end_ind"] + len(left_sep)       
 
     return output_dict 
+
+
+class Timer:
+    def __init__(self, output_dir):
+        self.preprocessing_start_time = None
+        self.inference_start_time = None
+        self.durations = {
+            "preprocessing": 0, 
+            "inference": 0,  
+        }
+        self.output_dir = output_dir
+
+    def on_preprocessing_start(self):
+        self.preprocessing_start_time = time.time()
+
+    def on_preprocessing_end(self):
+        self.durations["preprocessing"] += time.time() - self.preprocessing_start_time
+
+    def on_inference_start(self):
+        self.inference_start_time = time.time()
+
+    def on_inference_end(self):
+        self.durations["inference"] += time.time() - self.inference_start_time
+
+    # @property
+    # def durations(self):
+    #     return self.durations
+
+    def save_timer(self):
+        with open(self.output_dir / "timer.json", 'w') as fp:
+            json.dump(self.durations, fp)
 
 
 

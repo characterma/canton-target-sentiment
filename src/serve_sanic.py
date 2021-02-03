@@ -1,5 +1,5 @@
 # coding=utf-8
-  
+
 import asyncio
 import itertools
 import functools
@@ -17,12 +17,13 @@ app = Sanic(__name__)
 # we only run 1 inference run at any time (one could schedule between several runners if desired)
 # MAX_QUEUE_SIZE = 64  # we accept a backlog of MAX_QUEUE_SIZE before handing out "Too busy" errors
 MAX_BATCH_SIZE = 32  # we put at most MAX_BATCH_SIZE things in a single batch
-MAX_WAIT = 0.1        # we wait at most MAX_WAIT seconds before running for more inputs to arrive in batching
+MAX_WAIT = 0.1  # we wait at most MAX_WAIT seconds before running for more inputs to arrive in batching
 
 import logging
 from pathlib import Path
 import os, sys
 import pandas as pd
+import numpy as np
 from transformers_utils import PretrainedLM
 from utils import load_yaml, parse_api_req, SENTI_ID_MAP_INV
 from tokenizer import get_tokenizer
@@ -41,16 +42,17 @@ import torch
 
 device = 0
 
+
 def init_model(
-        model_class, 
-        body_config, 
-        num_labels, 
-        pretrained_emb, 
-        num_emb, 
-        pretrained_lm, 
-        device, 
-        state_path=None
-    ):
+    model_class,
+    body_config,
+    num_labels,
+    pretrained_emb,
+    num_emb,
+    pretrained_lm,
+    device,
+    state_path=None,
+):
 
     MODEL = getattr(sys.modules[__name__], model_class)
     model = MODEL(
@@ -65,7 +67,8 @@ def init_model(
         model.load_state(state_path)
     return model
 
-base_dir = Path("./")
+
+base_dir = Path("../")
 config_dir = base_dir / "config"
 deploy_config = load_yaml(config_dir / "deploy.yaml")
 
@@ -82,7 +85,10 @@ body_config = model_config[model_class]["body"]
 optim_config = model_config[model_class]["optim"]
 
 # load pretrained language model
-tokenizer = get_tokenizer(source=preprocess_config["tokenizer_source"], name=preprocess_config["tokenizer_name"])
+tokenizer = get_tokenizer(
+    source=preprocess_config["tokenizer_source"],
+    name=preprocess_config["tokenizer_name"],
+)
 pretrained_lm = None
 pretrained_word_emb = None
 word2idx = None
@@ -91,14 +97,15 @@ add_special_tokens = True
 pretrained_lm = PretrainedLM(body_config["pretrained_lm"])
 pretrained_lm.resize_token_embeddings(tokenizer=tokenizer)
 
-model = init_model(model_class=model_class, 
+model = init_model(
+    model_class=model_class,
     body_config=body_config,
-    num_labels=3, 
-    pretrained_emb=pretrained_word_emb, 
-    num_emb=len(word2idx) if word2idx else None, 
-    pretrained_lm=pretrained_lm, 
-    device=device, 
-    state_path=state_path
+    num_labels=3,
+    pretrained_emb=pretrained_word_emb,
+    num_emb=len(word2idx) if word2idx else None,
+    pretrained_lm=pretrained_lm,
+    device=device,
+    state_path=state_path,
 )
 
 model.eval()
@@ -110,12 +117,25 @@ class HandlingError(Exception):
         self.handling_code = code
         self.handling_msg = msg
 
+
 class ModelRunner:
-    def __init__(self):
+    def __init__(
+        self,
+        return_score=False,
+        return_tgt_pool=False,
+        return_tgt_mask=False,
+        return_all_repr=False,
+        return_attn=False,
+    ):
         self.queue = []
         self.queue_lock = None
         self.needs_processing = None
         self.needs_processing_timer = None
+        self.return_score = return_score
+        self.return_tgt_pool = return_tgt_pool
+        self.return_tgt_mask = return_tgt_mask
+        self.return_all_repr = return_all_repr
+        self.return_attn = return_attn
 
     def schedule_processing_if_needed(self):
         if len(self.queue) >= MAX_BATCH_SIZE:
@@ -123,12 +143,16 @@ class ModelRunner:
             self.needs_processing.set()
         elif self.queue:
             logger.debug("queue nonempty when processing a batch, setting next timer")
-            self.needs_processing_timer = app.loop.call_at(self.queue[0]["time"] + MAX_WAIT, self.needs_processing.set)
+            self.needs_processing_timer = app.loop.call_at(
+                self.queue[0]["time"] + MAX_WAIT, self.needs_processing.set
+            )
 
     async def process_input(self, input):
-        our_task = {"done_event": asyncio.Event(loop=app.loop),
-                    "input": input,
-                    "time": app.loop.time()}
+        our_task = {
+            "done_event": asyncio.Event(loop=app.loop),
+            "input": input,
+            "time": app.loop.time(),
+        }
         async with self.queue_lock:
             # if len(self.queue) >= MAX_QUEUE_SIZE:
             #     raise HandlingError("I'm too busy", code=503)
@@ -141,9 +165,25 @@ class ModelRunner:
 
     def run_model(self, input):  # runs in other thread
         with torch.no_grad():
-            output = model(**input, return_reps=False)
-            prediction = torch.argmax(output[1], dim=1)
-            return prediction
+            outputs = dict()
+            results = model(
+                **input,
+                return_tgt_pool=self.return_tgt_pool,
+                return_tgt_mask=self.return_tgt_mask,
+                return_all_repr=self.return_all_repr,
+                return_attn=self.return_attn
+            )
+
+            outputs["sentiment_idx"] = torch.argmax(results[1], dim=1)
+            # if self.return_score:
+            outputs["score"] = torch.nn.functional.softmax(results[1], dim=1)
+            # if self.return_tgt_repr:
+            outputs["tgt_pool"] = results[2]
+            # if self.return_attn:
+            outputs["tgt_mask"] = results[3]
+            outputs["all_repr"] = results[4]
+            outputs["attn"] = results[5]
+            return outputs
 
     async def model_runner(self):
         self.queue_lock = asyncio.Lock(loop=app.loop)
@@ -159,14 +199,22 @@ class ModelRunner:
             async with self.queue_lock:
                 if self.queue:
                     longest_wait = app.loop.time() - self.queue[0]["time"]
-                    logger.debug("launching processing. queue size: {}. longest wait: {}".format(len(self.queue), longest_wait))
+                    logger.debug(
+                        "launching processing. queue size: {}. longest wait: {}".format(
+                            len(self.queue), longest_wait
+                        )
+                    )
                 else:  # oops
                     longest_wait = None
-                    logger.debug("launching processing. queue size: {}. longest wait: {}".format(len(self.queue), longest_wait))
+                    logger.debug(
+                        "launching processing. queue size: {}. longest wait: {}".format(
+                            len(self.queue), longest_wait
+                        )
+                    )
                     continue
-                
+
                 to_process = self.queue[:MAX_BATCH_SIZE]
-                del self.queue[:len(to_process)]
+                del self.queue[: len(to_process)]
                 self.schedule_processing_if_needed()
             # so here we copy, it would be neater to avoid this
 
@@ -175,51 +223,126 @@ class ModelRunner:
 
                 if col in to_process[0]["input"].features:
                     input[col] = torch.stack(
-                            [t["input"].features[col] for t in to_process], 
-                            dim=0
-                        ).to(device)
+                        [t["input"].features[col] for t in to_process], dim=0
+                    ).to(device)
 
             # we could delete inputs here...
 
-            result = await app.loop.run_in_executor(
+            results = await app.loop.run_in_executor(
                 None, functools.partial(self.run_model, input)
             )
             # result = self.run_model(input)
 
-            result = [SENTI_ID_MAP_INV[p] for p in result.detach().cpu().numpy()]
-          
-            for t, r in zip(to_process, result):
-                t["output"] = r
+            results["sentiment"] = [
+                SENTI_ID_MAP_INV[p]
+                for p in results["sentiment_idx"].detach().cpu().numpy()
+            ]
+            # if self.return_tgt_repr:
+            results["tgt_pool"] = (
+                results["tgt_pool"].detach().cpu().numpy()
+                if results["tgt_pool"] is not None
+                else None
+            )
+            results["tgt_mask"] = (
+                results["tgt_mask"].detach().cpu().numpy()
+                if results["tgt_mask"] is not None
+                else None
+            )
+            results["all_repr"] = (
+                results["all_repr"].detach().cpu().numpy()
+                if results["all_repr"] is not None
+                else None
+            )
+            # if self.return_attn:
+            results["attn"] = (
+                np.array([a.detach().cpu().numpy() for a in results["attn"]])
+                if results["attn"] is not None
+                else None
+            )
+            # if self.return_score:
+            results["score"] = (
+                results["score"].detach().cpu().numpy().max(axis=1)
+                if results["score"] is not None
+                else None
+            )
+
+            for i in range(len(to_process)):
+                output = dict()
+                t = to_process[i]
+                output["sentiment_idx"] = int(results["sentiment_idx"][i])
+                output["sentiment"] = results["sentiment"][i]
+                output["tgt_pool"] = (
+                    results["tgt_pool"][i].tolist()
+                    if results["tgt_pool"] is not None
+                    else None
+                )
+                output["tgt_mask"] = (
+                    results["tgt_mask"][i].tolist()
+                    if results["tgt_mask"] is not None
+                    else None
+                )
+                output["all_repr"] = (
+                    results["all_repr"][i].tolist()
+                    if results["all_repr"] is not None
+                    else None
+                )
+                output["attn"] = (
+                    results["attn"][i].tolist() if results["attn"] is not None else None
+                )
+                output["score"] = (
+                    float(results["score"][i]) if results["score"] is not None else None
+                )
+                t["output"] = output
                 t["done_event"].set()
             del to_process
 
-model_runner = ModelRunner()
 
-@app.route('/target_sentiment', methods=['POST'], stream=True)
+model_runner = ModelRunner(
+    return_score=True,
+    return_tgt_pool=False,
+    return_tgt_mask=False,
+    return_all_repr=False,
+    return_attn=False,
+)
+
+
+@app.route("/target_sentiment", methods=["POST"], stream=True)
 async def target_sentiment(request):
     try:
 
         body = await request.stream.read()
         body = json.loads(body)
-        body = parse_api_req(body)
-        # print(body)
+
+        if "all_in_content_fmt" not in body or body["all_in_content_fmt"] == 0:
+            body = parse_api_req(body)
+        
 
         e = TargetDependentExample(
             raw_text=body["content"],
             raw_start_idx=body["start_ind"],
             raw_end_idx=body["end_ind"],
-            tokenizer=tokenizer, 
+            tokenizer=tokenizer,
             label=None,
             preprocess_config=preprocess_config,
-            required_features=model.INPUT_COLS
+            required_features=model.INPUT_COLS,
         )
 
-        output = await model_runner.process_input(e)
-        return sanic.response.json({"data": output, "message":"OK"}, status=200)
+        results = await model_runner.process_input(e)
+        response = dict()
+        response["message"] = "OK"
+        response["sentiment"] = results["sentiment"]
+        response["score"] = results["score"]
+        # results["tokens"] = e.features["tokens"]
+
+        # for k, v in results.items():
+        #     print(k, type(v))
+
+        return sanic.response.json(response, status=200)
 
     except Exception as e:
         msg = traceback.format_exc()
         return sanic.response.json({"message": msg}, status=500)
+
 
 app.add_task(model_runner.model_runner())
 app.run(host="0.0.0.0", port=8080, debug=False)

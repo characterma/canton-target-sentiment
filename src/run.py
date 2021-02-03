@@ -17,12 +17,11 @@ if __name__=="__main__":
 
 import argparse
 import pandas as pd
-from cantonsa.dataset import TDSADataset
-from cantonsa.trainer import Trainer
-from cantonsa.evaluater import Evaluater
-from cantonsa.transformers_utils import PretrainedLM
-from cantonsa.timer import Timer
-from cantonsa.utils import (
+from dataset import TargetDependentDataset
+from trainer import Trainer
+from evaluater import Evaluater
+from transformers_utils import PretrainedLM
+from utils import (
     init_logger,
     set_seed,
     load_yaml,
@@ -30,10 +29,11 @@ from cantonsa.utils import (
     get_label_map,
     generate_grid_search_params,
     apply_grid_search_params,
+    Timer, 
+    MODEL_EMB_TYPE
 )
-from cantonsa.tokenizer import get_tokenizer
-from cantonsa.constants import MODEL_EMB_TYPE
-from cantonsa.models import *
+from tokenizer import get_tokenizer
+from model import *
 import json
 from gensim.models import KeyedVectors
 
@@ -236,32 +236,30 @@ def run(
 
     # load and preprocess data
     if do_train:
-        train_dataset = TDSADataset(
+        train_dataset = TargetDependentDataset(
             dataset_dir / data_config["train"],
             label_map,
             tokenizer,
             preprocess_config=preprocess_config,
             word2idx=word2idx,
             add_special_tokens=add_special_tokens,
-            to_df=True,
-            show_statistics=True,
             name="train",
+            required_features=model.INPUT_COLS,
         )
 
         dev_evaluators = []
         for _, dev_info in data_config["dev"].items():
             dev_name = dev_info["name"]
             dev_file = dev_info["file"]
-            dev_dataset = TDSADataset(
+            dev_dataset = TargetDependentDataset(
                 dataset_dir / dev_file,
                 label_map,
                 tokenizer,
                 preprocess_config=preprocess_config,
                 word2idx=word2idx,
                 add_special_tokens=add_special_tokens,
-                to_df=True,
-                show_statistics=True,
-                name=f"dev_{dev_name}",
+                name=dev_name,
+                required_features=model.INPUT_COLS,
             )
             dev_evaluators.append(
                     Evaluater(
@@ -269,9 +267,8 @@ def run(
                     eval_config=eval_config,
                     output_dir=train_output_dir,
                     dataset=dev_dataset,
-                    save_preds=True,
-                    save_reps=True,
-                    return_losses=False, 
+                    return_loss=False, 
+                    no_save=True,
                     device=device,
                     )
                 )
@@ -299,17 +296,16 @@ def run(
             test_name = test_info["name"]
             test_file = test_info["file"]
 
-            test_dataset = TDSADataset(
+            test_dataset = TargetDependentDataset(
                 dataset_dir / test_file,
                 label_map,
                 tokenizer,
                 preprocess_config=preprocess_config,
                 word2idx=word2idx,
                 add_special_tokens=add_special_tokens,
-                to_df=True,
-                show_statistics=True,
-                name=f"test_{test_name}",
-                timer=timer
+                name=test_name,
+                timer=timer, 
+                required_features=model.INPUT_COLS,
             )
 
             test_evaluator = Evaluater(
@@ -317,16 +313,12 @@ def run(
                     eval_config=eval_config,
                     output_dir=eval_output_dir,
                     dataset=test_dataset,
-                    save_preds=True,
-                    save_reps=True,
-                    return_losses=False, 
+                    return_loss=False, 
                     timer=timer, 
                     device=device,
                     )
 
             test_evaluator.evaluate()
-            test_evaluator.save_scores()
-            timer.save_timer()
 
         if log_path is not None:
             shutil.copy(log_path, eval_output_dir)

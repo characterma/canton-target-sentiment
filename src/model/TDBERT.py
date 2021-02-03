@@ -116,24 +116,30 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         attention_mask,
         token_type_ids,
         label=None,
-        return_reps=False
+        return_tgt_pool=False,
+        return_tgt_mask=False,
+        return_all_repr=False,
+        return_attn=False
     ):
-        outputs = self.pretrained_lm(
+        lm = self.pretrained_lm(
             input_ids=raw_text,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             return_dict=True,
-        )["last_hidden_state"]
+            output_attentions=return_attn
+        )
+        
+        h = lm["last_hidden_state"]
 
-        # Average
+        # Average or max
         tgt_h = self.pool_target(
-            outputs, target_mask
+            h, target_mask
         )  # outputs: [B, S, Dim], target_mask: [B, S]
 
         tgt_h = self.tgt_fc_layer(tgt_h)
 
         if self.model_config.get("use_cls", False):
-            cls_h = self.cls_fc_layer(outputs[:, :1, :]).squeeze(1)
+            cls_h = self.cls_fc_layer(h[:, :1, :]).squeeze(1)
             # Concat -> fc_layer
             h = torch.cat([cls_h, tgt_h], dim=-1)
         else:
@@ -146,7 +152,27 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         else:
             losses = None
 
-        if return_reps:
-            return losses, logits, tgt_h
+        outputs = [losses, logits]
+
+        if return_tgt_pool:
+            outputs += [tgt_h]
         else:
-            return losses, logits
+            outputs += [None]
+
+        if return_tgt_mask:
+            outputs += [target_mask]
+        else:
+            outputs += [None]
+
+        if return_all_repr:
+            outputs += [h]
+        else:
+            outputs += [None]
+
+        if return_attn:
+            outputs += [lm["attentions"]]
+        else:
+            outputs += [None]
+
+        return outputs
+

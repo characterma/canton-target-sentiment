@@ -15,8 +15,8 @@ if __name__=="__main__":
     logging.basicConfig(handlers=handlers, format="%(message)s", level=logging.INFO)
 
 import argparse
-from cantonsa.utils import init_logger, load_yaml, save_yaml
-from cantonsa.run import run
+from utils import init_logger, load_yaml, save_yaml
+from run import run
 
 logger = logging.getLogger(__name__)
 
