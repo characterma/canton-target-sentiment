@@ -56,8 +56,6 @@ spec:
       #   hostPath:
       #     path: "/usr/share/zoneinfo/Asia/Hong_Kong"
 
-
-
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
