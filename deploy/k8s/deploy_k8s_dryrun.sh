@@ -57,7 +57,7 @@ if [ "$1" == "upgrade" ]; then
    helm upgrade -i --debug --dry-run $RELEASE_NAME ./$CHART_NAME
 else
    echo "helm install -n $RELEASE_NAME --dry-run --debug ./$CHART_NAME"
-   helm install -n $RELEASE_NAME --dry-run --debug ./$CHART_NAME
+   helm install $RELEASE_NAME ./$CHART_NAME --dry-run --debug 
 fi
 
 

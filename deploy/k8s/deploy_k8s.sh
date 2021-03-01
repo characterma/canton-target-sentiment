@@ -15,5 +15,5 @@ else
 	./deploy_k8s_dryrun.sh
 	
 	echo "helm install --namespace $K8S_DEPLOY_NAMESPACE -n $RELEASE_NAME ./$CHART_NAME"
-	helm install --namespace $K8S_DEPLOY_NAMESPACE -n $RELEASE_NAME ./$CHART_NAME
+	helm install $RELEASE_NAME ./$CHART_NAME --namespace $K8S_DEPLOY_NAMESPACE
 fi
