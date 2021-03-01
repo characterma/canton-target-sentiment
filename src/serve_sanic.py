@@ -14,8 +14,6 @@ import threading
 
 app = Sanic(__name__)
 
-# we only run 1 inference run at any time (one could schedule between several runners if desired)
-# MAX_QUEUE_SIZE = 64  # we accept a backlog of MAX_QUEUE_SIZE before handing out "Too busy" errors
 MAX_BATCH_SIZE = 32  # we put at most MAX_BATCH_SIZE things in a single batch
 MAX_WAIT = 0.1  # we wait at most MAX_WAIT seconds before running for more inputs to arrive in batching
 
@@ -29,18 +27,12 @@ from utils import load_yaml, parse_api_req, SENTI_ID_MAP_INV
 from tokenizer import get_tokenizer
 from model import *
 from dataset import TargetDependentExample
+from explanation import LimeExplanation, AttnExplanation
 import traceback
 import torch
 
-# if len(sys.argv) > 1:
-#     if sys.argv[1].isdigit():
-#         device = int(sys.argv[1])
-#     else:
-#         device = sys.argv[1]
-# else:
-#     device = 1
-
-device = 0
+# device = 0
+device = 1
 
 
 def init_model(
@@ -174,12 +166,9 @@ class ModelRunner:
                 return_attn=self.return_attn
             )
 
-            outputs["sentiment_idx"] = torch.argmax(results[1], dim=1)
-            # if self.return_score:
+            outputs["sentiment_id"] = torch.argmax(results[1], dim=1)
             outputs["score"] = torch.nn.functional.softmax(results[1], dim=1)
-            # if self.return_tgt_repr:
             outputs["tgt_pool"] = results[2]
-            # if self.return_attn:
             outputs["tgt_mask"] = results[3]
             outputs["all_repr"] = results[4]
             outputs["attn"] = results[5]
@@ -235,7 +224,7 @@ class ModelRunner:
 
             results["sentiment"] = [
                 SENTI_ID_MAP_INV[p]
-                for p in results["sentiment_idx"].detach().cpu().numpy()
+                for p in results["sentiment_id"].detach().cpu().numpy()
             ]
             # if self.return_tgt_repr:
             results["tgt_pool"] = (
@@ -269,7 +258,7 @@ class ModelRunner:
             for i in range(len(to_process)):
                 output = dict()
                 t = to_process[i]
-                output["sentiment_idx"] = int(results["sentiment_idx"][i])
+                output["sentiment_id"] = int(results["sentiment_id"][i])
                 output["sentiment"] = results["sentiment"][i]
                 output["tgt_pool"] = (
                     results["tgt_pool"][i].tolist()
@@ -302,7 +291,7 @@ model_runner = ModelRunner(
     return_tgt_pool=False,
     return_tgt_mask=False,
     return_all_repr=False,
-    return_attn=False,
+    return_attn=True,
 )
 
 
@@ -315,28 +304,45 @@ async def target_sentiment(request):
 
         if "all_in_content_fmt" not in body or body["all_in_content_fmt"] == 0:
             body = parse_api_req(body)
-        
 
-        e = TargetDependentExample(
+        response = dict()
+        example = TargetDependentExample(
             raw_text=body["content"],
             raw_start_idx=body["start_ind"],
             raw_end_idx=body["end_ind"],
             tokenizer=tokenizer,
             label=None,
             preprocess_config=preprocess_config,
-            required_features=model.INPUT_COLS,
+            required_features=model.INPUT_COLS + ['target_span'],
         )
+            
 
-        results = await model_runner.process_input(e)
-        response = dict()
-        response["message"] = "OK"
+        results = await model_runner.process_input(example)
         response["sentiment"] = results["sentiment"]
         response["score"] = results["score"]
-        # results["tokens"] = e.features["tokens"]
 
-        # for k, v in results.items():
-        #     print(k, type(v))
+        if "explanation" in body:
+            explanation_params = body["explanation_params"] if "explanation_params" in body else {}
+            if body["explanation"]=="lime":
+                expl = LimeExplanation(
+                    self, 
+                    model=model, 
+                    tokenizer=tokenizer,
+                    features=example.features,  
+                    non_negative=True, 
+                    exclude_spec_tokens=True, 
+                    num_samples=explanation_params['num_samples'] if 'num_samples' in explanation_params else 500, 
+                    faithfulness=explanation_params['faithfulness'] if 'faithfulness' in explanation_params else False
+                )
+                
+            
+            response['saliency_map'] = expl.scores
+            response["sentiment"] = str(expl.sentiment)
+            response["target_span"] = example.features['target_span'].tolist()
+            response["target_tokens"] = example.features['target_tokens']
+            response["score"] = float(expl.score)
 
+        response["message"] = "OK"
         return sanic.response.json(response, status=200)
 
     except Exception as e:

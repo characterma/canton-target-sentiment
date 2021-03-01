@@ -34,6 +34,7 @@ MODEL_EMB_TYPE = {
     "RAM": "WORD",
     "TNET_LF": "WORD",
     "TDBERT": "BERT",
+    "TDBERT_INTE": "BERT",
 }
 
 
@@ -138,7 +139,7 @@ def parse_api_req(req_dict):
     left_sep = "## Headline ##\n"
     right_sep = "\n## Content ##\n"
 
-    output_dict = {}
+    output_dict = req_dict
     if req_dict["target_in_hl"] == 0: # target in content
         hl_with_sep = left_sep + req_dict["headline"] + right_sep
         output_dict["content"] = hl_with_sep + req_dict["content"]

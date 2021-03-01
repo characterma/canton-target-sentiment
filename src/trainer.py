@@ -144,15 +144,37 @@ class Trainer(object):
         )
         return optimizer, scheduler     
 
-    def training_step(self, batch):
+    def training_step(self, batch, step, sentiment_logits=None):
+        # step 0: only sentiment classification
+        # step 1: sentiment classification + token classification
+
         self.model.train()
         inputs = dict()
+
+        # only sentiment classification
         for col in self.model.INPUT_COLS:
             inputs[col] = batch[col].to(self.device)
         outputs = self.model(**inputs)
         losses = outputs[0]
+        sentiment_logits = outputs[0]
+        # predicted_sentiment = torch.argmax(sentiment_logits, dim=1)
+
         losses.mean().backward()
+
+        # 
         return losses.detach()
+
+    # def training_step(self, batch):
+    #     self.model.train()
+    #     inputs = dict()
+
+    #     # with
+    #     for col in self.model.INPUT_COLS:
+    #         inputs[col] = batch[col].to(self.device)
+    #     outputs = self.model(**inputs)
+    #     losses = outputs[0]
+    #     losses.mean().backward()
+    #     return losses.detach()
 
     def train(self):
 
@@ -204,7 +226,7 @@ class Trainer(object):
             for step, batch in enumerate(epoch_iterator):
 
 
-                losses = self.training_step(batch)
+                losses = self.training_step(batch, step)
                 losses = losses.cpu().numpy()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 

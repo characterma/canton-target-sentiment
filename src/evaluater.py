@@ -38,6 +38,9 @@ class Evaluater:
         self.timer = timer
 
     def evaluation_step(self, batch):
+
+        print("###########", batch.keys())
+
         self.model.eval()
         with torch.no_grad():
             inputs = dict()
@@ -186,10 +189,11 @@ class Evaluater:
         if all_repr is not None:
             np.save(self.output_dir / f"all_repr_{self.dataset.name}_{identifier}.npy", all_repr)
         if attn is not None:
-            # np.save(self.output_dir / f"attn_{self.dataset.name}_{identifier}.npy", attn)
+            attn = np.concatenate(attn, axis=1)
+            np.save(self.output_dir / f"attn_{self.dataset.name}_{identifier}.npy", attn)
 
-            with open(self.output_dir / f"attn_{self.dataset.name}_{identifier}.pkl", 'wb') as f:
-                pickle.dump(attn, f)
+            # with open(self.output_dir / f"attn_{self.dataset.name}_{identifier}.pkl", 'wb') as f:
+            #     pickle.dump(attn, f)
 
         # save eval metrics
         pd.DataFrame(data=[self.metrics[identifier]]).to_csv(
