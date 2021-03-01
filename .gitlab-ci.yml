@@ -60,7 +60,7 @@ package:harbor_docker:
   - sh build_harbor_docker.sh
   # dependencies:
   # - build:maven
-  # when: manual
+  when: manual
   tags:
   - bigfiles            # default enable access to /BigFiles
   artifacts:
