@@ -1,0 +1,12 @@
+{{- if .Values.istioblackwhitelist.enabled -}}
+{{- $appName := .Values.appName -}}
+apiVersion: config.istio.io/v1alpha2
+kind: rule
+metadata:
+{{- template "commonMeta" . }}
+spec:
+  match: destination.labels["app"] == "{{ $appName }}"
+  actions:
+  - handler: {{ $appName }}
+    instances: [ {{ $appName }} ]
+{{- end -}}

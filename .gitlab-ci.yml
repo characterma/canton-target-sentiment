@@ -47,6 +47,27 @@ package:docker:
     paths:
     - deploy/
 
+# --- Triggered By: Commit / Tag ---
+# Remark: Collect necessary program files to build docker image, and store to Research Internal Image Repository
+package:harbor_docker:
+  stage: package
+  script:
+  - cd deploy/docker
+  - mkdir -p ailab/models/bert_base_chinese
+  - mkdir -p ailab/config/
+  - cp -r /BigFiles/Models/canton-target-sentiment/bert_base_chinese/* ailab/models/bert_base_chinese/
+  - cp -r /BigFiles/Models/canton-target-sentiment/config/* ailab/config/
+  - sh build_harbor_docker.sh
+  dependencies:
+  - build:maven
+  when: manual
+  tags:
+  - bigfiles            # default enable access to /BigFiles
+  artifacts:
+    name: package-harbor-docker-deploy
+    expire_in: 1 hrs    # will be auto deleted after 1 hour
+    paths:
+    - deploy/
 
 
 # ================= Stage: Deploy ==================
@@ -152,6 +173,20 @@ deploy:helm-museum:
     name: chart_museum
     url: http://ess-deploy.wisers.com:8585/api/charts
     
+# --- Triggered By: Tag ---
+# Remark: Save the helm chart to Research Internal Chart Museum for further deployment
+deploy:harbor-helm:
+  stage: deploy
+  script:
+  - cd deploy/k8s
+  - sh package_n_upload_2_harbor_helm.sh
+  dependencies:
+  - package:harbor_docker
+  when: manual
+  only:
+  - tags  
+  environment:
+    name: chart_museum
 
 
 # ================== Stage: Test ===================

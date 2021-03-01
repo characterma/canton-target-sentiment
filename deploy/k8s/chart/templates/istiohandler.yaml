@@ -1,0 +1,20 @@
+{{- if .Values.istioblackwhitelist.enabled -}}
+{{- $appName := .Values.appName -}}
+apiVersion: config.istio.io/v1alpha2
+kind: handler
+metadata:
+{{- template "commonMeta" . }}
+spec:
+  compiledAdapter: listchecker
+  params:
+    blacklist: true 
+    # when the value is "true" => it will be blacklist
+    # when the value is "false" => it will be whitelist
+    entryType: IP_ADDRESSES
+    #overrides: # overrides provide a static list
+    #- 1.2.3.4
+    #- 2.2.2.2
+    # Ordinarily black and white lists are maintained
+    providerUrl: {{ .Values.istioblackwhitelist.providerUrl }}
+    # externally and fetched asynchronously using the providerUrl.
+{{- end -}}

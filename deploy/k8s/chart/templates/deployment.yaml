@@ -1,10 +1,14 @@
 {{- $appName := .Values.appName -}}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
 {{- template "commonMeta" . }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ $appName }}
+      release: {{ .Release.Name}}
   template:
     metadata:
       labels:
@@ -22,6 +26,8 @@ spec:
           value: "Asia/Hong_Kong"
         # ----------------------------------
 
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
         ports:
         - containerPort: {{ default 8080 .Values.service.internalPort }}
 
@@ -33,17 +39,34 @@ spec:
 #        - name: configs
 #          mountPath: "/ailab/conf/logging.conf"
 #          subPath: "logging.conf"
-        - mountPath: "/etc/localtime"
-          name: localtime
+        # - mountPath: "/etc/localtime"
+        #   name: localtime
         # ----------------------------------
-
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-      - name: docker-pub
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
+      # - name: docker-pub
+        
       volumes:
-#      - name: configs
-#        configMap:
-#          name: {{ $appName }}
-      - name: localtime
-        hostPath:
-          path: "/usr/share/zoneinfo/Asia/Hong_Kong"
+     - name: configs
+       configMap:
+         name: {{ $appName }}
+      # - name: localtime
+      #   hostPath:
+      #     path: "/usr/share/zoneinfo/Asia/Hong_Kong"
 
+
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

@@ -9,5 +9,5 @@ Define common metadata
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-    ci-build-ref: {{ .Values.ciBuildRef | default "un-known" | substr 0 8 }}
+    ci-build-ref: "{{ .Values.ciBuildRef | default "un-known" | substr 0 8 }}"
 {{- end }}

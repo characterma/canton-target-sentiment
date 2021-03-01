@@ -1,0 +1,18 @@
+{{- if .Values.istioauth.enabled -}}
+{{- $appName := .Values.appName -}}
+apiVersion: authentication.istio.io/v1alpha1
+kind: Policy
+metadata:
+{{- template "commonMeta" . }}
+spec:
+  origins:
+  - jwt:
+      issuer: {{ .Values.istioauth.issuer }}
+      jwksUri: {{ .Values.istioauth.jwksUri }}
+  peers:
+  - mtls:
+      mode: {{ .Values.istioauth.mtls.mode }}
+  principalBinding: {{ .Values.istioauth.principalBinding }}
+  targets:
+  - name: {{ $appName }}
+{{- end -}}

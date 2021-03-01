@@ -1,0 +1,11 @@
+{{- if .Values.istioblackwhitelist.enabled -}}
+{{- $appName := .Values.appName -}}
+apiVersion: config.istio.io/v1alpha2
+kind: instance
+metadata:
+{{- template "commonMeta" . }}
+spec:
+  compiledTemplate: listentry
+  params:
+    value: request.headers["x-envoy-external-address"]
+{{- end -}}

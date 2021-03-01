@@ -1,0 +1,17 @@
+{{- if .Values.istioingress.enabled -}}
+{{- $appName := .Values.appName -}}
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+{{- template "commonMeta" . }}
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+{{- end -}}

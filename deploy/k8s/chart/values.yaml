@@ -28,3 +28,65 @@ configmap:
 # Application Props
 #props:
 #  engNerUrl: "http://ner-english-api.res-comm:8080/ess/entityextr/analyse"
+
+
+imagePullSecrets:
+  - name: docker-pub
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+resources:
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  limits:
+    cpu: 2000m
+    memory: 8G
+  requests:
+    cpu: 2000m
+    memory: 8G
+
+
+# Whether to enable Horizontal Pod Autoscaler
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  cpu:
+    averageUtilization: 75
+  memory:
+    averageUtilization: 75
+
+
+# Whether to enable "istio-ingress" rule for external API access
+istioingress:
+  enabled: true
+  internalPort: 8080
+
+# Whether to enable "istio-auth" rule for external API access
+# Istio authentication policy and related mutual TLS authentication
+istioauth:
+  enabled: false
+  issuer: http://keycloak-http.playground/keycloak/auth/realms/realm-ess
+  jwksUri: http://keycloak-http.playground/keycloak/auth/realms/realm-ess/protocol/openid-connect/certs
+  mtls:
+    mode: PERMISSIVE
+  principalBinding: USE_ORIGIN
+
+# Whether to enable "istio-destinationrule" rule for external API access
+# https://archive.istio.io/v1.4/docs/concepts/traffic-management/#destination-rules
+# Destination rules are applied after virtual service routing rules are evaluated, so they apply to the traffic’s “real” destination.
+istiodestinationrule:
+  enabled: true
+  tls:
+    mode: ISTIO_MUTUAL
+
+# Whether to enable "istio-blackwhitelist" for external API access
+istioblackwhitelist:
+  enabled: false
+  providerUrl: http://192.168.60.60:8080/WhiteList
