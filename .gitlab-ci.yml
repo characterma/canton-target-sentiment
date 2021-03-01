@@ -58,9 +58,9 @@ package:harbor_docker:
   - cp -r /BigFiles/Models/canton-target-sentiment/bert_base_chinese/* ailab/models/bert_base_chinese/
   - cp -r /BigFiles/Models/canton-target-sentiment/config/* ailab/config/
   - sh build_harbor_docker.sh
-  dependencies:
-  - build:maven
-  when: manual
+  # dependencies:
+  # - build:maven
+  # when: manual
   tags:
   - bigfiles            # default enable access to /BigFiles
   artifacts:
