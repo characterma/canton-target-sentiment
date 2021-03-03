@@ -32,29 +32,24 @@ spec:
         - containerPort: {{ default 8080 .Values.service.internalPort }}
 
         # Change Accordingly ---------------
-        volumeMounts:
+#        volumeMounts:
 #        - name: configs
 #          mountPath: "/ailab/conf/gunicorn.conf"
 #          subPath: "gunicorn.conf"
 #        - name: configs
 #          mountPath: "/ailab/conf/logging.conf"
 #          subPath: "logging.conf"
-        # - mountPath: "/etc/localtime"
-        #   name: localtime
         # ----------------------------------
+
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-        {{- toYaml . | nindent 6 }}
+      {{- toYaml . | nindent 6 }}
       {{- end }}
-      # - name: docker-pub
-        
       volumes:
       - name: configs
        configMap:
          name: {{ $appName }}
-      # - name: localtime
-      #   hostPath:
-      #     path: "/usr/share/zoneinfo/Asia/Hong_Kong"
+
 
       {{- with .Values.nodeSelector }}
       nodeSelector:
