@@ -49,7 +49,7 @@ spec:
       # - name: docker-pub
         
       volumes:
-     - name: configs
+      - name: configs
        configMap:
          name: {{ $appName }}
       # - name: localtime
