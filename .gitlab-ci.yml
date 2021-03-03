@@ -107,7 +107,7 @@ deploy:playground-k8s:
 
   # execute scripts:
   - cd deploy/k8s
-  - sh undeploy_k8s.sh --purge
+  - sh undeploy_k8s.sh
   - sh deploy_k8s.sh
   dependencies:
   - package:docker
@@ -292,7 +292,7 @@ undeploy:playground-k8s:
   - export RELEASE_NAME="$RELEASE_NAME_CI"     # override RELEASE_NAME for CI flow
   - export K8S_DEPLOY_NAMESPACE="playground"   # reset namespace to playground no matter what's in env.sh
   - cd deploy/k8s
-  - sh undeploy_k8s.sh --purge
+  - sh undeploy_k8s.sh
   when: manual
   except:
   - tags

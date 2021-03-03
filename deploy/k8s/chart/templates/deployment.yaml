@@ -8,7 +8,7 @@ spec:
   selector:
     matchLabels:
       app: {{ $appName }}
-      release: {{ .Release.Name}}
+      release: {{ .Release.Name }}
   template:
     metadata:
       labels:
@@ -47,8 +47,8 @@ spec:
       {{- end }}
       volumes:
       - name: configs
-       configMap:
-         name: {{ $appName }}
+        configMap:
+          name: {{ $appName }}
 
 
       {{- with .Values.nodeSelector }}

@@ -10,8 +10,8 @@ PACKAGE_DIR=./pkg
 mkdir -p $PACKAGE_DIR
 rm -rf $PACKAGE_DIR/*
 
-echo "helm package --save=false --destination $PACKAGE_DIR ./$CHART_NAME"
-helm package --save=false --destination $PACKAGE_DIR ./$CHART_NAME
+echo "helm package --destination $PACKAGE_DIR ./$CHART_NAME"
+helm package --destination $PACKAGE_DIR ./$CHART_NAME
 
 echo "curl --data-binary "@$PACKAGE_DIR/$CHART_NAME-$CHART_VERSION.tgz" $HELM_CHART_REPO/api/charts"
 curl --data-binary "@$PACKAGE_DIR/$CHART_NAME-$CHART_VERSION.tgz" $HELM_CHART_REPO/api/charts

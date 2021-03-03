@@ -53,11 +53,11 @@ sed -i 's/^imageTag.*$/imageTag: '"\"$IMAGE_TAG\""'/' $CHART_NAME/values.yaml
 helm dep up ./$CHART_NAME
 
 if [ "$1" == "upgrade" ]; then
-   echo "helm upgrade -i --debug --dry-run $RELEASE_NAME ./$CHART_NAME"
-   helm upgrade -i --debug --dry-run $RELEASE_NAME ./$CHART_NAME
+   echo "helm upgrade -i --debug --dry-run $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE ./$CHART_NAME"
+   helm upgrade -i --debug --dry-run $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE ./$CHART_NAME
 else
-   echo "helm install -n $RELEASE_NAME --dry-run --debug ./$CHART_NAME"
-   helm install $RELEASE_NAME ./$CHART_NAME --dry-run --debug 
+   echo "helm install $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE --dry-run --debug ./$CHART_NAME"
+   helm install $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE ./$CHART_NAME --dry-run --debug 
 fi
 
 

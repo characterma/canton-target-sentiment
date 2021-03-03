@@ -10,8 +10,8 @@ PACKAGE_DIR=./pkg
 mkdir -p $PACKAGE_DIR
 rm -rf $PACKAGE_DIR/*
 
-echo "helm package --save=false --destination $PACKAGE_DIR ./$CHART_NAME"
-helm package --save=false --destination $PACKAGE_DIR ./$CHART_NAME
+echo "helm package --destination $PACKAGE_DIR ./$CHART_NAME"
+helm package --destination $PACKAGE_DIR ./$CHART_NAME
 
 echo "helm push "@$PACKAGE_DIR/$CHART_NAME-$CHART_VERSION.tgz" ai-repo --username ci-headless-user --password ci1234"
 
