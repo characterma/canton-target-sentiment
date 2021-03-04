@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "e74b4bf8-6db5-4fff-b815-e08745a81738",
-		"name": "canton-target-sentiment",
+		"_postman_id": "ccf9b50b-9ec3-4bc1-ae0b-e138e08e7740",
+		"name": "rolex_sentiment",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -12,9 +12,9 @@
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test(\"target sentiment label\", function () {\r",
+							"pm.test(\"target sentiment\", function () {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData.data).to.eql(\"negative\");\r",
+							"    pm.expect(jsonData.message).to.eql(\"OK\");\r",
 							"});"
 						],
 						"type": "text/javascript"
@@ -26,16 +26,16 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"headline\": \"大家最近買左D乜 分享下?\", \r\n    \"content\": \"ABC, 用完覺得無想像咁好\", \r\n    \"start_ind\": 0, \r\n    \"end_ind\": 3, \r\n    \"target_in_hl\": 0\r\n}"
+					"raw": "{\r\n    \"content\": \"ABC is so nice.\", \r\n    \"start_ind\": 0, \r\n    \"end_ind\": 3\r\n}"
 				},
 				"url": {
-					"raw": "http://{{server}}/target_sentiment",
+					"raw": "http://{{server}}/rolex_sentiment",
 					"protocol": "http",
 					"host": [
 						"{{server}}"
 					],
 					"path": [
-						"target_sentiment"
+						"rolex_sentiment"
 					]
 				}
 			},
