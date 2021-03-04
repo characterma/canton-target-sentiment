@@ -8,6 +8,3 @@ aiohttp==3.6.2
 locust==1.4.1
 asyncio==3.4.3
 sanic
-flask
-uvicorn
-fastapi
