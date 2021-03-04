@@ -60,7 +60,7 @@ def init_model(
     return model
 
 
-base_dir = Path("../")
+base_dir = Path("./")
 config_dir = base_dir / "config"
 # deploy_config = load_yaml(config_dir / "deploy.yaml")
 
