@@ -32,7 +32,7 @@ import traceback
 import torch
 
 # device = 0
-device = 1
+device = 0
 
 
 def init_model(
