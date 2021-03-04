@@ -62,14 +62,14 @@ def init_model(
 
 base_dir = Path("../")
 config_dir = base_dir / "config"
-deploy_config = load_yaml(config_dir / "deploy.yaml")
+# deploy_config = load_yaml(config_dir / "deploy.yaml")
 
-model_dir = base_dir / "models" / deploy_config["model_dir"]
+model_dir = base_dir / "models" / "tgsan_rolex"
 
 model_config = load_yaml(model_dir / "model.yaml")
 train_config = load_yaml(model_dir / "train.yaml")
 
-state_path = model_dir / deploy_config["state_file"]
+state_path = model_dir / "best_state_balanced_epoch24.pt"
 
 model_class = train_config["model_class"]
 preprocess_config = model_config[model_class]["preprocess"]
