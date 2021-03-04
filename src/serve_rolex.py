@@ -31,8 +31,8 @@ from dataset import TargetDependentExample
 import traceback
 import torch
 
-# device = "cpu"
-device = 0
+device = "cpu"
+# device = 0
 
 
 def init_model(

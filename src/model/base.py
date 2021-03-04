@@ -37,7 +37,7 @@ class BaseModel(nn.Module):
         logger.info("  Path = %s", str(state_path))
         assert state_path.is_file()
         print("Device:", self.device)
-        self.load_state_dict(torch.load(state_path, map_location=self.device))
+        self.load_state_dict(torch.load(state_path, map_location=str(self.device)))
 
 
 
