@@ -32,9 +32,12 @@ class TargetDependentExample(object):
         raw_start_idx,
         raw_end_idx,
         tokenizer, 
+        # tokenizer_type,
         preprocess_config,
         label=None,
-        required_features=[]
+        required_features=[], 
+        word2idx=None, 
+        new_tokens=None
     ):
 
         self.raw_text = raw_text
@@ -42,7 +45,9 @@ class TargetDependentExample(object):
         self.raw_end_idx = raw_end_idx
         self.tgt_text = self.raw_text[raw_start_idx:raw_end_idx]
         self.label = label
+        self.word2idx = word2idx
         self.tokenizer = tokenizer
+        # self.tokenizer_type = tokenizer_type
         self.preprocess_config = preprocess_config
         self.required_features = required_features
 
@@ -59,22 +64,33 @@ class TargetDependentExample(object):
             self.preprocess_succeeded = False
         else:
             self.preprocess_succeeded = True
-        
-            # feature engineering
-            self.features = TargetDependentExample.get_features(
-                tgt_sent=self.tgt_sent, 
-                start_idx=self.start_idx, 
-                end_idx=self.end_idx, 
-                hl_sent=self.hl_sent, 
-                prev_sents=self.prev_sents, 
-                next_sents=self.next_sents, 
-                tgt_in_hl=self.tgt_in_hl, 
-                tokenizer=self.tokenizer,
-                max_length=self.preprocess_config.get('max_length', 180), 
-                mask_target=self.preprocess_config.get('mask_target', False), 
-                required_features=self.required_features,
-                label=label
-            )
+            if self.word2idx is None:
+                self.features = TargetDependentExample.get_features(
+                    tgt_sent=self.tgt_sent, 
+                    start_idx=self.start_idx, 
+                    end_idx=self.end_idx, 
+                    hl_sent=self.hl_sent, 
+                    prev_sents=self.prev_sents, 
+                    next_sents=self.next_sents, 
+                    tgt_in_hl=self.tgt_in_hl, 
+                    tokenizer=self.tokenizer,
+                    max_length=self.preprocess_config.get('max_length', 180), 
+                    mask_target=self.preprocess_config.get('mask_target', False), 
+                    required_features=self.required_features,
+                    label=label
+                )
+            else:
+                self.features = TargetDependentExample.get_features_non_bert(
+                    sent=self.tgt_sent, 
+                    start_idx=self.start_idx, 
+                    end_idx=self.end_idx, 
+                    tokenizer=self.tokenizer,
+                    max_length=self.preprocess_config.get('max_length', 180), 
+                    required_features=self.required_features,
+                    label=label, 
+                    word2idx=word2idx, 
+                    new_tokens=new_tokens
+                )
 
             if len(self.features) > 0:
                 self.feature_succeeded = True
@@ -126,6 +142,57 @@ class TargetDependentExample(object):
         return arrays
 
     @staticmethod
+    def get_features_non_bert(
+        sent, 
+        start_idx, 
+        end_idx, 
+        tokenizer,
+        max_length, 
+        required_features, 
+        word2idx, 
+        label=None, 
+        new_tokens=None
+    ):
+        sent_encoded = tokenizer(
+            sent,
+            max_length=max_length,
+            truncation=True,
+            padding='max_length',
+            add_special_tokens=False,
+        )
+
+        raw_text_ids = np.array(sent_encoded.input_ids[:max_length])
+        attention_mask = np.array(sent_encoded.attention_mask[:max_length])
+        token_type_ids = np.array(sent_encoded.token_type_ids[:max_length])
+        target_mask = np.array([0] * len(raw_text_ids))
+
+        # Find the token positions of target
+        for char_idx in range(start_idx, end_idx):
+            token_idx = sent_encoded.char_to_token(char_idx)
+            if token_idx is not None and token_idx < len(raw_text_ids):
+                target_mask[token_idx] = 1
+        tokens = tokenizer.convert_ids_to_tokens(raw_text_ids)
+        raw_text_ids = []
+        for t in tokens:
+            if t in word2idx:
+                raw_text_ids.append(word2idx[t])
+            else:
+                if new_tokens is not None:
+                    new_tokens.append(t)
+                    raw_text_ids.append(0)
+                else:
+                    raw_text_ids.append(word2idx["<OOV>"])
+
+        results = {
+            "raw_text": torch.tensor(raw_text_ids).long(), 
+            "attention_mask": torch.tensor(attention_mask).long(), 
+            "target_mask": torch.tensor(target_mask).long(), 
+            "tokens": tokens, 
+            "label": SENTI_ID_MAP[label]
+        }
+        return results
+
+    @staticmethod
     def get_features(
         tgt_sent, 
         start_idx, 
@@ -138,7 +205,7 @@ class TargetDependentExample(object):
         max_length, 
         mask_target, 
         required_features, 
-        label=None
+        label=None, 
     ):
         assert(len(tgt_sent) > 0)
         features = dict()
@@ -482,6 +549,7 @@ class TargetDependentDataset(Dataset):
         name="",
         required_features=[], 
         add_special_tokens=True, 
+        new_tokens=None
     ):
         """
         Args:
@@ -499,13 +567,14 @@ class TargetDependentDataset(Dataset):
         self._add_new_word = False
         self.timer = timer
         self.required_features = required_features
+        self.new_tokens = new_tokens
 
         if word2idx is not None and len(self.word2idx) == 0:
             self.word2idx[None] = 0
             self.word2idx["<OOV>"] = 1
             self._add_new_word = True
 
-        self.data = self.load_from_path()
+        self.data = self.load_from_path(word2idx=word2idx)
 
         self.df = pd.DataFrame(
             data={
@@ -519,8 +588,8 @@ class TargetDependentDataset(Dataset):
                 "next_sents": [e.next_sents for e in self.data],
                 "tgt_in_hl": [e.tgt_in_hl for e in self.data],
                 "tokens": [e.features['tokens'] for e in self.data],
-                "target_span": [e.features['target_span'] for e in self.data],
-                "target_tokens": [e.features['target_tokens'] for e in self.data],
+                # "target_span": [e.features['target_span'] for e in self.data],
+                # "target_tokens": [e.features['target_tokens'] for e in self.data],
                 "label": [e.label for e in self.data],
             }
         )
@@ -535,7 +604,7 @@ class TargetDependentDataset(Dataset):
         for k, v in count_class.items():
             logger.info(f"  Number of '{k}' = {v}")
 
-    def load_from_path(self):
+    def load_from_path(self, word2idx=None):
         logger.info("***** Loading data *****")
         logger.info("  Path = %s", str(self.data_path))
         data = []
@@ -565,7 +634,9 @@ class TargetDependentDataset(Dataset):
                     tokenizer=self.tokenizer, 
                     label=self.label_map[label],
                     preprocess_config=self.preprocess_config,
-                    required_features=self.required_features                   
+                    required_features=self.required_features, 
+                    word2idx=word2idx, 
+                    new_tokens=self.new_tokens             
                 )
 
                 if e.preprocess_succeeded:

@@ -45,10 +45,10 @@ spec:
       imagePullSecrets:
       {{- toYaml . | nindent 6 }}
       {{- end }}
-      volumes:
-      - name: configs
-        configMap:
-          name: {{ $appName }}
+      # volumes:
+      # - name: configs
+      #   configMap:
+      #     name: {{ $appName }}
 
 
       {{- with .Values.nodeSelector }}

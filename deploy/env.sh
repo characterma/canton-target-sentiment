@@ -17,7 +17,7 @@ IMAGE_TAG=1.1
 # Update Chart Tag if different from any deployed version
 CHART_VERSION=0.1.1
 
-CHART_DESCRIPTION="Cantonese target sentiment for beauty products."
+CHART_DESCRIPTION="Cantonese target sentiment for Rolex."
 
 # Optional, for running deployment script manually
 K8S_DEPLOY_NAMESPACE=playground
