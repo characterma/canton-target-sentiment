@@ -5,13 +5,13 @@ from pathlib import Path
 import random
 import json
 from argparse import Namespace
-from ruamel.yaml.comments import CommentedMap
+# from ruamel.yaml.comments import CommentedMap
 import numpy as np
 import pandas as pd
 import torch
 import time
-
-from ruamel.yaml import YAML
+import yaml
+# from ruamel.yaml import YAML
 from sklearn.model_selection import ParameterGrid
 
 
@@ -86,15 +86,18 @@ def save_yaml(data, file_path):
     yaml.dump(data, file_path)
 
 
-def load_yaml(file_path, overwriting_config=None):
-    yaml = YAML()
-    data = yaml.load(open(file_path, "r"))
-    if isinstance(overwriting_config, CommentedMap) or isinstance(
-        overwriting_config, dict
-    ):
-        data = apply_overwriting_config(overwriting_config, data)
-    return data
+# def load_yaml(file_path, overwriting_config=None):
+#     yaml = YAML()
+#     data = yaml.load(open(file_path, "r"))
+#     if isinstance(overwriting_config, CommentedMap) or isinstance(
+#         overwriting_config, dict
+#     ):
+#         data = apply_overwriting_config(overwriting_config, data)
+#     return data
 
+def load_yaml(file_path):
+    data = yaml.load(open(file_path, "r"), Loader=yaml.FullLoader)
+    return data
 
 def generate_grid_search_params(grid_config):
     param_grid = dict()
