@@ -1,0 +1,2 @@
+model_dir: "tgsan_chinese"
+state_file: "best_state_imbalanced_epoch11.pt"

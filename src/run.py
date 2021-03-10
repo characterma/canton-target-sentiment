@@ -3,8 +3,10 @@ import logging
 from pathlib import Path
 import os, shutil, sys
 import uuid
+import numpy as np
+import pickle
 
-if __name__=="__main__":
+if __name__ == "__main__":
     log_dir = Path(os.environ["CANTON_SA_DIR"]) / "log"
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
@@ -29,8 +31,8 @@ from utils import (
     get_label_map,
     generate_grid_search_params,
     apply_grid_search_params,
-    Timer, 
-    MODEL_EMB_TYPE
+    Timer,
+    MODEL_EMB_TYPE,
 )
 from tokenizer import get_tokenizer
 from model import *
@@ -41,15 +43,15 @@ logger = logging.getLogger(__name__)
 
 
 def init_model(
-        model_class, 
-        body_config, 
-        num_labels, 
-        pretrained_emb, 
-        num_emb, 
-        pretrained_lm, 
-        device, 
-        state_path=None
-    ):
+    model_class,
+    body_config,
+    num_labels,
+    pretrained_emb,
+    num_emb,
+    pretrained_lm,
+    device,
+    state_path=None,
+):
 
     MODEL = getattr(sys.modules[__name__], model_class)
     model = MODEL(
@@ -64,6 +66,7 @@ def init_model(
         model.load_state(state_path)
     return model
 
+
 def run(
     do_train=False,
     do_eval=False,
@@ -72,8 +75,7 @@ def run(
     eval_config_file="eval.yaml",
     model_config_file="model.yaml",
     grid_config_file="grid.yaml",
-    overwriting_config_file=None,
-    log_path=None, 
+    log_path=None,
     device="cpu",
 ):
     init_logger()
@@ -81,33 +83,22 @@ def run(
     base_dir = Path(os.environ["CANTON_SA_DIR"])
     config_dir = base_dir / "config"
 
-    if overwriting_config_file:
-        overwriting_config = load_yaml(config_dir / overwriting_config_file)
-    else:
-        overwriting_config = dict()
-    eval_config = load_yaml(
-        config_dir / eval_config_file,
-        overwriting_config=overwriting_config.get("eval", dict()),
-    )
-
     if do_train:
         data_config = load_yaml(
             config_dir / data_config_file,
-            overwriting_config=overwriting_config.get("data", dict()),
         )
         train_config = load_yaml(
             config_dir / train_config_file,
-            overwriting_config=overwriting_config.get("train", dict()),
         )
         model_config = load_yaml(
             config_dir / model_config_file,
-            overwriting_config=overwriting_config.get("model", dict()),
         )
         grid_config = load_yaml(
             config_dir / grid_config_file,
-            overwriting_config=overwriting_config.get("grid", dict()),
         )
-
+        eval_config = load_yaml(
+            config_dir / eval_config_file,
+        )
         if train_config["state_file"]:
             train_state_path = (
                 base_dir / "output" / "train" / train_config["state_file"]
@@ -123,34 +114,35 @@ def run(
 
     if do_eval:
         if do_train:
+            eval_config = load_yaml(
+                config_dir / eval_config_file,
+            )
             eval_input_dir = train_config["output_dir"]
             eval_state_path = train_output_dir / eval_config["state_file"]
             eval_output_dir = (
                 base_dir / "output" / "eval" / (train_config["output_dir"] + "_eval")
             )
         else:
+            eval_config = load_yaml(
+                config_dir / eval_config_file,
+            )
             eval_input_dir = eval_config["input_dir"]
 
             if eval_config["use_train_data_config"]:
                 data_config = load_yaml(
-                    base_dir / "output" / "train" / eval_input_dir / data_config_file, 
-                    overwriting_config=overwriting_config.get("data", dict()),
+                    base_dir / "output" / "train" / eval_input_dir / data_config_file,
                 )
             else:
-                data_config = load_yaml(config_dir / data_config_file, 
-                                        overwriting_config=overwriting_config.get("data", dict()),)
+                data_config = load_yaml(config_dir / data_config_file)
 
             train_config = load_yaml(
-                base_dir / "output" / "train" / eval_input_dir / train_config_file, 
-                overwriting_config=overwriting_config.get("train", dict()),
+                base_dir / "output" / "train" / eval_input_dir / train_config_file,
             )
             model_config = load_yaml(
-                base_dir / "output" / "train" / eval_input_dir / model_config_file, 
-                overwriting_config=overwriting_config.get("model", dict()),
+                base_dir / "output" / "train" / eval_input_dir / model_config_file,
             )
             grid_config = load_yaml(
-                base_dir / "output" / "train" / eval_input_dir / grid_config_file, 
-                overwriting_config=overwriting_config.get("grid", dict()),
+                base_dir / "output" / "train" / eval_input_dir / grid_config_file,
             )
 
             eval_state_path = (
@@ -169,7 +161,7 @@ def run(
         save_yaml(train_config, train_output_dir / train_config_file)
         save_yaml(grid_config, train_output_dir / grid_config_file)
         save_yaml(data_config, train_output_dir / data_config_file)
-        save_yaml(eval_config, train_output_dir / eval_config_file)
+        # save_yaml(eval_config, train_output_dir / eval_config_file)
 
     if do_eval:
         save_yaml(model_config, eval_output_dir / model_config_file)
@@ -186,52 +178,115 @@ def run(
     dataset_dir = base_dir / "data" / "datasets" / data_config["dataset"]
 
     # load pretrained language model
-    tokenizer = get_tokenizer(source=preprocess_config["tokenizer_source"], name=preprocess_config["tokenizer_name"])
+    tokenizer = get_tokenizer(
+        source=preprocess_config["tokenizer_source"],
+        name=preprocess_config["tokenizer_name"],
+    )
     pretrained_lm = None
     pretrained_word_emb = None
+    emb_vectors = None
     word2idx = None
+    num_emb = None
     add_special_tokens = True
+    label_map = get_label_map(dataset_dir / data_config["label_map"])
 
     if MODEL_EMB_TYPE[model_class] == "BERT":
         pretrained_lm = PretrainedLM(body_config["pretrained_lm"])
         pretrained_lm.resize_token_embeddings(tokenizer=tokenizer)
 
     elif MODEL_EMB_TYPE[model_class] == "WORD":
-        assert "pretrained_word_emb" in body_config
-        assert "use_pretrained" in body_config
-        use_pretrained = body_config["use_pretrained"]
         add_special_tokens = False
-        if use_pretrained:
-            word2idx = None
-            word_emb_path = (
-                base_dir
-                / "data"
-                / "word_embeddings"
-                / body_config["pretrained_word_emb"]
-            )
-            logger.info("***** Loading pretrained word embeddings *****")
-            logger.info("  Pretrained word embeddings = '%s'", str(word_emb_path))
-            pretrained_word_emb = KeyedVectors.load_word2vec_format(
-                word_emb_path, binary=False
-            )
-            _, emb_dim = pretrained_word_emb.vectors.shape
-            pretrained_word_emb.add(["<OOV>"], [[0] * emb_dim])
-            vocab = pretrained_word_emb.vocab
-            for token in vocab:
-                word2idx[token] = vocab[token].index
-        else:
-            pretrained_word_emb = None
+        if do_train:
+            _vocab = TargetDependentDataset(
+                dataset_dir / data_config["train"],
+                label_map,
+                tokenizer,
+                preprocess_config=preprocess_config,
+                word2idx=None,
+                add_special_tokens=False,
+                name="train",
+                required_features=None,
+                get_vocab_only=True,
+            ).vocab
 
-    label_map = get_label_map(dataset_dir / data_config["label_map"])
+            vocab = dict()
+            for k, v in _vocab.items():
+                if v >= 2:
+                    vocab[k] = v
 
-    model = init_model(model_class=model_class, 
+            word2idx = dict()
+            word2idx["<PAD>"] = 0
+            word2idx["<OOV>"] = 1
+            for k in vocab.keys():
+                word2idx[k] = len(word2idx)
+            num_emb = len(word2idx)
+
+            if body_config["use_pretrained"]:
+
+                word_emb_path = (
+                    base_dir
+                    / "data"
+                    / "word_embeddings"
+                    / body_config["pretrained_word_emb"]
+                )
+                logger.info("***** Loading pretrained word embeddings *****")
+                logger.info("  Pretrained word embeddings = '%s'", str(word_emb_path))
+
+                pretrained_word_emb = KeyedVectors.load_word2vec_format(
+                    word_emb_path, binary=False
+                )
+
+                emb_dim = pretrained_word_emb.vectors.shape[1]
+
+                emb_vectors = np.random.rand(len(word2idx) + len(vocab), emb_dim)
+                glove_vocab = pretrained_word_emb.vocab
+                glove_vectors = pretrained_word_emb.vectors
+
+                # migrate glove vectors
+                for k in vocab.keys():
+                    if k in glove_vocab:
+                        glove_idx = glove_vocab[k].index
+                        emb_vectors[word2idx[k], :] = glove_vectors[glove_idx, :]
+                emb_dim = glove_vectors.shape[1]
+            else:
+                emb_dim = body_config["emb_dim"]
+
+            word2idx_info = {"word2idx": word2idx, "emb_dim": emb_dim}
+            pickle.dump(
+                word2idx_info, open(train_output_dir / "word2idx_info.pkl", "wb")
+            )
+
+        elif do_eval:
+            word2idx_info = pickle.load(
+                open(
+                    base_dir
+                    / "output"
+                    / "train"
+                    / eval_input_dir
+                    / "word2idx_info.pkl",
+                    "rb",
+                )
+            )
+            word2idx = word2idx_info["word2idx"]
+            emb_dim = word2idx_info["emb_dim"]
+            emb_vectors = np.random.rand(len(word2idx), emb_dim)
+
+        num_emb = len(word2idx)
+        logger.info("***** Word embeddings *****")
+        logger.info("  Number of tokens = '%s'", num_emb)
+        logger.info("  Embedding dimension = '%s'", emb_dim)
+
+    model = init_model(
+        model_class=model_class,
         body_config=body_config,
-        num_labels=len(label_map), 
-        pretrained_emb=pretrained_word_emb, 
-        num_emb=len(word2idx) if word2idx else None, 
-        pretrained_lm=pretrained_lm, 
-        device=device, 
-        state_path=train_state_path if train_state_path else (None if do_train else eval_state_path)
+        num_labels=len(label_map),
+        pretrained_emb=emb_vectors,
+        num_emb=num_emb,
+        pretrained_lm=pretrained_lm,
+        device=device,
+        state_path=train_state_path
+        if train_state_path
+        else (None if do_train else eval_state_path),
     )
 
     # load and preprocess data
@@ -262,24 +317,23 @@ def run(
                 required_features=model.INPUT_COLS,
             )
             dev_evaluators.append(
-                    Evaluater(
-                    model=model, 
+                Evaluater(
+                    model=model,
                     eval_config=eval_config,
                     output_dir=train_output_dir,
                     dataset=dev_dataset,
-                    return_loss=False, 
                     no_save=True,
                     device=device,
-                    )
                 )
+            )
 
         trainer = Trainer(
-            model=model, 
+            model=model,
             train_config=train_config,
             optim_config=optim_config,
             output_dir=train_output_dir,
             dataset=train_dataset,
-            dev_evaluaters=dev_evaluators, 
+            dev_evaluaters=dev_evaluators,
             device=device,
         )
 
@@ -304,19 +358,18 @@ def run(
                 word2idx=word2idx,
                 add_special_tokens=add_special_tokens,
                 name=test_name,
-                timer=timer, 
+                timer=timer,
                 required_features=model.INPUT_COLS,
             )
 
             test_evaluator = Evaluater(
-                    model=model, 
-                    eval_config=eval_config,
-                    output_dir=eval_output_dir,
-                    dataset=test_dataset,
-                    return_loss=False, 
-                    timer=timer, 
-                    device=device,
-                    )
+                model=model,
+                eval_config=eval_config,
+                output_dir=eval_output_dir,
+                dataset=test_dataset,
+                timer=timer,
+                device=device,
+            )
 
             test_evaluator.evaluate()
 
@@ -340,7 +393,6 @@ if __name__ == "__main__":
     parser.add_argument("--train_config", type=str, default="train.yaml")
     parser.add_argument("--grid_config", type=str, default="grid.yaml")
     parser.add_argument("--eval_config", type=str, default="eval.yaml")
-    parser.add_argument("--overwriting_config", type=str, default="")
     parser.add_argument("--device", type=int, default=0)
     args = parser.parse_args()
     run(
@@ -351,7 +403,6 @@ if __name__ == "__main__":
         eval_config_file=args.eval_config,
         model_config_file=args.model_config,
         grid_config_file=args.grid_config,
-        overwriting_config_file=args.overwriting_config,
-        log_path=log_path, 
+        log_path=log_path,
         device=args.device,
     )

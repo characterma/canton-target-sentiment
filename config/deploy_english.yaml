@@ -1,0 +1,2 @@
+model_dir: "tgsan_twitter"
+state_file: "best_state_balanced_epoch24.pt"

@@ -1,5 +1,11 @@
 from transformers import AutoTokenizer, PreTrainedTokenizerFast
-from transformers import XLNetConfig, BertConfig, ElectraConfig, XLMRobertaConfig, AlbertConfig
+from transformers import (
+    XLNetConfig,
+    BertConfig,
+    ElectraConfig,
+    XLMRobertaConfig,
+    AlbertConfig,
+)
 from transformers import (
     ElectraForPreTraining,
     ElectraModel,
@@ -9,7 +15,7 @@ from transformers import (
     XLMRobertaModel,
     BertForMaskedLM,
     BertModel,
-    AlbertModel
+    AlbertModel,
 )
 from utils import SPEC_TOKEN
 import torch.nn as nn
@@ -30,11 +36,11 @@ CONFIG_CLASS_MAP = {
     "bert-base-multilingual-uncased": BertConfig,
     "bert-base-chinese": BertConfig,  # testing
     "denpa92/bert-base-cantonese": BertConfig,  # missing tokenizer.
-    "voidful/albert_chinese_tiny": AlbertConfig,  # 
-    "clue/albert_chinese_tiny": AlbertConfig,  # 
-    "voidful/albert_chinese_small": AlbertConfig,  # 
-    "clue/albert_chinese_small": AlbertConfig, 
-    "voidful/albert_chinese_base": AlbertConfig,  # 
+    "voidful/albert_chinese_tiny": AlbertConfig,  #
+    "clue/albert_chinese_tiny": AlbertConfig,  #
+    "voidful/albert_chinese_small": AlbertConfig,  #
+    "clue/albert_chinese_small": AlbertConfig,
+    "voidful/albert_chinese_base": AlbertConfig,  #
 }
 
 MODEL_CLASS_MAP = {
@@ -50,11 +56,11 @@ MODEL_CLASS_MAP = {
     "bert-base-multilingual-uncased": BertModel,
     "bert-base-chinese": BertModel,  # BertForMaskedLM
     "denpa92/bert-base-cantonese": AlbertModel,
-    "voidful/albert_chinese_tiny": AlbertModel,  # 
-    "clue/albert_chinese_tiny": AlbertModel,  # 
-    "voidful/albert_chinese_small": AlbertModel,  # 
-    "clue/albert_chinese_small": AlbertModel, 
-    "voidful/albert_chinese_base": AlbertModel,  # 
+    "voidful/albert_chinese_tiny": AlbertModel,  #
+    "clue/albert_chinese_tiny": AlbertModel,  #
+    "voidful/albert_chinese_small": AlbertModel,  #
+    "clue/albert_chinese_small": AlbertModel,
+    "voidful/albert_chinese_base": AlbertModel,  #
 }
 
 

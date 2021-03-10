@@ -1,7 +1,12 @@
 seed: 42
 batch_size: 64
 logging_steps: -1
-input_dir: ""
-state_file: "*.pt"
-output_dir: ""
+input_dir: "20210308/tgsan_canto"
+state_file: "best_state_*.pt"
+output_dir: "202100308/tgsan_canto_eval"
+save_tgt_pool: False
+save_tgt_mask: False
+save_all_repr: False
+save_attn: True
+save_multihead_attn: False
 use_train_data_config: True

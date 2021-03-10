@@ -17,7 +17,9 @@ class BaseModel(nn.Module):
     2. cache / save variables
     3. basic loggging
     """
+
     INPUT_COLS = []
+
     def __init__(self):
         super(BaseModel, self).__init__()
         self._caches = defaultdict(lambda: None)
@@ -37,8 +39,9 @@ class BaseModel(nn.Module):
         logger.info("  Path = %s", str(state_path))
         assert state_path.is_file()
         print("Device:", self.device)
-        self.load_state_dict(torch.load(state_path, map_location=str(self.device)))
-
-
-
-
+        self.load_state_dict(
+            torch.load(
+                state_path,
+                # map_location=str(self.device)
+            )
+        )

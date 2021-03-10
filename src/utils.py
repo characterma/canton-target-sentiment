@@ -5,12 +5,14 @@ from pathlib import Path
 import random
 import json
 from argparse import Namespace
+
 # from ruamel.yaml.comments import CommentedMap
 import numpy as np
 import pandas as pd
 import torch
 import time
 import yaml
+
 # from ruamel.yaml import YAML
 from sklearn.model_selection import ParameterGrid
 
@@ -79,25 +81,16 @@ def set_seed(seed):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
-        
+
 
 def save_yaml(data, file_path):
-    yaml = YAML()
-    yaml.dump(data, file_path)
+    yaml.dump(data, open(file_path, "w"), default_flow_style=False)
 
-
-# def load_yaml(file_path, overwriting_config=None):
-#     yaml = YAML()
-#     data = yaml.load(open(file_path, "r"))
-#     if isinstance(overwriting_config, CommentedMap) or isinstance(
-#         overwriting_config, dict
-#     ):
-#         data = apply_overwriting_config(overwriting_config, data)
-#     return data
 
 def load_yaml(file_path):
     data = yaml.load(open(file_path, "r"), Loader=yaml.FullLoader)
     return data
+
 
 def generate_grid_search_params(grid_config):
     param_grid = dict()
@@ -143,7 +136,7 @@ def parse_api_req(req_dict):
     right_sep = "\n## Content ##\n"
 
     output_dict = req_dict
-    if req_dict["target_in_hl"] == 0: # target in content
+    if req_dict["target_in_hl"] == 0:  # target in content
         hl_with_sep = left_sep + req_dict["headline"] + right_sep
         output_dict["content"] = hl_with_sep + req_dict["content"]
         output_dict["start_ind"] = req_dict["start_ind"] + len(hl_with_sep)
@@ -152,9 +145,9 @@ def parse_api_req(req_dict):
         hl_with_sep = left_sep + req_dict["headline"] + right_sep
         output_dict["content"] = hl_with_sep + req_dict["content"]
         output_dict["start_ind"] = req_dict["start_ind"] + len(left_sep)
-        output_dict["end_ind"] = req_dict["end_ind"] + len(left_sep)       
+        output_dict["end_ind"] = req_dict["end_ind"] + len(left_sep)
 
-    return output_dict 
+    return output_dict
 
 
 class Timer:
@@ -162,8 +155,8 @@ class Timer:
         self.preprocessing_start_time = None
         self.inference_start_time = None
         self.durations = {
-            "preprocessing": 0, 
-            "inference": 0,  
+            "preprocessing": 0,
+            "inference": 0,
         }
         self.output_dir = output_dir
 
@@ -184,8 +177,5 @@ class Timer:
     #     return self.durations
 
     def save_timer(self):
-        with open(self.output_dir / "timer.json", 'w') as fp:
+        with open(self.output_dir / "timer.json", "w") as fp:
             json.dump(self.durations, fp)
-
-
-

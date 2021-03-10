@@ -1,14 +1,14 @@
 TDBERT:
   preprocess:
-    text_preprocessing: "hk_beauty" # "", hk_beauty
+    text_preprocessing: "" # "", hk_beauty
     mask_target: False
     max_length: 180
     tokenizer_source: "transformers"
-    tokenizer_name: "toastynews/electra-hongkongese-large-discriminator"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+    tokenizer_name: "bert-base-uncased"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
   body:
-    pretrained_lm: "toastynews/electra-hongkongese-large-discriminator" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+    pretrained_lm: "bert-base-uncased" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
     target_pooling: "max"
-    use_cls: True
+    use_cls: False
     dropout_rate: 0.1
   optim:
     optimizer: "AdamW"
@@ -24,13 +24,15 @@ TDBERT:
     warmup_steps: 0
 TGSAN:
   preprocess:
-    sentence_length: 180
-    tokenizer: "huggingface:::bert-base-uncased"  # source:::tokenizer_type
+    text_preprocessing: "hk_beauty" # "", hk_beauty
+    max_length: 80
+    tokenizer_source: "spacy"
+    tokenizer_name: "english" 
   body:
-    use_pretrained: True
+    use_pretrained: False
     pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
     emb_dim: 150
-    embedding_trainable: False
+    embedding_trainable: True
     embedding_dropout: 0.5
     rnn_hidden_dim: 150
     r: 2
@@ -42,8 +44,7 @@ TGSAN:
     att_dropout: 0.1
   optim:
     optimizer: "AdamW"
-    train_batch_size: 64
-    eval_batch_size: 128
+    batch_size: 64
     learning_rate: 0.0015
     num_train_epochs: 25
     weight_decay: 0.9

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from transformers import AlbertModel, BertModel, BertPreTrainedModel, RobertaModel
-from . base import BaseModel
+from .base import BaseModel
 
 
 class FCLayer(nn.Module):
@@ -20,7 +20,14 @@ class FCLayer(nn.Module):
 
 
 class TDBERT(BertPreTrainedModel, BaseModel):
-    INPUT_COLS = ["raw_text", "attention_mask", "token_type_ids", "target_mask", "label"]
+    INPUT_COLS = [
+        "raw_text",
+        "attention_mask",
+        "token_type_ids",
+        "target_mask",
+        "label",
+    ]
+
     def __init__(
         self,
         model_config,
@@ -40,20 +47,20 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         self.num_labels = num_labels
         self.target_pooling = target_pooling
         self.init_classifier()
-        self.loss_func = nn.CrossEntropyLoss(reduction='none')
+        self.loss_func = nn.CrossEntropyLoss(reduction="none")
         self.to(self._device)
 
     def init_classifier(self):
         """
         TODO: (1) decide the activations, (2) chain it into one object
         """
-        
+
         self.tgt_fc_layer = FCLayer(
             input_dim=self.pretrained_lm_config.hidden_size,
             output_dim=self.pretrained_lm_config.hidden_size,
             dropout_rate=self.model_config["dropout_rate"],
         )
-        
+
         if self.model_config.get("use_cls", False):
             self.cls_fc_layer = FCLayer(
                 input_dim=self.pretrained_lm_config.hidden_size,
@@ -63,7 +70,7 @@ class TDBERT(BertPreTrainedModel, BaseModel):
             label_classifier_input_dim = self.pretrained_lm_config.hidden_size * 2
         else:
             label_classifier_input_dim = self.pretrained_lm_config.hidden_size
-             
+
         self.label_classifier = FCLayer(
             input_dim=label_classifier_input_dim,
             output_dim=self.num_labels,
@@ -90,7 +97,9 @@ class TDBERT(BertPreTrainedModel, BaseModel):
             return avg_vector
         elif self.target_pooling == "max":
             t_h = torch.max(
-                hidden_output.float() * torch.unsqueeze(t_mask.float(), -1), dim=1, keepdim=False
+                hidden_output.float() * torch.unsqueeze(t_mask.float(), -1),
+                dim=1,
+                keepdim=False,
             )
             max_vector = t_h.values
             return max_vector
@@ -119,16 +128,16 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         return_tgt_pool=False,
         return_tgt_mask=False,
         return_all_repr=False,
-        return_attn=False
+        return_attn=False,
     ):
         lm = self.pretrained_lm(
             input_ids=raw_text,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             return_dict=True,
-            output_attentions=return_attn
+            output_attentions=return_attn,
         )
-        
+
         h = lm["last_hidden_state"]
 
         # Average or max
@@ -175,4 +184,3 @@ class TDBERT(BertPreTrainedModel, BaseModel):
             outputs += [None]
 
         return outputs
-

@@ -1,17 +1,40 @@
-dataset: "hk_beauty/split_by_neu_to_neg_up_down" # data folder
-label_map: "label_map.json"
-train: "train_s0_nn0.json" # we can only have one train set and one dev set
+# dataset: acl14_twitter   # data folder
+# label_map: label_map.json
+# train: train.json   # we can only have one train set and one dev set
+# dev: # we can have multiple test sets
+#   0:
+#     name: balanced
+#     file: dev.json
+# test: # we can have multiple test sets
+#   0:
+#     name: test
+#     file: test.json
+
+# dataset: acl14_twitter   # data folder
+dataset: hk_beauty/split_by_neu_to_neg_up_down   # data folder
+label_map: label_map.json
+# train: train.json   # we can only have one train set and one dev set
+train: train_s0_nn0.json   # we can only have one train set and one dev set
 dev: # we can have multiple test sets
+  # 0:
+    # name: balanced
+    # file: dev.json
+  # 0:
+    # name: balanced
+  #   file: dev_s0_bal.json
   0:
-    name: "balanced" 
-    file: "dev_s0_bal.json"
-  1:
-    name: "imbalanced" 
-    file: "dev_s0.json"
+    name: imbalanced
+    file: dev_s0.json
 test: # we can have multiple test sets
+  # 0:
+    # name: test
+    # file: test.json
   0:
-    name: "original_imbalanced"
-    file: "test_s0.json"
+    name: original_imbalanced
+    file: test_s0.json
+
+
+
   # 0:
   #   name: "original_balanced"
   #   file: "test_s0_bal.json"

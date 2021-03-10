@@ -1,2 +1,0 @@
-model_dir: "bert_base_chinese"
-state_file: "best_state_dev_imbalanced_epoch6.pt"

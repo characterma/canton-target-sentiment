@@ -25,12 +25,12 @@ logger = logging.getLogger(__name__)
 class Trainer(object):
     def __init__(
         self,
-        model, 
+        model,
         train_config,
         optim_config,
         output_dir,
         dataset,
-        dev_evaluaters, 
+        dev_evaluaters,
         device=0,
     ):
         self.device = device if torch.cuda.is_available() else "cpu"
@@ -46,7 +46,6 @@ class Trainer(object):
         self.best_epoch = defaultdict(lambda: None)
         self.best_step = defaultdict(lambda: None)
         self.best_model = defaultdict(lambda: None)
-
 
     def _get_train_sampler(self):
 
@@ -91,10 +90,7 @@ class Trainer(object):
             t_total = self.optim_config["max_steps"]
             self.optim_config["num_train_epochs"] = (
                 self.optim_config["max_steps"]
-                // (
-                    len(dataloader)
-                    // self.optim_config["gradient_accumulation_steps"]
-                )
+                // (len(dataloader) // self.optim_config["gradient_accumulation_steps"])
                 + 1
             )
         else:
@@ -111,7 +107,7 @@ class Trainer(object):
                     for n, p in self.model.named_parameters()
                     if not any(nd in n for nd in no_decay)
                 ],
-                "weight_decay": self.optim_config["weight_decay"],
+                "weight_decay": float(self.optim_config["weight_decay"]),
             },
             {
                 "params": [
@@ -125,56 +121,38 @@ class Trainer(object):
         if self.optim_config["optimizer"] == "AdamW":
             optimizer = AdamW(
                 optimizer_grouped_parameters,
-                lr=self.optim_config["learning_rate"],
-                eps=self.optim_config["adam_epsilon"],
+                lr=float(self.optim_config["learning_rate"]),
+                eps=float(self.optim_config["adam_epsilon"]),
             )
         elif self.optim_config["optimizer"] == "RMSprop":
             optimizer = RMSprop(
                 optimizer_grouped_parameters,
-                lr=self.optim_config["learning_rate"],
-                eps=self.optim_config["adam_epsilon"],
+                lr=float(self.optim_config["learning_rate"]),
+                eps=float(self.optim_config["adam_epsilon"]),
             )
         else:
             raise (Exception)
 
         scheduler = get_linear_schedule_with_warmup(
             optimizer,
-            num_warmup_steps=self.optim_config["warmup_steps"],
+            num_warmup_steps=int(self.optim_config["warmup_steps"]),
             num_training_steps=t_total,
         )
-        return optimizer, scheduler     
+        return optimizer, scheduler
 
     def training_step(self, batch, step, sentiment_logits=None):
         # step 0: only sentiment classification
         # step 1: sentiment classification + token classification
-
         self.model.train()
         inputs = dict()
-
         # only sentiment classification
         for col in self.model.INPUT_COLS:
-            inputs[col] = batch[col].to(self.device)
+            inputs[col] = batch[col].to(self.device).long()
         outputs = self.model(**inputs)
         losses = outputs[0]
         sentiment_logits = outputs[0]
-        # predicted_sentiment = torch.argmax(sentiment_logits, dim=1)
-
         losses.mean().backward()
-
-        # 
         return losses.detach()
-
-    # def training_step(self, batch):
-    #     self.model.train()
-    #     inputs = dict()
-
-    #     # with
-    #     for col in self.model.INPUT_COLS:
-    #         inputs[col] = batch[col].to(self.device)
-    #     outputs = self.model(**inputs)
-    #     losses = outputs[0]
-    #     losses.mean().backward()
-    #     return losses.detach()
 
     def train(self):
 
@@ -183,19 +161,19 @@ class Trainer(object):
             self.model.freeze_lm()
 
         # reset classifier parameters
-        if "reset_classifier" in self.optim_config and self.optim_config["reset_classifier"]:
+        if (
+            "reset_classifier" in self.optim_config
+            and self.optim_config["reset_classifier"]
+        ):
             self.model.init_classifier()
 
-        train_sampler = self._get_train_sampler()
         dataloader = DataLoader(
             self.dataset,
-            sampler=train_sampler,
             batch_size=self.optim_config["batch_size"],
+            collate_fn=self.dataset.pad_collate,
         )
 
         optimizer, scheduler = self.create_optimizer_and_scheduler(dataloader)
-
-        # TODO: fp16
 
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(self.dataset))
@@ -216,21 +194,17 @@ class Trainer(object):
             desc=f"Epoch",
         )
 
-        epoch_times = []
-
         for epoch, _ in enumerate(train_iterator):
-            
-            t0 = time.time()
+
             epoch_iterator = tqdm(dataloader, desc="Iteration")
             last_step = len(epoch_iterator)
             for step, batch in enumerate(epoch_iterator):
-
 
                 losses = self.training_step(batch, step)
                 losses = losses.cpu().numpy()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 
-                epoch_iterator.set_postfix({'tr_loss': np.mean(losses)})
+                epoch_iterator.set_postfix({"tr_loss": np.mean(losses)})
 
                 if (step + 1) % self.optim_config["gradient_accumulation_steps"] == 0:
                     torch.nn.utils.clip_grad_norm_(
@@ -243,10 +217,6 @@ class Trainer(object):
                     self.model.zero_grad()
 
             self.on_epoch_end(epoch)
-            epoch_times.append(time.time() - t0)
-
-            logger.info("  Average time per epoch = %d", np.mean(epoch_times))
-
         self.on_training_end()
 
     def on_epoch_end(self, epoch):
@@ -256,10 +226,16 @@ class Trainer(object):
             metrics = outputs[0]
 
             # determine whether it is best
-            if self.best_scores[evaluater.dataset_name]["macro_f1"] is None or self.best_scores[evaluater.dataset_name]["macro_f1"] < metrics["macro_f1"]:
+            if (
+                self.best_scores[evaluater.dataset_name]["macro_f1"] is None
+                or self.best_scores[evaluater.dataset_name]["macro_f1"]
+                < metrics["macro_f1"]
+            ):
                 self.best_scores[evaluater.dataset_name] = metrics
-                self.best_epoch[evaluater.dataset_name] = epoch 
-                self.best_model[evaluater.dataset_name] = copy.deepcopy(self.model.state_dict()) 
+                self.best_epoch[evaluater.dataset_name] = epoch
+                self.best_model[evaluater.dataset_name] = copy.deepcopy(
+                    self.model.state_dict()
+                )
 
     def on_training_end(self):
         """
@@ -269,11 +245,7 @@ class Trainer(object):
         for dataset_name in self.best_model.keys():
             if self.best_model[dataset_name] is not None:
                 epoch = self.best_epoch[dataset_name]
-                out_path = self.output_dir / f"best_state_{dataset_name}_epoch{epoch}.pt"
+                out_path = (
+                    self.output_dir / f"best_state_{dataset_name}_epoch{epoch}.pt"
+                )
                 torch.save(self.best_model[dataset_name], out_path)
-        
-        # for e in self.dev_evaluaters:
-        #     e.save_scores()
-
-
-    

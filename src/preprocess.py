@@ -1,6 +1,13 @@
 # coding=utf-8
 import re
 from utils import SPEC_TOKEN
+from hanziconv import HanziConv
+
+
+def standardize_text(raw_text):
+    raw_text = raw_text.lower()
+    raw_text = HanziConv.toSimplified(raw_text)
+    return raw_text
 
 
 def get_hl_content_spans(

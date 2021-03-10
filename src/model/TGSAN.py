@@ -3,7 +3,7 @@ import math
 import torch.nn as nn
 
 import transformers
-from . base import BaseModel
+from .base import BaseModel
 
 
 class StructuredSelfAttention(nn.Module):
@@ -189,7 +189,9 @@ class TGSAN(BaseModel):
         tgt_idx {tensor} -- in shape [B, L]; target index of the input sequence, 1 for target tokens, 0 for others
         length_idx {tensor} -- in shape [B, L]; length index of the input sequence, 0 for padding tokens, 1 for others
     """
+
     INPUT_COLS = ["raw_text", "attention_mask", "target_mask", "label"]
+
     def __init__(
         self,
         model_config,
