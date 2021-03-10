@@ -27,7 +27,7 @@ import torch
 
 device = "cpu"
 
-base_dir = Path("../")
+base_dir = Path("./")
 config_dir = base_dir / "config"
 
 
