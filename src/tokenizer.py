@@ -1,7 +1,10 @@
+import logging
 from transformers import AutoTokenizer
 from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
 from utils import SPEC_TOKEN
+
+logger = logging.getLogger(__name__)
 
 
 def get_tokenizer(source, name):
