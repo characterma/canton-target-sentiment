@@ -33,7 +33,7 @@ package:docker:
   - cd deploy/docker
   - mkdir -p ailab/models/tgsan_rolex
   - mkdir -p ailab/config/
-  - cp -r /BigFiles/Models/canton-target-sentiment/tgsan_rolex/* ailab/models/tgsan_rolex/
+  - cp -r /BigFiles/Models/canton-target-sentiment/tgsan_rolex/* ailab/models/
   - cp -r /BigFiles/Models/canton-target-sentiment/tgsan_rolex/config/* ailab/config/
   # run scripts
   - set -x
