@@ -14,7 +14,7 @@
 						"exec": [
 							"pm.test(\"target sentiment\", function () {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData.message).to.eql(\"OK\");\r",
+							"    pm.expect(jsonData.sentiment).to.eql(\"positive\");\r",
 							"});"
 						],
 						"type": "text/javascript"
@@ -26,7 +26,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"content\": \"ABC is so nice.\", \r\n    \"start_ind\": 0, \r\n    \"end_ind\": 3\r\n}"
+					"raw": "{\r\n    \"content\": \"CPB 光潤粉底 twenty century粉霜都係好出名既養膚粉底 出油之後妝感更靚 不過價格偏貴.\", \r\n    \"target_locs\": [[0,8]], \r\n    \"language\": \"chinese\"\r\n}"
 				},
 				"url": {
 					"raw": "http://{{server}}/rolex_sentiment",
