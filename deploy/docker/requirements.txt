@@ -11,3 +11,4 @@ sanic
 setuptools
 wheel
 spacy
+hanziconv
