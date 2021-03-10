@@ -108,8 +108,8 @@ class ModelRunner:
             results = self.model(
                 **input,
             )
-            print(results[1])
             outputs["sentiment_id"] = torch.argmax(results[1], dim=1)
+            outputs["score"] = torch.nn.functional.softmax(results[1], dim=1)[:, outputs["sentiment_id"]]
             return outputs
 
     async def model_runner(self):
@@ -162,12 +162,14 @@ class ModelRunner:
                 SENTI_ID_MAP_INV[p]
                 for p in results["sentiment_id"].detach().cpu().numpy()
             ]
+            results["score"] = [float(s[0]) for s in results["score"].detach().cpu().numpy()]
 
             for i in range(len(to_process)):
                 output = dict()
                 t = to_process[i]
                 output["sentiment_id"] = int(results["sentiment_id"][i])
                 output["sentiment"] = results["sentiment"][i]
+                output["score"] = results["score"][i]
                 t["output"] = output
                 t["done_event"].set()
             del to_process
@@ -198,6 +200,7 @@ async def target_sentiment(request):
 
             results = await model_runner_eng.process_input(example)
             response["sentiment"] = results["sentiment"]
+            response["score"] = results["score"]
             response["message"] = "OK"
         elif body["language"] == "chinese":
             example = TargetDependentExample(
@@ -211,6 +214,7 @@ async def target_sentiment(request):
 
             results = await model_runner_chn.process_input(example)
             response["sentiment"] = results["sentiment"]
+            response["score"] = results["score"]
             response["message"] = "OK"
 
         return sanic.response.json(response, status=200)
