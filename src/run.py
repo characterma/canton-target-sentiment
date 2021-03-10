@@ -29,8 +29,6 @@ from utils import (
     load_yaml,
     save_yaml,
     get_label_map,
-    generate_grid_search_params,
-    apply_grid_search_params,
     Timer,
     MODEL_EMB_TYPE,
 )
@@ -74,7 +72,6 @@ def run(
     train_config_file="train.yaml",
     eval_config_file="eval.yaml",
     model_config_file="model.yaml",
-    grid_config_file="grid.yaml",
     log_path=None,
     device="cpu",
 ):
@@ -92,9 +89,6 @@ def run(
         )
         model_config = load_yaml(
             config_dir / model_config_file,
-        )
-        grid_config = load_yaml(
-            config_dir / grid_config_file,
         )
         eval_config = load_yaml(
             config_dir / eval_config_file,
@@ -141,9 +135,6 @@ def run(
             model_config = load_yaml(
                 base_dir / "output" / "train" / eval_input_dir / model_config_file,
             )
-            grid_config = load_yaml(
-                base_dir / "output" / "train" / eval_input_dir / grid_config_file,
-            )
 
             eval_state_path = (
                 base_dir
@@ -159,14 +150,12 @@ def run(
     if do_train:
         save_yaml(model_config, train_output_dir / model_config_file)
         save_yaml(train_config, train_output_dir / train_config_file)
-        save_yaml(grid_config, train_output_dir / grid_config_file)
         save_yaml(data_config, train_output_dir / data_config_file)
         # save_yaml(eval_config, train_output_dir / eval_config_file)
 
     if do_eval:
         save_yaml(model_config, eval_output_dir / model_config_file)
         save_yaml(train_config, eval_output_dir / train_config_file)
-        save_yaml(grid_config, eval_output_dir / grid_config_file)
         save_yaml(data_config, eval_output_dir / data_config_file)
         save_yaml(eval_config, eval_output_dir / eval_config_file)
 
@@ -238,16 +227,15 @@ def run(
 
                 emb_dim = pretrained_word_emb.vectors.shape[1]
 
-                emb_vectors = np.random.rand(len(word2idx) + len(vocab), emb_dim)
+                emb_vectors = np.random.rand(len(word2idx), emb_dim)
                 glove_vocab = pretrained_word_emb.vocab
                 glove_vectors = pretrained_word_emb.vectors
 
-                # migrate glove vectors
                 for k in vocab.keys():
                     if k in glove_vocab:
                         glove_idx = glove_vocab[k].index
                         emb_vectors[word2idx[k], :] = glove_vectors[glove_idx, :]
-                emb_dim = glove_vectors.shape[1]
+                emb_dim = emb_vectors.shape[1]
             else:
                 emb_dim = body_config["emb_dim"]
 
@@ -391,7 +379,6 @@ if __name__ == "__main__":
     parser.add_argument("--data_config", type=str, default="data.yaml")
     parser.add_argument("--model_config", type=str, default="model.yaml")
     parser.add_argument("--train_config", type=str, default="train.yaml")
-    parser.add_argument("--grid_config", type=str, default="grid.yaml")
     parser.add_argument("--eval_config", type=str, default="eval.yaml")
     parser.add_argument("--device", type=int, default=0)
     args = parser.parse_args()
@@ -402,7 +389,6 @@ if __name__ == "__main__":
         train_config_file=args.train_config,
         eval_config_file=args.eval_config,
         model_config_file=args.model_config,
-        grid_config_file=args.grid_config,
         log_path=log_path,
         device=args.device,
     )
