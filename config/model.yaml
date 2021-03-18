@@ -1,12 +1,12 @@
 TDBERT:
   preprocess:
-    text_preprocessing: "" # "", hk_beauty
+    text_preprocessing: "hk_beauty" # "", hk_beauty
     mask_target: False
     max_length: 180
     tokenizer_source: "transformers"
-    tokenizer_name: "bert-base-uncased"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+    tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
   body:
-    pretrained_lm: "bert-base-uncased" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+    pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
     target_pooling: "max"
     use_cls: False
     dropout_rate: 0.1
@@ -15,8 +15,41 @@ TDBERT:
     sampler: "random"
     batch_size: 16
     learning_rate: 2e-5
-    num_train_epochs: 6
+    num_train_epochs: 8
     weight_decay: 0.0
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8
+    max_grad_norm: 1.0
+    max_steps: -1
+    warmup_steps: 0
+TGSAN2:
+  preprocess:
+    text_preprocessing: "hk_beauty" # "", hk_beauty
+    max_length: 80
+    tokenizer_source: "spacy"
+    tokenizer_name: "chinese" 
+  body:
+    kd: False
+    use_pretrained: False
+    bert_config: "bert-base-chinese"
+    pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
+    emb_dim: 150
+    embedding_trainable: True
+    embedding_dropout: 0.5
+    rnn_hidden_dim: 150
+    r: 2
+    tgt_san_dim: 64
+    san_dropout: 0.1
+    san_penal_coeff: 0.1
+    ffn_dim: 16
+    ffn_dropout: 0.1
+    att_dropout: 0.1
+  optim:
+    optimizer: "AdamW"
+    batch_size: 64
+    learning_rate: 0.0015
+    num_train_epochs: 100
+    weight_decay: 0.9
     gradient_accumulation_steps: 1
     adam_epsilon: 1e-8
     max_grad_norm: 1.0
@@ -24,11 +57,12 @@ TDBERT:
     warmup_steps: 0
 TGSAN:
   preprocess:
-    text_preprocessing: "hk_beauty" # "", hk_beauty
+    text_preprocessing: "" # "", hk_beauty
     max_length: 80
     tokenizer_source: "spacy"
-    tokenizer_name: "english" 
+    tokenizer_name: "chinese" 
   body:
+    kd: False
     use_pretrained: False
     pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
     emb_dim: 150
@@ -46,7 +80,7 @@ TGSAN:
     optimizer: "AdamW"
     batch_size: 64
     learning_rate: 0.0015
-    num_train_epochs: 25
+    num_train_epochs: 100
     weight_decay: 0.9
     gradient_accumulation_steps: 1
     adam_epsilon: 1e-8
