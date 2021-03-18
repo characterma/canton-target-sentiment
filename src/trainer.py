@@ -140,17 +140,21 @@ class Trainer(object):
         )
         return optimizer, scheduler
 
-    def training_step(self, batch, step, sentiment_logits=None):
+    def training_step(self, batch, step):
         # step 0: only sentiment classification
         # step 1: sentiment classification + token classification
         self.model.train()
         inputs = dict()
         # only sentiment classification
         for col in self.model.INPUT_COLS:
-            inputs[col] = batch[col].to(self.device).long()
+            if col in batch:
+                if col!="soft_label":
+                    inputs[col] = batch[col].to(self.device).long()
+                else:
+                    inputs[col] = batch[col].to(self.device).float()
         outputs = self.model(**inputs)
         losses = outputs[0]
-        sentiment_logits = outputs[0]
+        logits = outputs[1]
         losses.mean().backward()
         return losses.detach()
 
@@ -226,6 +230,7 @@ class Trainer(object):
             metrics = outputs[0]
 
             # determine whether it is best
+            # if evaluater.dataset_name!="train":
             if (
                 self.best_scores[evaluater.dataset_name]["macro_f1"] is None
                 or self.best_scores[evaluater.dataset_name]["macro_f1"]

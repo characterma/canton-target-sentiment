@@ -42,6 +42,6 @@ class BaseModel(nn.Module):
         self.load_state_dict(
             torch.load(
                 state_path,
-                map_location=str(self.device)
+                # map_location=str(self.device)
             )
         )

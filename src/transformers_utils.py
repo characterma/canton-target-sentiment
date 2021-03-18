@@ -84,3 +84,8 @@ class PretrainedLM(object):
 
     def resize_token_embeddings(self, tokenizer):
         self.model.resize_token_embeddings(len(tokenizer))
+
+
+def load_bert_config(model_name):
+    return CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
+

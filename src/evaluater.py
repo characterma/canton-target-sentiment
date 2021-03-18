@@ -39,7 +39,8 @@ class Evaluater:
         with torch.no_grad():
             inputs = dict()
             for col in self.model.INPUT_COLS:
-                inputs[col] = batch[col].to(self.device).long()
+                if col != "soft_label":
+                    inputs[col] = batch[col].to(self.device).long()
             results = self.model(
                 **inputs,
             )
@@ -47,6 +48,9 @@ class Evaluater:
 
             # alwasy output
             outputs["sentiment_idx"] = torch.argmax(results[1], dim=1)
+            # print(outputs["logits"])
+            outputs["loss"] = torch.mean(results[0])
+            # print(outputs["loss"])
             outputs["logits"] = results[1]
             outputs["score"] = torch.nn.functional.softmax(results[1], dim=1)
         return outputs
@@ -104,6 +108,7 @@ class Evaluater:
         sentiment_idx = np.array([])
         score = np.array([])
         logits = np.array([])
+        losses = np.array([])
 
         if self.timer is not None:
             self.timer.on_inference_start()
@@ -115,6 +120,10 @@ class Evaluater:
             label = np.concatenate(
                 [label, batch["label"].detach().cpu().numpy()], axis=None
             )
+            losses = np.concatenate(
+                [losses, results["loss"].detach().cpu().numpy()], axis=None
+            )
+
             sentiment_idx = np.concatenate(
                 [sentiment_idx, results["sentiment_idx"].detach().cpu().numpy()],
                 axis=None,
@@ -122,13 +131,17 @@ class Evaluater:
             score = np.concatenate(
                 [score, results["score"].detach().cpu().numpy().max(axis=1)], axis=None
             )
-            logits = np.concatenate(
-                [score, results["logits"].detach().cpu().numpy().max(axis=1)], axis=0
-            )
+            if len(logits)==0:
+                logits = results["logits"].detach().cpu().numpy()
+            else:
+                logits = np.concatenate(
+                    [logits, results["logits"].detach().cpu().numpy()], axis=0
+                )
 
         if self.timer is not None:
             self.timer.on_inference_end()
         self.metrics[identifier] = self.compute_metrics(label, sentiment_idx)
+        self.metrics[identifier]['loss'] = losses.mean()
 
         # save basic info
         if not self.no_save:

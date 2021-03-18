@@ -29,6 +29,7 @@ for k, v in SENTI_ID_MAP.items():
 
 MODEL_EMB_TYPE = {
     "TGSAN": "WORD",
+    "TGSAN2": "WORD",
     "TDLSTM": "WORD",
     "ATAE_LSTM": "WORD",
     "IAN": "WORD",

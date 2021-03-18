@@ -190,7 +190,7 @@ class TGSAN(BaseModel):
         length_idx {tensor} -- in shape [B, L]; length index of the input sequence, 0 for padding tokens, 1 for others
     """
 
-    INPUT_COLS = ["raw_text", "attention_mask", "target_mask", "label"]
+    INPUT_COLS = ["raw_text", "attention_mask", "target_mask", "label", "soft_label"]
 
     def __init__(
         self,
@@ -199,6 +199,7 @@ class TGSAN(BaseModel):
         pretrained_emb=None,
         num_emb=None,
         pretrained_lm=None,
+        bert_config=None, 
         device="cpu",
     ):
         super(TGSAN, self).__init__()
@@ -304,7 +305,7 @@ class TGSAN(BaseModel):
             elif "weight" in name:
                 nn.init.xavier_uniform_(param, gain=1.0)
 
-    def forward(self, raw_text, attention_mask, target_mask, label=None):
+    def forward(self, raw_text, attention_mask, target_mask, label=None, soft_label=None):
         """
         text: list of token id
         tgt_idx: mask for the target terms
@@ -359,7 +360,12 @@ class TGSAN(BaseModel):
                 penal_term + ctx_penal if (penal_term is not None) else ctx_penal
             )
         loss = 0
-        if label is not None:
+
+
+        if soft_label is not None:
+            loss_fct = nn.MSELoss()
+            loss = loss_fct(logits.view(-1), soft_label.view(-1))            
+        elif label is not None:
             if self.num_labels == 1:
                 loss_fct = nn.MSELoss()
                 loss = loss_fct(logits.view(-1), label.view(-1))

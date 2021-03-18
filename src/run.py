@@ -22,7 +22,7 @@ import pandas as pd
 from dataset import TargetDependentDataset
 from trainer import Trainer
 from evaluater import Evaluater
-from transformers_utils import PretrainedLM
+from transformers_utils import PretrainedLM, load_bert_config
 from utils import (
     init_logger,
     set_seed,
@@ -48,6 +48,7 @@ def init_model(
     num_emb,
     pretrained_lm,
     device,
+    bert_config=None, 
     state_path=None,
 ):
 
@@ -58,6 +59,7 @@ def init_model(
         pretrained_emb=pretrained_emb,
         num_emb=num_emb,
         pretrained_lm=pretrained_lm,
+        bert_config=bert_config,
         device=device,
     )
     if state_path is not None:
@@ -186,6 +188,14 @@ def run(
     elif MODEL_EMB_TYPE[model_class] == "WORD":
         add_special_tokens = False
         if do_train:
+
+            # TODO
+            if model_class == "TGSAN2":
+                bert_config = load_bert_config(body_config["bert_config"])
+                bert_config.hidden_size = 120
+            else:
+                bert_config = None
+
             _vocab = TargetDependentDataset(
                 dataset_dir / data_config["train"],
                 label_map,
@@ -196,6 +206,7 @@ def run(
                 name="train",
                 required_features=None,
                 get_vocab_only=True,
+                source_data_fmt=data_config["format"]
             ).vocab
 
             vocab = dict()
@@ -238,7 +249,9 @@ def run(
                 emb_dim = emb_vectors.shape[1]
             else:
                 emb_dim = body_config["emb_dim"]
-
+            if model_class == "TGSAN2":
+                bert_config.vocab_size = len(word2idx)
+                bert_config.max_position_embeddings = preprocess_config['max_length']
             word2idx_info = {"word2idx": word2idx, "emb_dim": emb_dim}
             pickle.dump(
                 word2idx_info, open(train_output_dir / "word2idx_info.pkl", "wb")
@@ -271,6 +284,7 @@ def run(
         pretrained_emb=emb_vectors,
         num_emb=num_emb,
         pretrained_lm=pretrained_lm,
+        bert_config=bert_config, 
         device=device,
         state_path=train_state_path
         if train_state_path
@@ -279,6 +293,11 @@ def run(
 
     # load and preprocess data
     if do_train:
+        if body_config.get('kd', False):
+            required_features=model.INPUT_COLS
+        else:
+            required_features=[col for col in model.INPUT_COLS if col!='soft_label']
+
         train_dataset = TargetDependentDataset(
             dataset_dir / data_config["train"],
             label_map,
@@ -287,13 +306,19 @@ def run(
             word2idx=word2idx,
             add_special_tokens=add_special_tokens,
             name="train",
-            required_features=model.INPUT_COLS,
+            required_features=required_features, 
+            soft_label_path=dataset_dir / "logits.npy" if body_config.get('kd', False) else None, 
+            failed_ids_path=dataset_dir / "train_failed_ids.pkl" if body_config.get('kd', False) else None, 
+            source_data_fmt=data_config["format"]
         )
+
+        pickle.dump(train_dataset.failed_ids, open(train_output_dir / "train_failed_ids.pkl", "wb"))
 
         dev_evaluators = []
         for _, dev_info in data_config["dev"].items():
             dev_name = dev_info["name"]
             dev_file = dev_info["file"]
+
             dev_dataset = TargetDependentDataset(
                 dataset_dir / dev_file,
                 label_map,
@@ -302,7 +327,8 @@ def run(
                 word2idx=word2idx,
                 add_special_tokens=add_special_tokens,
                 name=dev_name,
-                required_features=model.INPUT_COLS,
+                required_features=[col for col in model.INPUT_COLS if col!='soft_label'],
+                source_data_fmt=data_config["format"]
             )
             dev_evaluators.append(
                 Evaluater(
@@ -347,7 +373,8 @@ def run(
                 add_special_tokens=add_special_tokens,
                 name=test_name,
                 timer=timer,
-                required_features=model.INPUT_COLS,
+                required_features=[col for col in model.INPUT_COLS if col!='soft_label'],
+                source_data_fmt=data_config["format"]
             )
 
             test_evaluator = Evaluater(
@@ -391,4 +418,5 @@ if __name__ == "__main__":
         model_config_file=args.model_config,
         log_path=log_path,
         device=args.device,
+        # device='cpu'
     )

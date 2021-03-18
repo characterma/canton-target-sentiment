@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import pickle
 import pandas as pd
 import numpy as np
 import torch
@@ -57,7 +58,6 @@ class PadCollate:
     def __call__(self, batch):
         return self.pad_collate(batch)
 
-
 class TargetDependentExample(object):
     """
     A single training/test example for simple sequence classification.
@@ -74,28 +74,18 @@ class TargetDependentExample(object):
         word2idx=None,
         get_vocab_only=False,
         vocab=None,
+        soft_label=None, 
     ):
 
         self.raw_text = standardize_text(raw_text)
         self.target_locs = target_locs
         self.succeeded = True
-
-        if preprocess_config.get("text_preprocessing", "") == "hk_beauty":
-            self.raw_text, (st_idx, ed_idx), _, _, _, _ = preprocess_text_hk_beauty(
-                raw_text, target_locs[0][0], target_locs[0][1], sent_sep=""
-            )
-            if st_idx is None or ed_idx is None:
-                self.succeeded = False
-                return None
-
-            self.target_locs = [[st_idx, ed_idx]]
-
         self.label = label
+        self.soft_label = soft_label
         self.word2idx = word2idx
         self.tokenizer = tokenizer
         self.preprocess_config = preprocess_config
         self.required_features = required_features
-        # self.get_vocab_only = get_vocab_only
 
         if get_vocab_only:
             self.vocab = TargetDependentExample.get_vocab_non_bert(
@@ -103,22 +93,50 @@ class TargetDependentExample(object):
             )
         else:
             if self.word2idx is None:
-                pass
-                # self.features = TargetDependentExample.get_features(
-                #     tgt_sent=self.tgt_sent,
-                #     start_idx=self.start_idx,
-                #     end_idx=self.end_idx,
-                #     hl_sent=self.hl_sent,
-                #     prev_sents=self.prev_sents,
-                #     next_sents=self.next_sents,
-                #     tgt_in_hl=self.tgt_in_hl,
-                #     tokenizer=self.tokenizer,
-                #     max_length=self.preprocess_config.get('max_length', 180),
-                #     mask_target=self.preprocess_config.get('mask_target', False),
-                #     required_features=self.required_features,
-                #     label=label
-                # )
+
+                if preprocess_config.get("text_preprocessing", "") == "hk_beauty":
+                    tgt_sent, (st_idx, ed_idx), hl_sent, prev_sents, next_sents, tgt_in_hl, = preprocess_text_hk_beauty(
+                        raw_text, target_locs[0][0], target_locs[0][1]
+                    )
+                    if st_idx is None or ed_idx is None:
+                        self.succeeded = False
+                        return None
+
+                    self.target_locs = [[st_idx, ed_idx]]
+                else:
+                    tgt_sent = raw_text
+                    hl_sent = ""
+                    prev_sents = ""
+                    next_sents = ""
+                    tgt_in_hl = False
+
+                self.features = TargetDependentExample.get_features_bert(
+                    tgt_sent=tgt_sent,
+                    target_locs=self.target_locs,
+                    hl_sent=hl_sent,
+                    prev_sents=prev_sents,
+                    next_sents=next_sents,
+                    tgt_in_hl=tgt_in_hl,
+                    tokenizer=self.tokenizer,
+                    max_length=self.preprocess_config.get('max_length', 180),
+                    required_features=self.required_features,
+                    label=label
+                )
+                if st_idx is None or ed_idx is None or len(self.features)==0:
+                    self.succeeded = False
+                    return None
+                # print(self.features.keys())
             else:
+                if preprocess_config.get("text_preprocessing", "") == "hk_beauty":
+                    self.raw_text, (st_idx, ed_idx), _, _, _, _ = preprocess_text_hk_beauty(
+                        raw_text, target_locs[0][0], target_locs[0][1], sent_sep=""
+                    )
+                    if st_idx is None or ed_idx is None:
+                        self.succeeded = False
+                        return None
+
+                    self.target_locs = [[st_idx, ed_idx]]
+
                 self.features = TargetDependentExample.get_features_non_bert(
                     raw_text=self.raw_text,
                     target_locs=self.target_locs,
@@ -126,11 +144,13 @@ class TargetDependentExample(object):
                     max_length=self.preprocess_config.get("max_length", 180),
                     required_features=self.required_features,
                     label=label,
+                    soft_label=soft_label, 
                     word2idx=word2idx,
                 )
 
     @staticmethod
     def pad(arrays, max_length, value=0):
+        # print(max_length)
         for i in range(len(arrays)):
             space = max_length - len(arrays[i])
             assert space >= 0
@@ -149,7 +169,7 @@ class TargetDependentExample(object):
                     vocab[t.text] = 1
             return vocab
         else:
-            tokens = raw_text.split()
+            tokens = list(raw_text)
             for t in tokens:
                 if t in vocab:
                     vocab[t] += 1
@@ -166,11 +186,13 @@ class TargetDependentExample(object):
         required_features,
         word2idx,
         label=None,
+        soft_label=None, 
     ):
         if tokenizer is not None:
 
             tokens = tokenizer(raw_text)
-            raw_text_ids = [word2idx.get(t.text, word2idx["<OOV>"]) for t in tokens]
+            raw_text_ids = [word2idx.get(t.text, word2idx["<OOV>"]) for t in tokens][:max_length]
+            target_mask = target_mask[:max_length]
             attention_mask = np.zeros(len(raw_text_ids))
             attention_mask[: len(raw_text_ids)] = 1
             target_mask = np.zeros(len(raw_text_ids))
@@ -192,9 +214,15 @@ class TargetDependentExample(object):
                             target_mask[-1] = 1
                             break
 
-            raw_text_ids = [word2idx.get(t, word2idx["<OOV>"]) for t in tokens]
+            raw_text_ids = [word2idx.get(t, word2idx["<OOV>"]) for t in tokens][:max_length]
+            target_mask = target_mask[:max_length]
             attention_mask = np.zeros(len(raw_text_ids))
             attention_mask[: len(raw_text_ids)] = 1
+
+        raw_text_ids, attention_mask, target_mask = TargetDependentExample.pad(
+                arrays=[raw_text_ids, attention_mask, target_mask],
+                max_length=max_length,
+            )
 
         results = {
             "raw_text": torch.tensor(raw_text_ids).long(),
@@ -202,21 +230,21 @@ class TargetDependentExample(object):
             "target_mask": torch.tensor(target_mask).long(),
             "tokens": [str(t) for t in tokens],
             "label": SENTI_ID_MAP[label] if label is not None else None,
+            "soft_label": soft_label if soft_label is not None else None,
         }
         return results
 
     @staticmethod
-    def get_features(
+    def get_features_bert(
         tgt_sent,
-        start_idx,
-        end_idx,
+        target_locs,
         hl_sent,
         prev_sents,
         next_sents,
         tgt_in_hl,
         tokenizer,
         max_length,
-        mask_target,
+        # mask_target,
         required_features,
         label=None,
     ):
@@ -240,13 +268,14 @@ class TargetDependentExample(object):
 
         # Find the token positions of target
         tgt_token_ids = []
-        if mask_target:
-            mask_id = tokenizer.convert_tokens_to_ids(SPEC_TOKEN.TARGET)
-            for pos, token_idx in enumerate(raw_text_ids):
-                if token_idx == mask_id:
-                    target_mask[pos] = 1
-                    tgt_token_ids.append(pos)
-        else:
+        # if mask_target:
+        #     mask_id = tokenizer.convert_tokens_to_ids(SPEC_TOKEN.TARGET)
+        #     for pos, token_idx in enumerate(raw_text_ids):
+        #         if token_idx == mask_id:
+        #             target_mask[pos] = 1
+        #             tgt_token_ids.append(pos)
+        # else:
+        for (start_idx, end_idx) in target_locs:
             for char_idx in range(start_idx, end_idx):
                 token_idx = tgt_sent_encoded.char_to_token(char_idx)
                 if token_idx is not None and token_idx < len(raw_text_ids):
@@ -607,6 +636,9 @@ class TargetDependentDataset(Dataset):
         required_features=[],
         add_special_tokens=True,
         get_vocab_only=False,
+        soft_label_path=None, 
+        failed_ids_path=None, 
+        source_data_fmt=1,
     ):
         """
         Args:
@@ -615,6 +647,9 @@ class TargetDependentDataset(Dataset):
         self.name = name
         self.word2idx = word2idx
         self.data_path = data_path
+        self.source_data_fmt = int(source_data_fmt)
+        self.soft_label_path = soft_label_path
+        self.failed_ids_path = failed_ids_path
         self.tokenizer = tokenizer
         self.preprocess_config = preprocess_config
         self.max_length = preprocess_config["max_length"]
@@ -632,27 +667,91 @@ class TargetDependentDataset(Dataset):
         )
 
         if get_vocab_only:
-            _ = self.load_from_path(word2idx=word2idx)
+            if self.source_data_fmt==1:
+                _, _ = self.load_from_path(word2idx=word2idx)
+            else:
+                _, _ = self.load_from_path2(word2idx=word2idx)
 
         else:
-            self.data = self.load_from_path(word2idx=word2idx)
+            if self.source_data_fmt==1:
+                self.data, self.failed_ids = self.load_from_path(word2idx=word2idx)
+            else:
+                self.data, self.failed_ids = self.load_from_path2(word2idx=word2idx)
+
             self.df = pd.DataFrame(
                 data={
                     "raw_text": [e.raw_text for e in self.data],
-                    "tokens": [e.features["tokens"] for e in self.data],
+                    # "tokens": [e.features["tokens"] for e in self.data],
                     "label": [e.label for e in self.data],
                 }
             )
 
-        # count_class = {}
-        # for e in self.data:
-        #     label = e.label
-        #     if label not in count_class:
-        #         count_class[label] = 1
-        #     else:
-        #         count_class[label] += 1
-        # for k, v in count_class.items():
-        #     logger.info(f"  Number of '{k}' = {v}")
+    def load_from_path2(self, word2idx=None):
+        logger.info("***** Loading data *****")
+        logger.info("  Path = %s", str(self.data_path))
+        data = []
+        key = 0
+        lines = json.load(open(self.data_path, "r"))
+        logger.info("  Number of lines = %d", len(lines))
+
+        preprocess_failed = 0
+        feature_failed = 0
+        train_failed_ids = []
+        if self.soft_label_path and os.path.isfile(self.soft_label_path):
+            soft_labels = np.load(self.soft_label_path)
+            print("###")
+            print(soft_labels.shape)
+            # train_failed_ids = []
+            if self.failed_ids_path and os.path.isfile(self.failed_ids_path):
+                train_failed_ids = pickle.load(open(self.failed_ids_path, "rb"))
+        else:
+            soft_labels = None
+
+        data = []
+        failed_ids = []
+
+        print(train_failed_ids)
+        if soft_labels is not None:
+            print(len(lines), len(train_failed_ids) , soft_labels.shape[0])
+            assert((len(lines) - len(train_failed_ids))==soft_labels.shape[0])
+
+        for id, line in tqdm(enumerate(lines)):
+
+            if id in train_failed_ids:
+                continue 
+
+            # doc = json.loads(line)
+ 
+            label = str(line["sentiment"])
+
+            if label not in self.label_map and label.lower() not in SENTI_ID_MAP:
+                logger.warning("  Illegal label : %s", label)
+                failed_ids.append(id)
+                continue
+
+            # print(self.label_map[label])
+            e = TargetDependentExample(
+                raw_text=line["content"],
+                target_locs=line['target_locs'],
+                tokenizer=self.tokenizer,
+                label=self.label_map[label],
+                preprocess_config=self.preprocess_config,
+                required_features=self.required_features,
+                word2idx=word2idx,
+                get_vocab_only=self.get_vocab_only,
+                vocab=self.vocab,
+                soft_label=soft_labels[len(data), :] if soft_labels is not None else None 
+            )
+
+            if e.succeeded:
+                data.append(e)
+            else:
+                failed_ids.append(id)
+
+        logger.info("  Loaded examples = %d", len(data))
+        logger.info("  Failed preprocessing = %d", preprocess_failed)
+        logger.info("  Failed max len = %d", feature_failed)
+        return data, failed_ids
 
     def load_from_path(self, word2idx=None):
         logger.info("***** Loading data *****")
@@ -664,16 +763,38 @@ class TargetDependentDataset(Dataset):
 
         preprocess_failed = 0
         feature_failed = 0
+        train_failed_ids = []
+
+        if self.soft_label_path and os.path.isfile(self.soft_label_path):
+            soft_labels = np.load(self.soft_label_path)
+            print("###")
+            print(soft_labels.shape)
+            # train_failed_ids = []
+            if self.failed_ids_path and os.path.isfile(self.failed_ids_path):
+                train_failed_ids = pickle.load(open(self.failed_ids_path, "rb"))
+        else:
+            soft_labels = None
 
         data = []
+        failed_ids = []
 
-        for line in tqdm(lines):
+        print(train_failed_ids)
+        if soft_labels is not None:
+            print(len(lines), len(train_failed_ids) , soft_labels.shape[0])
+            assert((len(lines) - len(train_failed_ids))==soft_labels.shape[0])
+
+        for id, line in tqdm(enumerate(lines)):
+
+            if id in train_failed_ids:
+                continue 
+
             doc = json.loads(line)
             for t in doc["labels"]:
                 label = str(t["label_name"])
 
                 if label not in self.label_map and label.lower() not in SENTI_ID_MAP:
                     logger.warning("  Illegal label : %s", label)
+                    failed_ids.append(id)
                     continue
 
                 # print(self.label_map[label])
@@ -687,28 +808,19 @@ class TargetDependentDataset(Dataset):
                     word2idx=word2idx,
                     get_vocab_only=self.get_vocab_only,
                     vocab=self.vocab,
+                    soft_label=soft_labels[len(data), :] if soft_labels is not None else None 
                 )
 
                 if e.succeeded:
                     data.append(e)
-
-        #         if e.preprocess_succeeded:
-        #             if e.feature_succeeded:
-        #                 data.append(e)
-        #             else:
-        #                 feature_failed += 1
-        #         else:
-        #             preprocess_failed += 1
-
-        # # resample
-        # if self.preprocess_config.get("resample_size", None):
-        #     data = resample(data, replace=True, n_samples=int(self.preprocess_config["resample_size"]))
+                else:
+                    failed_ids.append(id)
 
         logger.info("  Loaded examples = %d", len(data))
         logger.info("  Failed preprocessing = %d", preprocess_failed)
         logger.info("  Failed max len = %d", feature_failed)
 
-        return data
+        return data, failed_ids
 
     def get_class_balanced_weights(self):
         class_size = self.df["label"].value_counts()
