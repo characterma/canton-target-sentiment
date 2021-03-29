@@ -36,6 +36,7 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         num_emb=None,
         pretrained_lm=None,
         target_pooling="max",
+        bert_config=None, 
         device="cpu",
     ):
         super(TDBERT, self).__init__(pretrained_lm.config)

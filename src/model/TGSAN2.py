@@ -44,21 +44,21 @@ class TGSAN2(BaseModel):
         super(TGSAN2, self).__init__()
         self.bert_config = bert_config
         self.num_labels = num_labels
-        # print(bert_config)
         self.embedding = BertEmbeddings(config=bert_config)
+        self.embedding_dropout = nn.Dropout(model_config["embedding_dropout"])
 
-        self.encoder = nn.TransformerEncoderLayer(
+        self.encoders = nn.ModuleList([nn.TransformerEncoderLayer(
             d_model=bert_config.hidden_size, 
             nhead=12, 
             dim_feedforward=360, 
-            dropout=0.1, 
+            dropout=model_config['encoder_dropout'], 
             activation='relu'
-        )
+        ) for i in range(model_config['n_encoder'])])
 
         self.classifier = FCLayer(
             input_dim=bert_config.hidden_size,
             output_dim=self.num_labels,
-            dropout_rate=0.1,
+            dropout_rate=model_config['fc_dropout'],
             use_activation=False,
         )
 
@@ -82,15 +82,15 @@ class TGSAN2(BaseModel):
             inputs_embeds=None, 
         )
 
-        x = self.encoder(
-            x.transpose(1, 0), 
-            src_key_padding_mask=(1-attention_mask).bool()
-        ).transpose(1, 0) # B, L, D
+        # x = self.embedding_dropout(x)
+
+        x = x.transpose(1, 0)
+        for encoder in self.encoders:
+            x = encoder(x, src_key_padding_mask=(1-attention_mask).bool()) # B, L, D
+        x = x.transpose(1, 0)
 
         tgt = self.pool_target(x, target_mask)
         logits = self.classifier(tgt)
-
-        # print(tgt[torch.isnan(tgt)])
 
         if soft_label is not None:
             loss_fct = nn.MSELoss()

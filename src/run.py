@@ -180,10 +180,12 @@ def run(
     num_emb = None
     add_special_tokens = True
     label_map = get_label_map(dataset_dir / data_config["label_map"])
+    bert_config = None
 
     if MODEL_EMB_TYPE[model_class] == "BERT":
         pretrained_lm = PretrainedLM(body_config["pretrained_lm"])
         pretrained_lm.resize_token_embeddings(tokenizer=tokenizer)
+        bert_config = None
 
     elif MODEL_EMB_TYPE[model_class] == "WORD":
         add_special_tokens = False
@@ -193,6 +195,7 @@ def run(
             if model_class == "TGSAN2":
                 bert_config = load_bert_config(body_config["bert_config"])
                 bert_config.hidden_size = 120
+                bert_config.hidden_dropout_prob = 0.5
             else:
                 bert_config = None
 
@@ -249,9 +252,11 @@ def run(
                 emb_dim = emb_vectors.shape[1]
             else:
                 emb_dim = body_config["emb_dim"]
+
             if model_class == "TGSAN2":
                 bert_config.vocab_size = len(word2idx)
                 bert_config.max_position_embeddings = preprocess_config['max_length']
+                print(bert_config)
             word2idx_info = {"word2idx": word2idx, "emb_dim": emb_dim}
             pickle.dump(
                 word2idx_info, open(train_output_dir / "word2idx_info.pkl", "wb")
@@ -387,6 +392,7 @@ def run(
             )
 
             test_evaluator.evaluate()
+            timer.save_timer()
 
         if log_path is not None:
             shutil.copy(log_path, eval_output_dir)
@@ -409,6 +415,7 @@ if __name__ == "__main__":
     parser.add_argument("--eval_config", type=str, default="eval.yaml")
     parser.add_argument("--device", type=int, default=0)
     args = parser.parse_args()
+
     run(
         do_train=True if args.do_train else False,
         do_eval=True if args.do_eval else False,
@@ -418,5 +425,4 @@ if __name__ == "__main__":
         model_config_file=args.model_config,
         log_path=log_path,
         device=args.device,
-        # device='cpu'
     )
