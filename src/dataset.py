@@ -67,18 +67,22 @@ class TargetDependentExample(object):
         soft_label=None, 
     ):
 
-        self.raw_text = standardize_text(raw_text)
+        self.raw_text = standardize_text(str(raw_text))
         self.target_locs = target_locs
         self.succeeded = True
         self.label = label
         self.soft_label = soft_label
         self.word2idx = word2idx
+        self.vocab = vocab
+        # if word2idx is not None:
+        #     print(list(word2idx.items())[:10])
         self.tokenizer = tokenizer
         self.preprocess_config = preprocess_config
         self.required_features = required_features
 
         if get_vocab_only: # only non-bert tokenizer applies
-            self.vocab = self.get_vocab_non_bert()
+            self.get_vocab_non_bert()
+
         else:
             if not self.word2idx: # bert
                 if preprocess_config.get("text_preprocessing", "") == "hk_beauty":
@@ -130,12 +134,21 @@ class TargetDependentExample(object):
         return arrays
 
     def get_vocab_non_bert(self):
-        if self.tokenizer is not None: # spacy type tokenizer
+
+        if self.tokenizer is not None:
             tokens = self.tokenizer(self.raw_text)
-        else: # simple split
+            for t in tokens:
+                if t.text in self.vocab:
+                    self.vocab[t.text] += 1
+                else:
+                    self.vocab[t.text] = 1
+        else:
             tokens = list(self.raw_text)
-        vocab = Counter(tokens)
-        return vocab
+            for t in tokens:
+                if t in self.vocab:
+                    self.vocab[t] += 1
+                else:
+                    self.vocab[t] = 1
 
     def get_features_non_bert(
         self, 
@@ -155,7 +168,6 @@ class TargetDependentExample(object):
                 raw_text_ids = [self.word2idx.get(t, self.word2idx["<OOV>"]) for t in tokens][:max_length]
                 if len(raw_text_ids)==0:
                     return {}
-                # print(raw_text_ids)
   
             attention_mask = np.zeros(len(raw_text_ids))
             attention_mask[: len(raw_text_ids)] = 1
@@ -178,13 +190,13 @@ class TargetDependentExample(object):
             target_mask = []
             cnt = 0
             for idx, c in enumerate(raw_text):
-                if c.strip() != "":
-                    tokens.append(c)
-                    target_mask.append(0)
-                    for (start_idx, end_idx) in self.target_locs:
-                        if start_idx <= idx < end_idx:
-                            target_mask[-1] = 1
-                            break
+                # if c.strip() != "":
+                tokens.append(c)
+                target_mask.append(0)
+                for (start_idx, end_idx) in self.target_locs:
+                    if start_idx <= idx < end_idx:
+                        target_mask[-1] = 1
+                        break
 
             raw_text_ids = [self.word2idx.get(t, self.word2idx["<OOV>"]) for t in tokens][:max_length]
             target_mask = target_mask[:max_length]
@@ -487,7 +499,6 @@ class TargetDependentExample(object):
         else:
             label_id = None
 
-        # print(tgt_token_ids)
         start_token_pos = min(tgt_token_ids) if len(tgt_token_ids) > 0 else None
         end_token_pos = max(tgt_token_ids) if len(tgt_token_ids) > 0 else None
 
@@ -658,8 +669,6 @@ class TargetDependentDataset(Dataset):
         train_failed_ids = []
         if self.soft_label_path and os.path.isfile(self.soft_label_path):
             soft_labels = np.load(self.soft_label_path)
-            print("###")
-            print(soft_labels.shape)
             # train_failed_ids = []
             if self.failed_ids_path and os.path.isfile(self.failed_ids_path):
                 train_failed_ids = pickle.load(open(self.failed_ids_path, "rb"))

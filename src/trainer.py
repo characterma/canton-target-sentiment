@@ -173,6 +173,7 @@ class Trainer(object):
 
         dataloader = DataLoader(
             self.dataset,
+            shuffle=True, 
             batch_size=self.optim_config["batch_size"],
             collate_fn=self.dataset.pad_collate,
         )
