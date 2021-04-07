@@ -14,7 +14,7 @@
 						"exec": [
 							"pm.test(\"target sentiment\", function () {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData.sentiment).to.eql(\"positive\");\r",
+							"    pm.expect(jsonData.doclist[0].labelunits[0].sentiment).to.eql(\"neutral\");\r",
 							"});"
 						],
 						"type": "text/javascript"
