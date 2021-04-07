@@ -5,6 +5,7 @@ import functools
 from sanic import Sanic
 from sanic.response import text
 import json
+import re
 from sanic.log import logger
 from sanic.exceptions import ServerError
 import sanic
@@ -149,7 +150,8 @@ class ModelRunner:
             for col in self.model.INPUT_COLS:
 
                 if col in to_process[0]["input"].features:
-                    if col != "label":
+                    if "label" not in col:
+                        print(col)
                         input[col] = torch.stack(
                             [t["input"].features[col] for t in to_process], dim=0
                         ).to(device)
@@ -175,55 +177,84 @@ class ModelRunner:
             del to_process
 
 
-print("loading chinese model:")
-model_runner_chn = ModelRunner("chinese")
-print("loading english model:")
-model_runner_eng = ModelRunner("english")
+def parse_input(data):
+    results = []
+    for x in data['doclist'][0]['labelunits']:
+        row = dict()
+        st_idx = x['unit_index'][0]
+        row['unit_text'] = x['unit_text']
+        
+        row['subject_text'] = x['subject_text']
+        row['subject_index'] = [[i[0] - st_idx, i[1] - st_idx] for i in x['subject_index']]
+        
+        row['aspect_text'] = x['aspect_text']
+        row['aspect_index'] = [[i[0] - st_idx, i[1] - st_idx] for i in x['aspect_index']]
 
+        results.append(row)
+    return results
+
+def insert_sentiment(data, sentiments):
+    for i, x in enumerate(data['doclist'][0]['labelunits']):
+        x['sentiment'] = sentiments[i]
+
+    return data
+
+
+def is_spam(unit_text, subject_text):
+    clean_text = ' '.join(re.sub("(#\s?\w+)|(@\w+)|(•\s?\w+)"," ",unit_text).split())
+    for t in subject_text:
+        if t not in clean_text:
+            return True
+    return False
+
+
+model_runner = ModelRunner("chinese")
 
 @app.route("/rolex_sentiment", methods=["POST"], stream=True)
 async def target_sentiment(request):
     try:
-        body = await request.stream.read()
-        body = json.loads(body)
+        raw_data = await request.stream.read()
+        raw_data = json.loads(raw_data)
+
+        parsed_data = parse_input(raw_data)
+
         response = dict()
 
-        if body["language"] == "english":
-            example = TargetDependentExample(
-                raw_text=body["content"],
-                target_locs=body["target_locs"],
-                tokenizer=model_runner_eng.tokenizer,
-                preprocess_config=model_runner_eng.preprocess_config,
-                required_features=model_runner_eng.model.INPUT_COLS,
-                word2idx=model_runner_eng.word2idx,
-            )
-
-            results = await model_runner_eng.process_input(example)
-            response["sentiment"] = results["sentiment"]
-            response["score"] = results["score"]
+        if raw_data["language"] == "english":
             response["message"] = "OK"
-        elif body["language"] == "chinese":
-            example = TargetDependentExample(
-                raw_text=body["content"],
-                target_locs=body["target_locs"],
-                tokenizer=model_runner_chn.tokenizer,
-                preprocess_config=model_runner_chn.preprocess_config,
-                required_features=model_runner_chn.model.INPUT_COLS,
-                word2idx=model_runner_chn.word2idx,
-            )
+            response["sentiment"] = "not_supported"
 
-            results = await model_runner_chn.process_input(example)
-            response["sentiment"] = results["sentiment"]
-            response["score"] = results["score"]
-            response["message"] = "OK"
+        elif raw_data["language"] == "chinese":
 
-        return sanic.response.json(response, status=200)
+            sentiments = []
+            for x in parsed_data:
+
+                # rule check
+                if not is_spam(x['unit_text'], x['subject_text']):
+
+                    # model
+                    example = TargetDependentExample(
+                        raw_text=x["unit_text"],
+                        target_locs=x["subject_index"] + x["aspect_index"],
+                        tokenizer=model_runner.tokenizer,
+                        preprocess_config=model_runner.preprocess_config,
+                        required_features=model_runner.model.INPUT_COLS,
+                        word2idx=model_runner.word2idx,
+                    )
+
+                    results = await model_runner.process_input(example)
+                    sentiments.append(results["sentiment"])
+                else:
+                    print("hash tags.")
+                    sentiments.append("neutral")
+
+            raw_data = insert_sentiment(raw_data, sentiments)
+
+        return sanic.response.json(raw_data, status=200)
 
     except Exception as e:
         msg = traceback.format_exc()
         return sanic.response.json({"message": msg}, status=500)
 
-
-app.add_task(model_runner_eng.model_runner())
-app.add_task(model_runner_chn.model_runner())
+app.add_task(model_runner.model_runner())
 app.run(host="0.0.0.0", port=8080, debug=False)

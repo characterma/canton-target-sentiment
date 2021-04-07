@@ -311,6 +311,7 @@ class TGSAN(BaseModel):
         tgt_idx: mask for the target terms
         length_idx: mask for padded sentence
         """
+
         x = self.embed(raw_text).to(torch.float32)  # [B, L, E]
         if self.emb_dropout is not None:
             x = self.emb_dropout(x)
