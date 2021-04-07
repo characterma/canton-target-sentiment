@@ -203,9 +203,9 @@ def insert_sentiment(data, sentiments):
 def is_spam(unit_text, subject_text):
     clean_text = ' '.join(re.sub("(#\s?\w+)|(@\w+)|(•\s?\w+)"," ",unit_text).split())
     for t in subject_text:
-        if t not in clean_text:
-            return True
-    return False
+        if t in clean_text:
+            return False
+    return True
 
 
 model_runner = ModelRunner("chinese")
@@ -230,7 +230,7 @@ async def target_sentiment(request):
             for x in parsed_data:
 
                 # rule check
-                if not is_spam(x['unit_text'], x['subject_text']):
+                if not is_spam(x['unit_text'], [x['unit_text'][i[0]:i[1]] for i in x["subject_index"]]):
 
                     # model
                     example = TargetDependentExample(
