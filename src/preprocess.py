@@ -9,6 +9,36 @@ def standardize_text(raw_text):
     raw_text = HanziConv.toSimplified(raw_text)
     return raw_text
 
+def emoji_index_conversion(text, indices):
+    # indices: list of list
+    python_index = []
+    java_index = []
+    incident = 0
+    for i in range(len(text)):
+        python_index.append(i)
+        java_index.append(i + incident)
+        if len(text[i].encode('utf-8')) == 4:
+            incident += 1
+    java_index.append(len(text) + incident)
+    _idx_map = list(zip(java_index, python_index))
+    _idx_map = sorted(_idx_map, key=lambda x: x[0])
+    idx_map = dict()
+    for i in range(len(_idx_map)-1):
+        if _idx_map[i][0] + 1 < _idx_map[i+1][0]:
+            for j in range(_idx_map[i][0] + 1, _idx_map[i+1][0]):
+                idx_map[j] = _idx_map[i][1]
+                # print("^^^", j, idx_map[j])
+        # else:
+        idx_map[_idx_map[i][0]] = _idx_map[i][1]
+
+    # print(idx_map)
+    # print(indices)
+    for x in indices:
+        x[0] = idx_map[x[0]]
+        x[1] = idx_map[x[1]]
+    return indices
+
+
 
 def get_hl_content_spans(
     text, hl_separator="## Headline ##", ct_separator="## Content ##"

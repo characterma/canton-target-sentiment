@@ -93,6 +93,7 @@ class Evaluater:
 
         dataloader = DataLoader(
             self.dataset,
+            shuffle=False,
             sampler=SequentialSampler(self.dataset),
             batch_size=self.eval_config["batch_size"],
             collate_fn=self.dataset.pad_collate,

@@ -151,7 +151,6 @@ class ModelRunner:
 
                 if col in to_process[0]["input"].features:
                     if "label" not in col:
-                        print(col)
                         input[col] = torch.stack(
                             [t["input"].features[col] for t in to_process], dim=0
                         ).to(device)
@@ -183,11 +182,7 @@ def parse_input(data):
         row = dict()
         st_idx = x['unit_index'][0]
         row['unit_text'] = x['unit_text']
-        
-        row['subject_text'] = x['subject_text']
         row['subject_index'] = [[i[0] - st_idx, i[1] - st_idx] for i in x['subject_index']]
-        
-        row['aspect_text'] = x['aspect_text']
         row['aspect_index'] = [[i[0] - st_idx, i[1] - st_idx] for i in x['aspect_index']]
 
         results.append(row)
@@ -245,7 +240,6 @@ async def target_sentiment(request):
                     results = await model_runner.process_input(example)
                     sentiments.append(results["sentiment"])
                 else:
-                    print("hash tags.")
                     sentiments.append("neutral")
 
             raw_data = insert_sentiment(raw_data, sentiments)

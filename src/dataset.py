@@ -11,7 +11,7 @@ from tqdm import tqdm
 from torch.utils.data import Dataset
 from pathlib import Path
 from utils import SENTI_ID_MAP, SPEC_TOKEN
-from preprocess import preprocess_text_hk_beauty, standardize_text
+from preprocess import preprocess_text_hk_beauty, standardize_text, emoji_index_conversion
 from sklearn.utils import resample
 from tokenizer import tokenizer_internal
 from collections import Counter
@@ -68,14 +68,12 @@ class TargetDependentExample(object):
     ):
 
         self.raw_text = standardize_text(str(raw_text))
-        self.target_locs = target_locs
+        self.target_locs = emoji_index_conversion(self.raw_text, target_locs)
         self.succeeded = True
         self.label = label
         self.soft_label = soft_label
         self.word2idx = word2idx
         self.vocab = vocab
-        # if word2idx is not None:
-        #     print(list(word2idx.items())[:10])
         self.tokenizer = tokenizer
         self.preprocess_config = preprocess_config
         self.required_features = required_features
@@ -667,8 +665,12 @@ class TargetDependentDataset(Dataset):
         preprocess_failed = 0
         feature_failed = 0
         train_failed_ids = []
+
+        print("Load soft labels.", self.soft_label_path)
+        # print(self.soft_label_path, os.path.isfile(self.soft_label_path))
         if self.soft_label_path and os.path.isfile(self.soft_label_path):
             soft_labels = np.load(self.soft_label_path)
+            
             # train_failed_ids = []
             if self.failed_ids_path and os.path.isfile(self.failed_ids_path):
                 train_failed_ids = pickle.load(open(self.failed_ids_path, "rb"))
@@ -678,7 +680,7 @@ class TargetDependentDataset(Dataset):
         data = []
         failed_ids = []
 
-        print(train_failed_ids)
+        print("**", train_failed_ids)
         if soft_labels is not None:
             print(len(lines), len(train_failed_ids) , soft_labels.shape[0])
             assert((len(lines) - len(train_failed_ids))==soft_labels.shape[0])

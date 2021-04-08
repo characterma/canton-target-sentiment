@@ -1,59 +1,107 @@
-# Cantonese Target Dependent Sentiment Analysis
+# **Target-dependent sentiment analysis for Rolex**
 
-## Deployment Guide
+## API Specification
 
-### Setup API with Docker
+**URL: /**
 
-1. Build docker image.
-```bash
-cd ./deploy/docker
-sh build_docker.sh
-docker build -t IMAGE_NAME . 
-```
+**Type: POST**
 
-2. Start a container.
-```bash
-docker run --name CONTAINER_NAME -m 8GB --cpus 4 -p PORT:8080 -td IMAGE_NAME
-```
+**Description**
 
-3. Start API. (**!!!!!**) API_NAME needs to be 'sanic' or 'aiohttp'.
-```
-docker exec -d CONTAINER_NAME sh start.sh API_NAME
-```
+1. Process target-guided Chinese text sentiment analysis using TGSAN model
+2. Trinary model are supported. 
 
-### Load Testing 
-1. Setup API with docker
-2. Run Locust tests (for specific tests).
-```bash
-docker exec -d CONTAINER_NAME python ./deploy/test/locustfile.py -u=CONCORRENT_USERS --api=API_NAME
-```
+**Input Data**
 
-3. Or, run pre-defined Locust tests.
-```bash
-docker exec -d CONTAINER_NAME bash -c "cd ./deploy/test/ ; bash run_all_test.sh API_NAME ; cd ../.."
-```
+- `language` ("chinese" or "english"): indicates the language of input text.
+- `doclist`: contains one or multiple labelunits, same format as the output from KG, with four required fields for each labelunit.
+  * unit_index
+  * unit_text
+  * subject_index
+  * aspect_index
 
-4. Retrieve test results
-```bash
-docker cp CONTAINER_NAME:./deploy/test/ ./
-```
 
-### API Usage 
+**Sample Input**
 
-1. POST to `http://HOST:PORT/target_sentiment` with body as:
 ```json
 {
-    "content": "## Headline ##\n大家最近買左D乜 分享下?\n## Content ##\n引用:\n原帖由 綠茶寶寶 於 2018-12-31 08:40 PM 發表\n買左3盒胭脂\nFit me 胭脂睇youtuber推介話好用，用完覺得麻麻\n原來fit me麻麻 我買左YSL 支定妝噴霧 用完覺得無想像咁好\n\n", 
-    "start_ind": 141, 
-    "end_ind": 144
+  "language": "chinese",
+  "doclist": [
+    {
+      "labelunits": [
+        {
+          "unit_index": [0,67],
+          "unit_text": "蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。",
+          "subject_index": [[0, 2], [58, 60]],
+          "aspect_index": []
+        }, 
+        {
+          "unit_index": [0,100],
+          "unit_text": "同樣道理，在黑暗中以紫外 燈照射roger dubuis excalibur blacklight所發出的七彩光芒，在剔透的鏤通機芯映襯下，也顯得更具深度及迷人。",
+          "subject_index": [[16, 21], [22, 28], [29, 38], [39, 49], [64, 66]],
+          "aspect_index": []
+        }, 
+        {
+          "unit_index": [0,13],
+          "unit_text": "#cartier #美洲豹",
+          "subject_index": [[1, 8]],
+          "aspect_index": []
+        }, 
+        {
+            "unit_index": [0,220],
+            "unit_text": "🤩🤩🤩🤩🤩🤩🤩🤩蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。",
+            "subject_index": [[16, 18], [74, 76]],
+            "aspect_index": [], 
+        }
+        ]
+    }
+  ]
 }
 ```
 
-2. Response:
+**Output Data**
+
+- Original input with an extra field for each labelunit:
+  * sentiment ("neutral", "negative", or "positive")
+
+**Sample Output**
+
 ```json
 {
-    "data": "negative",
-    "message": "OK"
+    "language": "chinese",
+    "doclist": [
+        {
+            "labelunits": [
+                {
+                    "unit_index": [0,67],
+                    "unit_text": "蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。",
+                    "subject_index": [[0,2],[58,60]],
+                    "aspect_index": [],
+                    "sentiment": "negative"
+                },
+                {
+                    "unit_index": [0,100],
+                    "unit_text": "同樣道理，在黑暗中以紫外 燈照射roger dubuis excalibur blacklight所發出的七彩光芒，在剔透的鏤通機芯映襯下，也顯得更具深度及迷人。",
+                    "subject_index": [[16,21],[22,28],[29,38],[39,49],[64,66]],
+                    "aspect_index": [],
+                    "sentiment": "positive"
+                },
+                {
+                    "unit_index": [0,13],
+                    "unit_text": "#cartier #美洲豹",
+                    "subject_index": [[1,8]],
+                    "aspect_index": [],
+                    "sentiment": "neutral"
+                },
+                {
+                    "unit_index": [0,220],
+                    "unit_text": "🤩🤩🤩🤩🤩🤩🤩🤩蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。",
+                    "subject_index": [[16, 18], [74, 76]],
+                    "aspect_index": [], 
+                    "sentiment": "negative"
+                }
+            ]
+        }
+    ]
 }
-
 ```

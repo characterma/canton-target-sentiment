@@ -148,6 +148,7 @@ class Trainer(object):
         # only sentiment classification
         for col in self.model.INPUT_COLS:
             if col in batch:
+                # print(col)
                 if col!="soft_label":
                     inputs[col] = batch[col].to(self.device).long()
                 else:

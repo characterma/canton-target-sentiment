@@ -313,7 +313,7 @@ def run(
             name="train",
             required_features=required_features, 
             soft_label_path=dataset_dir / "logits.npy" if body_config.get('kd', False) else None, 
-            failed_ids_path=dataset_dir / "train_failed_ids.pkl" if body_config.get('kd', False) else None, 
+            failed_ids_path=dataset_dir / "kd_failed_ids.pkl" if body_config.get('kd', False) else None, 
             source_data_fmt=data_config["format"]
         )
 
@@ -381,6 +381,8 @@ def run(
                 required_features=[col for col in model.INPUT_COLS if col!='soft_label'],
                 source_data_fmt=data_config["format"]
             )
+
+            pickle.dump(test_dataset.failed_ids, open(eval_output_dir / "test_failed_ids.pkl", "wb"))
 
             test_evaluator = Evaluater(
                 model=model,
