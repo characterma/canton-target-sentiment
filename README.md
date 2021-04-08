@@ -2,7 +2,7 @@
 
 ## API Specification
 
-**URL: /**
+**URL: /rolex_sentiment**
 
 **Type: POST**
 
