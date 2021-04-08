@@ -14,7 +14,19 @@
 						"exec": [
 							"pm.test(\"target sentiment\", function () {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData.doclist[0].labelunits[0].sentiment).to.eql(\"neutral\");\r",
+							"    pm.expect(jsonData.doclist[0].labelunits[0].sentiment).to.eql(\"negative\");\r",
+							"});\r",
+							"pm.test(\"target sentiment\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.doclist[0].labelunits[1].sentiment).to.eql(\"positive\");\r",
+							"});\r",
+							"pm.test(\"target sentiment\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.doclist[0].labelunits[2].sentiment).to.eql(\"neutral\");\r",
+							"});\r",
+							"pm.test(\"target sentiment\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.doclist[0].labelunits[3].sentiment).to.eql(\"negative\");\r",
 							"});"
 						],
 						"type": "text/javascript"
@@ -26,7 +38,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"language\": \"chinese\",\r\n  \"doclist\": [\r\n    {\r\n      \"labelunits\": [\r\n        {\r\n          \"unit_index\": [\r\n            0,\r\n            249\r\n          ],\r\n          \"unit_text\": \"伯爵女表入手记自己最近比较迷表 带着身边不少朋友也跟着一起入坑 妹妹生日快到了 想送一块表给她 不想送太大衆的牌子 欧米茄劳力士就不考虑了 女生也不喜欢机械表 就考虑每一块石英的 也省的麻烦了 一块电池够走好久了 准得不行也不用上链不用调时间 石英表的话也就不注重机芯什么的 注重外表就好了[害羞r]就想找几个做珠宝的品牌 就想到了伯爵 伯爵表的镶钻都做的华而不俗 而且伯爵表以薄着名 设计上也算是符合我的口味 表带是绢带的材质 佩戴的触觉也比较丝滑 石英表相比机械表就是轻薄 拿在手里都没什么感觉的[派对r]\",\r\n          \"subject_index\": [[0, 2], [58, 60]],\r\n          \"subject_text\": [],\r\n          \"aspect_index\": [],\r\n          \"aspect_text\": [],\r\n          \"sentiment\": \"\"\r\n        }]\r\n    }\r\n  ]\r\n}"
+					"raw": "{\r\n  \"language\": \"chinese\",\r\n  \"doclist\": [\r\n    {\r\n      \"labelunits\": [\r\n        {\r\n          \"unit_index\": [0,67],\r\n          \"unit_text\": \"蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。\",\r\n          \"subject_index\": [[0, 2], [58, 60]],\r\n          \"aspect_index\": []\r\n        }, \r\n        {\r\n          \"unit_index\": [0,100],\r\n          \"unit_text\": \"同樣道理，在黑暗中以紫外 燈照射roger dubuis excalibur blacklight所發出的七彩光芒，在剔透的鏤通機芯映襯下，也顯得更具深度及迷人。\",\r\n          \"subject_index\": [[16, 21], [22, 28], [29, 38], [39, 49], [64, 66]],\r\n          \"aspect_index\": []\r\n        }, \r\n        {\r\n          \"unit_index\": [0,13],\r\n          \"unit_text\": \"#cartier #美洲豹\",\r\n          \"subject_index\": [[1, 8]],\r\n          \"aspect_index\": []\r\n        }, \r\n        {\r\n          \"unit_index\": [0,220],\r\n          \"unit_text\": \"🤩🤩🤩🤩🤩🤩🤩🤩蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。\",\r\n          \"subject_index\": [[16, 18], [74, 76]],\r\n          \"aspect_index\": []\r\n        }\r\n        ]\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "http://{{server}}/rolex_sentiment",
