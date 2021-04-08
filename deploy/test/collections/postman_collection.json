@@ -23,11 +23,7 @@
 							"pm.test(\"target sentiment\", function () {\r",
 							"    var jsonData = pm.response.json();\r",
 							"    pm.expect(jsonData.doclist[0].labelunits[2].sentiment).to.eql(\"0\");\r",
-							"});\r",
-							"pm.test(\"target sentiment\", function () {\r",
-							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData.doclist[0].labelunits[3].sentiment).to.eql(\"-1\");\r",
-							"});"
+							"});\r"
 						],
 						"type": "text/javascript"
 					}
