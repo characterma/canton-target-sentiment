@@ -68,7 +68,8 @@ class TargetDependentExample(object):
     ):
 
         self.raw_text = standardize_text(str(raw_text))
-        self.target_locs = emoji_index_conversion(self.raw_text, target_locs)
+        # self.target_locs = emoji_index_conversion(self.raw_text, target_locs)
+        self.target_locs = target_locs
         self.succeeded = True
         self.label = label
         self.soft_label = soft_label

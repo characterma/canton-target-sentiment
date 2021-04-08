@@ -31,6 +31,12 @@ device = "cpu"
 base_dir = Path("./")
 config_dir = base_dir / "config"
 
+sentiment_to_id = {
+    "neutral": "0",
+    "negative": "-1", 
+    "positive": "1"
+}
+
 
 class ModelRunner:
     def __init__(self, version):
@@ -176,9 +182,9 @@ class ModelRunner:
             del to_process
 
 
-def parse_input(data):
+def parse_input(doc):
     results = []
-    for x in data['doclist'][0]['labelunits']:
+    for x in doc['labelunits']:
         row = dict()
         st_idx = x['unit_index'][0]
         row['unit_text'] = x['unit_text']
@@ -188,11 +194,9 @@ def parse_input(data):
         results.append(row)
     return results
 
-def insert_sentiment(data, sentiments):
-    for i, x in enumerate(data['doclist'][0]['labelunits']):
-        x['sentiment'] = sentiments[i]
-
-    return data
+def insert_sentiment(doc, sentiments):
+    for i, x in enumerate(doc['labelunits']):
+        x['sentiment'] = sentiment_to_id[sentiments[i]]
 
 
 def is_spam(unit_text, subject_text):
@@ -202,7 +206,6 @@ def is_spam(unit_text, subject_text):
             return False
     return True
 
-
 model_runner = ModelRunner("chinese")
 
 @app.route("/rolex_sentiment", methods=["POST"], stream=True)
@@ -210,39 +213,35 @@ async def target_sentiment(request):
     try:
         raw_data = await request.stream.read()
         raw_data = json.loads(raw_data)
+        language = raw_data["language"]
 
-        parsed_data = parse_input(raw_data)
+        for doc in raw_data['doclist']:
 
-        response = dict()
-
-        if raw_data["language"] == "english":
-            response["message"] = "OK"
-            response["sentiment"] = "not_supported"
-
-        elif raw_data["language"] == "chinese":
-
+            parsed_doc = parse_input(doc)
             sentiments = []
-            for x in parsed_data:
-
+            for u in parsed_doc:
                 # rule check
-                if not is_spam(x['unit_text'], [x['unit_text'][i[0]:i[1]] for i in x["subject_index"]]):
+                subj_text = [u['unit_text'][i[0]:i[1]] for i in u["subject_index"]]
+                unit_text = u['unit_text']
+                subj_idx = u["subject_index"]
+                aspt_idx = u["aspect_index"]
 
-                    # model
-                    example = TargetDependentExample(
-                        raw_text=x["unit_text"],
-                        target_locs=x["subject_index"] + x["aspect_index"],
+                if not is_spam(unit_text, subj_text):
+
+                    e = TargetDependentExample(
+                        raw_text=unit_text,
+                        target_locs=subj_idx + aspt_idx, 
                         tokenizer=model_runner.tokenizer,
                         preprocess_config=model_runner.preprocess_config,
                         required_features=model_runner.model.INPUT_COLS,
                         word2idx=model_runner.word2idx,
                     )
-
-                    results = await model_runner.process_input(example)
+                    results = await model_runner.process_input(e)
                     sentiments.append(results["sentiment"])
                 else:
                     sentiments.append("neutral")
 
-            raw_data = insert_sentiment(raw_data, sentiments)
+            insert_sentiment(doc, sentiments)
 
         return sanic.response.json(raw_data, status=200)
 
