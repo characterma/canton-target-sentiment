@@ -178,3 +178,21 @@
     ]
 }
 ```
+
+## API Load Test
+
+**Description**
+* Test case: single document with single label unit.
+* K8S enviroment: 
+  * cpu: 2000m
+  * memory: 8G
+  * maximum replicas: 1
+
+**Results**
+
+| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization |
+|----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|
+| 20                         | 6323                         | 91.53               | 0       | 600m                    | 4.88G                      |
+| 50                         | 10169                        | 147.38              | 0       | 600m                    | 4.88G                      |
+| 100                        | 9988                         | 144.53              | 0       | 600m                    | 4.88G                      |
+| 200                        | 11458                        | 165.8               | 0       | 1200m                   | 5.90G                      |
