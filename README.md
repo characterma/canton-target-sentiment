@@ -74,7 +74,7 @@
 **Output Data**
 
 - Original input with an extra field for each labelunit:
-  * sentiment ("neutral", "negative", or "positive")
+  * sentiment ("0", "-1", or "1")
 
 **Sample Output**
 
@@ -182,7 +182,10 @@
 ## API Load Test
 
 **Description**
-* Test case: single document with single label unit.
+* Test case: 
+  * Single document with single label unit.
+  * Unit text length=81. (Median unit text length=72)
+
 * K8S enviroment: 
   * cpu: 2000m
   * memory: 8G
@@ -196,3 +199,31 @@
 | 50                         | 10169                        | 147.38              | 0       | 600m                    | 4.88G                      |
 | 100                        | 9988                         | 144.53              | 0       | 600m                    | 4.88G                      |
 | 200                        | 11458                        | 165.8               | 0       | 1200m                   | 5.90G                      |
+
+
+## Accuracy
+
+**Description**
+* Test data:
+ * Up to 3000 samples from CN, HK, TW data.
+ * Unseen during model training.
+
+**Results**
+
+| Class    | Metric    | Score    |
+|----------|-----------|----------|
+| Overall  | Accuracy  | 0.867317 |
+|          | Macro F1  | 0.68544  |
+|          | Micro F1  | 0.867317 |
+| Neutral  | Precision | 0.90962  |
+|          | Recall    | 0.936876 |
+|          | F1        | 0.923047 |
+|          | Support   | 2503     |
+| Negative | Precision | 0.622642 |
+|          | Recall    | 0.445946 |
+|          | F1        | 0.519685 |
+|          | Support   | 74       |
+| Positive | Precision | 0.650901 |
+|          | Recall    | 0.580321 |
+|          | F1        | 0.613588 |
+|          | Support   | 498      |
