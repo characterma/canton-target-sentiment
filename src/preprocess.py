@@ -19,23 +19,31 @@ def emoji_index_conversion(text, indices):
         java_index.append(i + incident)
         if len(text[i].encode('utf-8')) == 4:
             incident += 1
+
+    python_index.append(len(text))
     java_index.append(len(text) + incident)
+
     _idx_map = list(zip(java_index, python_index))
     _idx_map = sorted(_idx_map, key=lambda x: x[0])
     idx_map = dict()
-    for i in range(len(_idx_map)-1):
-        if _idx_map[i][0] + 1 < _idx_map[i+1][0]:
-            for j in range(_idx_map[i][0] + 1, _idx_map[i+1][0]):
-                idx_map[j] = _idx_map[i][1]
-                # print("^^^", j, idx_map[j])
-        # else:
+    for i in range(len(_idx_map)):
+        if i < len(_idx_map) - 1:
+            if _idx_map[i][0] + 1 < _idx_map[i+1][0]:
+                for j in range(_idx_map[i][0] + 1, _idx_map[i+1][0]):
+                    idx_map[j] = _idx_map[i][1]
+
         idx_map[_idx_map[i][0]] = _idx_map[i][1]
 
-    # print(idx_map)
-    # print(indices)
     for x in indices:
-        x[0] = idx_map[x[0]]
-        x[1] = idx_map[x[1]]
+        if x[0] > len(text):
+            x[0] = x[0] + incident
+        else:
+            x[0] = idx_map[x[0]]
+
+        if x[1] > len(text):
+            x[1] = x[1] + incident
+        else:
+            x[1] = idx_map[x[1]]
     return indices
 
 

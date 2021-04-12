@@ -191,7 +191,7 @@
   * memory: 8G
   * maximum replicas: 1
 
-**Results**
+**Results -- CPU only**
 
 | Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization |
 |----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|
@@ -200,6 +200,14 @@
 | 100                        | 9988                         | 144.53              | 0       | 600m                    | 4.88G                      |
 | 200                        | 11458                        | 165.8               | 0       | 1200m                   | 5.90G                      |
 
+**Results -- with GPU**
+
+| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization |
+|----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|
+| 20                         | 10094                         | 146.19               | 0       | <1000m                    | <1.20G                      |
+| 50                         | 39730                        | 574.24              | 0       | <1000m                    | <1.20G                      |
+| 100                        | 49828                         | 719.14              | 0       | <1000m                    | <1.20G                      |
+| 200                        | 53229                        | 766.16               | 0       | <1000m                   | <1.20G                      |
 
 ## Accuracy
 
@@ -212,18 +220,18 @@
 
 | Class    | Metric    | Score    |
 |----------|-----------|----------|
-| Overall  | Accuracy  | 0.867317 |
-|          | Macro F1  | 0.68544  |
-|          | Micro F1  | 0.867317 |
-| Neutral  | Precision | 0.90962  |
-|          | Recall    | 0.936876 |
-|          | F1        | 0.923047 |
-|          | Support   | 2503     |
-| Negative | Precision | 0.622642 |
-|          | Recall    | 0.445946 |
-|          | F1        | 0.519685 |
-|          | Support   | 74       |
-| Positive | Precision | 0.650901 |
-|          | Recall    | 0.580321 |
-|          | F1        | 0.613588 |
-|          | Support   | 498      |
+| Overall  | Accuracy  | 0.88074 |
+|          | Macro F1  | 0.72378  |
+|          | Micro F1  | 0.88074 |
+| Neutral  | Precision | 0.91893  |
+|          | Recall    | 0.94270 |
+|          | F1        | 0.93066 |
+|          | Support   | 2513     |
+| Negative | Precision | 0.71111 |
+|          | Recall    | 0.51613 |
+|          | F1        | 0.59813 |
+|          | Support   | 62       |
+| Positive | Precision | 0.67713 |
+|          | Recall    | 0.61134 |
+|          | F1        | 0.64255 |
+|          | Support   | 494      |
