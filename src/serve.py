@@ -26,7 +26,7 @@ from dataset import TargetDependentExample
 import traceback
 import torch
 
-device = "cpu"
+device = 0
 
 base_dir = Path("./")
 config_dir = base_dir / "config"
