@@ -43,5 +43,6 @@ class BaseModel(nn.Module):
             torch.load(
                 state_path,
                 map_location="cpu"
-            ).to(self.device)
+            )
         )
+        self.to(self.device)
