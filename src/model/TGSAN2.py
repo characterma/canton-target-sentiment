@@ -61,7 +61,7 @@ class TGSAN2(BaseModel):
             nhead=12, 
             dim_feedforward=360, 
             dropout=model_config['encoder_dropout'], 
-            activation='relu'
+            # activation='relu'
         ) for i in range(model_config['n_encoder'])])
 
         self.classifier = FCLayer(
