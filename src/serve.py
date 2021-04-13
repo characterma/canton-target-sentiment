@@ -59,9 +59,9 @@ class ModelRunner:
         self.train_config = load_yaml(self.model_dir / "train.yaml")
         self.state_path = self.model_dir / self.deploy_config["state_file"]
         self.model_class = self.train_config["model_class"]
-        self.preprocess_config = self.model_config[self.model_class]["preprocess"]
+        self.preprocess_config = self.model_config[self.model_class]
         self.preprocess_config["text_preprocessing"] = ""
-        self.body_config = self.model_config[self.model_class]["body"]
+        self.body_config = self.model_config[self.model_class]
 
     def load_model(self):
         word2idx_info = pickle.load(open(self.model_dir / "word2idx_info.pkl", "rb"))
@@ -206,7 +206,7 @@ def is_spam(unit_text, subject_text):
             return False
     return True
 
-model_runner = ModelRunner("chinese")
+
 
 @app.route("/rolex_sentiment", methods=["POST"], stream=True)
 async def target_sentiment(request):
@@ -249,5 +249,8 @@ async def target_sentiment(request):
         msg = traceback.format_exc()
         return sanic.response.json({"message": msg}, status=500)
 
-app.add_task(model_runner.model_runner())
-app.run(host="0.0.0.0", port=8080, debug=False)
+
+if __name__=="__main__":
+    model_runner = ModelRunner("chinese")
+    app.add_task(model_runner.model_runner())
+    app.run(host="0.0.0.0", port=8080, debug=False)

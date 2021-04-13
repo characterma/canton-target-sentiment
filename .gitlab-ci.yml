@@ -31,10 +31,10 @@ package:docker:
   script:
   # copy bigfiles
   - cd deploy/docker
-  - mkdir -p ailab/models/tgsan_rolex
+  - mkdir -p ailab/models/rolex
   - mkdir -p ailab/config/
-  - cp -r /BigFiles/Models/canton-target-sentiment/tgsan_rolex/* ailab/models/
-  - cp -r /BigFiles/Models/canton-target-sentiment/tgsan_rolex/config/* ailab/config/
+  - cp -r /BigFiles/Models/canton-target-sentiment/rolex/* ailab/models/
+  - cp -r /BigFiles/Models/canton-target-sentiment/rolex/config/* ailab/config/
   # run scripts
   - set -x
   - sh build_docker.sh
@@ -53,10 +53,10 @@ package:harbor_docker:
   stage: package
   script:
   - cd deploy/docker
-  - mkdir -p ailab/models/tgsan_rolex
+  - mkdir -p ailab/models/rolex
   - mkdir -p ailab/config/
-  - cp -r /BigFiles/Models/canton-target-sentiment/tgsan_rolex/* ailab/models/tgsan_rolex/
-  - cp -r /BigFiles/Models/canton-target-sentiment/tgsan_rolex/config/* ailab/config/
+  - cp -r /BigFiles/Models/canton-target-sentiment/rolex/* ailab/models/rolex/
+  - cp -r /BigFiles/Models/canton-target-sentiment/rolex/config/* ailab/config/
   - sh build_harbor_docker.sh
   # dependencies:
   # - build:maven

@@ -4,6 +4,7 @@ import torch.nn as nn
 
 import transformers
 from transformers.modeling_bert import BertEmbeddings
+from transformers import BertConfig
 from .base import BaseModel
 
 class FCLayer(nn.Module):
@@ -38,17 +39,25 @@ class TGSAN2(BaseModel):
         pretrained_emb=None,
         num_emb=None,
         pretrained_lm=None,
-        bert_config=None, 
         device="cpu",
     ):
         super(TGSAN2, self).__init__()
-        self.bert_config = bert_config
+
+        self.bert_config = BertConfig.from_pretrained(model_config["bert_config"])
+
+        self.bert_config.hidden_size = model_config["emb_dim"]
+        self.bert_config.hidden_dropout_prob = model_config["emb_dropout"]
+
+        self.bert_config.vocab_size = num_emb
+        self.bert_config.max_position_embeddings = model_config['max_length']
+
+
         self.num_labels = num_labels
-        self.embedding = BertEmbeddings(config=bert_config)
-        self.embedding_dropout = nn.Dropout(model_config["embedding_dropout"])
+        self.embedding = BertEmbeddings(config=self.bert_config)
+        # self.embedding_dropout = nn.Dropout(model_config["emb_dropout"])
 
         self.encoders = nn.ModuleList([nn.TransformerEncoderLayer(
-            d_model=bert_config.hidden_size, 
+            d_model=self.bert_config.hidden_size, 
             nhead=12, 
             dim_feedforward=360, 
             dropout=model_config['encoder_dropout'], 
@@ -56,12 +65,12 @@ class TGSAN2(BaseModel):
         ) for i in range(model_config['n_encoder'])])
 
         self.classifier = FCLayer(
-            input_dim=bert_config.hidden_size,
+            input_dim=self.bert_config.hidden_size,
             output_dim=self.num_labels,
             dropout_rate=model_config['fc_dropout'],
             use_activation=False,
         )
-
+        self.device = device
         self.to(device)
 
     def pool_target(self, hidden_output, t_mask):
@@ -102,6 +111,8 @@ class TGSAN2(BaseModel):
             else:
                 loss_fct = nn.CrossEntropyLoss()
                 loss = loss_fct(logits.view(-1, self.num_labels), label.view(-1))
+        else:
+            loss = None
         # print("***********************")
 
         # print(logits[torch.isnan(logits)])
