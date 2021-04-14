@@ -14,14 +14,6 @@
 						"exec": [
 							"pm.test(\"target sentiment\", function () {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData.doclist[0].labelunits[0].sentiment).to.eql(\"-1\");\r",
-							"});\r",
-							"pm.test(\"target sentiment\", function () {\r",
-							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData.doclist[0].labelunits[1].sentiment).to.eql(\"1\");\r",
-							"});\r",
-							"pm.test(\"target sentiment\", function () {\r",
-							"    var jsonData = pm.response.json();\r",
 							"    pm.expect(jsonData.doclist[0].labelunits[2].sentiment).to.eql(\"0\");\r",
 							"});\r"
 						],
