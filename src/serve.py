@@ -26,7 +26,6 @@ import torch
 
 class ModelRunner:
     def __init__(self, version, base_dir, config_dir):
-        self.device = self.deploy_config['device'] if torch.cuda.is_available() else "cpu"
         self.base_dir = base_dir
         self.config_dir = config_dir
         self.queue = []
@@ -53,6 +52,7 @@ class ModelRunner:
         self.body_config = self.model_config[self.model_class]
 
     def load_model(self):
+        self.device = self.deploy_config['device'] if torch.cuda.is_available() else "cpu"
         word2idx_info = pickle.load(open(self.model_dir / "word2idx_info.pkl", "rb"))
         self.word2idx = word2idx_info["word2idx"]
         self.emb_dim = word2idx_info["emb_dim"]
