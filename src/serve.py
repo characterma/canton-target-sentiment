@@ -12,9 +12,6 @@ import sanic
 
 app = Sanic(__name__)
 
-MAX_BATCH_SIZE = 32  # we put at most MAX_BATCH_SIZE things in a single batch
-MAX_WAIT = 0.1  # we wait at most MAX_WAIT seconds before running for more inputs to arrive in batching
-
 from pathlib import Path
 import os, sys
 import numpy as np
@@ -26,20 +23,12 @@ from dataset import TargetDependentExample
 import traceback
 import torch
 
-device = 0
-
-base_dir = Path("./")
-config_dir = base_dir / "config"
-
-sentiment_to_id = {
-    "neutral": "0",
-    "negative": "-1", 
-    "positive": "1"
-}
-
 
 class ModelRunner:
-    def __init__(self, version):
+    def __init__(self, version, base_dir, config_dir):
+        self.device = self.deploy_config['device'] if torch.cuda.is_available() else "cpu"
+        self.base_dir = base_dir
+        self.config_dir = config_dir
         self.queue = []
         self.queue_lock = None
         self.needs_processing = None
@@ -53,8 +42,8 @@ class ModelRunner:
 
     def load_configs(self):
 
-        self.deploy_config = load_yaml(config_dir / f"deploy_{self.version}.yaml")
-        self.model_dir = base_dir / "models" / self.deploy_config["model_dir"]
+        self.deploy_config = load_yaml(self.config_dir / f"deploy_{self.version}.yaml")
+        self.model_dir = self.base_dir / "models" / self.deploy_config["model_dir"]
         self.model_config = load_yaml(self.model_dir / "model.yaml")
         self.train_config = load_yaml(self.model_dir / "train.yaml")
         self.state_path = self.model_dir / self.deploy_config["state_file"]
@@ -75,7 +64,7 @@ class ModelRunner:
             pretrained_emb=emb_vectors,
             num_emb=num_emb,
             pretrained_lm=None,
-            device=device,
+            device=self.device,
         )
         self.model.load_state(self.state_path)
 
@@ -86,13 +75,13 @@ class ModelRunner:
         )
 
     def schedule_processing_if_needed(self):
-        if len(self.queue) >= MAX_BATCH_SIZE:
+        if len(self.queue) >= self.deploy_config['max_batch_size']:
             logger.debug("next batch ready when processing a batch")
             self.needs_processing.set()
         elif self.queue:
             logger.debug("queue nonempty when processing a batch, setting next timer")
             self.needs_processing_timer = app.loop.call_at(
-                self.queue[0]["time"] + MAX_WAIT, self.needs_processing.set
+                self.queue[0]["time"] + self.deploy_config['max_wait'], self.needs_processing.set
             )
 
     async def process_input(self, input):
@@ -147,7 +136,7 @@ class ModelRunner:
                     )
                     continue
 
-                to_process = self.queue[:MAX_BATCH_SIZE]
+                to_process = self.queue[:self.deploy_config['max_batch_size']]
                 del self.queue[: len(to_process)]
                 self.schedule_processing_if_needed()
             # so here we copy, it would be neater to avoid this
@@ -159,7 +148,7 @@ class ModelRunner:
                     if "label" not in col:
                         input[col] = torch.stack(
                             [t["input"].features[col] for t in to_process], dim=0
-                        ).to(device)
+                        ).to(self.device)
 
             results = await app.loop.run_in_executor(
                 None, functools.partial(self.run_model, input)
@@ -182,17 +171,34 @@ class ModelRunner:
             del to_process
 
 
-def parse_input(doc):
-    results = []
-    for x in doc['labelunits']:
-        row = dict()
-        st_idx = x['unit_index'][0]
-        row['unit_text'] = x['unit_text']
-        row['subject_index'] = [[i[0] - st_idx, i[1] - st_idx] for i in x['subject_index']]
-        row['aspect_index'] = [[i[0] - st_idx, i[1] - st_idx] for i in x['aspect_index']]
+def parse_doc(doc, io_format):
+    if io_format=='syntactic':
+        results = []
+        for x in doc['labelunits']:
+            row = dict()
+            st_idx = x['unit_index'][0]
+            row['unit_text'] = x['unit_text']
+            row['subject_index'] = [[i[0] - st_idx, i[1] - st_idx] for i in x['subject_index']]
+            row['aspect_index'] = [[i[0] - st_idx, i[1] - st_idx] for i in x['aspect_index']]
 
-        results.append(row)
-    return results
+            results.append(row)
+        return results
+    else:
+        return [doc]
+
+
+def parse_labelunit(u, io_format):
+    if io_format=='syntactic':
+
+        text = u['unit_text']
+        target_locs = u["subject_index"] + u["aspect_index"]
+        subj_text = [u['unit_text'][i[0]:i[1]] for i in u["subject_index"]]
+    else:
+        text = u['text']
+        target_locs = u["target"]
+        subj_text = [u['unit_text'][i[0]:i[1]] for i in target_locs]
+    return text, target_locs, subj_text
+
 
 def insert_sentiment(doc, sentiments):
     for i, x in enumerate(doc['labelunits']):
@@ -207,30 +213,27 @@ def is_spam(unit_text, subject_text):
     return True
 
 
-
-@app.route("/rolex_sentiment", methods=["POST"], stream=True)
+@app.route("/target_sentiment", methods=["POST"], stream=True)
 async def target_sentiment(request):
     try:
         raw_data = await request.stream.read()
         raw_data = json.loads(raw_data)
         language = raw_data["language"]
+        io_format = raw_data["format"]
+        documents = raw_data['doclist'] if io_format=='syntactic' else [raw_data]
 
-        for doc in raw_data['doclist']:
+        for doc in documents:
 
-            parsed_doc = parse_input(doc)
+            parsed_doc = parse_doc(doc, io_format=io_format)
             sentiments = []
             for u in parsed_doc:
-                # rule check
-                subj_text = [u['unit_text'][i[0]:i[1]] for i in u["subject_index"]]
-                unit_text = u['unit_text']
-                subj_idx = u["subject_index"]
-                aspt_idx = u["aspect_index"]
 
-                if not is_spam(unit_text, subj_text):
+                text, target_locs, subj_text = parse_labelunit(u, io_format=io_format)
+                if not is_spam(text, subj_text):
 
                     e = TargetDependentExample(
-                        raw_text=unit_text,
-                        target_locs=subj_idx + aspt_idx, 
+                        raw_text=text,
+                        target_locs=target_locs, 
                         tokenizer=model_runner.tokenizer,
                         preprocess_config=model_runner.preprocess_config,
                         required_features=model_runner.model.INPUT_COLS,
@@ -251,6 +254,19 @@ async def target_sentiment(request):
 
 
 if __name__=="__main__":
-    model_runner = ModelRunner("chinese")
+    base_dir = Path("./")
+    config_dir = base_dir / "config"
+
+    sentiment_to_id = {
+        "neutral": "0",
+        "negative": "-1", 
+        "positive": "1"
+    }
+
+    model_runner = ModelRunner(
+        "chinese", 
+        base_dir=base_dir, 
+        config_dir=config_dir, 
+    )
     app.add_task(model_runner.model_runner())
     app.run(host="0.0.0.0", port=8080, debug=False)
