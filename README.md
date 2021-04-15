@@ -1,8 +1,8 @@
-# **Target-dependent sentiment analysis for Rolex**
+# **Target-dependent sentiment analysis**
 
 ## API Specification
 
-**URL: /rolex_sentiment**
+**URL: /target_sentiment**
 
 **Type: POST**
 
@@ -11,21 +11,63 @@
 1. Process target-guided sentiment analysis.
 2. Chinese model are currently supported. 
 
+### Input & output formats (general)
+
+
 **Input Data**
 
-- `language` ("chinese" or "english"): indicates the language of input text.
+- `language` indicates the language ("chinese" or "english")  of input text.
+- `text`: contents.
+- `target`: the indices of the target.
+- `format`: 'general'
+
+**Sample Input**
+
+```json
+{
+    "language": "chinese",
+    "format": "general",
+    "text": "蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。",
+    "target": [[0,2],[58,60],[58,60]],
+}
+```
+
+**Output Data**
+
+- Original input with an extra field:
+  * sentiment ("0", "-1", or "1")
+
+**Sample Output**
+
+```json
+{
+    "language": "chinese",
+    "format": "general",
+    "text": "蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。",
+    "target": [[0,2],[58,60],[58,60]],
+    "sentiment": "-1",
+}
+```
+
+### Input & output formats (syntactic API)
+
+**Input Data**
+
+- `language` indicates the language ("chinese" or "english")  of input text.
 - `doclist`: contains one or multiple documents
 - `labelunits`: contains labelunits in each document. Each labelunit has four required fields.
   * unit_index
   * unit_text
   * subject_index
   * aspect_index
+- `format`: 'syntactic'
 
 **Sample Input**
 
 ```json
 {
   "language": "chinese",
+  "format": "syntactic",
   "doclist": [
     {
       "labelunits": [
@@ -81,6 +123,7 @@
 ```json
 {
     "language": "chinese",
+    "format": "syntactic",
     "doclist": [
         {
             "labelunits": [
@@ -200,7 +243,7 @@
 | 100                        | 9988                         | 144.53              | 0       | 600m                    | 4.88G                      |
 | 200                        | 11458                        | 165.8               | 0       | 1200m                   | 5.90G                      |
 
-**Results -- with GPU**
+**Results -- with GPU (TGSAN)**
 
 | Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization |
 |----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|
@@ -208,6 +251,8 @@
 | 50                         | 39730                        | 574.24              | 0       | <1000m                    | <1.20G                      |
 | 100                        | 49828                         | 719.14              | 0       | <1000m                    | <1.20G                      |
 | 200                        | 53229                        | 766.16               | 0       | <1000m                   | <1.20G                      |
+
+**Results -- with GPU (TGSAN2)**
 
 ## Accuracy
 

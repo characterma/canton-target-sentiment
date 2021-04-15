@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "ccf9b50b-9ec3-4bc1-ae0b-e138e08e7740",
-		"name": "rolex_sentiment",
+		"name": "target_sentiment",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -29,13 +29,13 @@
 					"raw": "{\r\n  \"language\": \"chinese\",\r\n  \"doclist\": [\r\n    {\r\n      \"labelunits\": [\r\n        {\r\n          \"unit_index\": [0,67],\r\n          \"unit_text\": \"蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。\",\r\n          \"subject_index\": [[0, 2], [58, 60]],\r\n          \"aspect_index\": []\r\n        }, \r\n        {\r\n          \"unit_index\": [0,100],\r\n          \"unit_text\": \"同樣道理，在黑暗中以紫外 燈照射roger dubuis excalibur blacklight所發出的七彩光芒，在剔透的鏤通機芯映襯下，也顯得更具深度及迷人。\",\r\n          \"subject_index\": [[16, 21], [22, 28], [29, 38], [39, 49], [64, 66]],\r\n          \"aspect_index\": []\r\n        }, \r\n        {\r\n          \"unit_index\": [0,13],\r\n          \"unit_text\": \"#cartier #美洲豹\",\r\n          \"subject_index\": [[1, 8]],\r\n          \"aspect_index\": []\r\n        }, \r\n        {\r\n          \"unit_index\": [0,220],\r\n          \"unit_text\": \"🤩🤩🤩🤩🤩🤩🤩🤩蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。\",\r\n          \"subject_index\": [[16, 18], [74, 76]],\r\n          \"aspect_index\": []\r\n        }\r\n        ]\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
-					"raw": "http://{{server}}/rolex_sentiment",
+					"raw": "http://{{server}}/target_sentiment",
 					"protocol": "http",
 					"host": [
 						"{{server}}"
 					],
 					"path": [
-						"rolex_sentiment"
+						"target_sentiment"
 					]
 				}
 			},
