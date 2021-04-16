@@ -20,6 +20,7 @@ from tokenizer import get_tokenizer
 from model import *
 import pickle
 from dataset import TargetDependentExample
+from neg_kws import neg_kws
 import traceback
 import torch
 
@@ -43,6 +44,8 @@ class ModelRunner:
 
         self.deploy_config = load_yaml(self.config_dir / f"deploy_{self.version}.yaml")
         self.model_dir = self.base_dir / "models" / self.deploy_config["model_dir"]
+
+        print(os.listdir(self.model_dir))
         self.model_config = load_yaml(self.model_dir / "model.yaml")
         self.train_config = load_yaml(self.model_dir / "train.yaml")
         self.state_path = self.model_dir / self.deploy_config["state_file"]
@@ -200,9 +203,13 @@ def parse_labelunit(u, io_format):
     return text, target_locs, subj_text
 
 
-def insert_sentiment(doc, sentiments):
+def insert_sentiment(doc, sentiments, debugs=None):
     for i, x in enumerate(doc['labelunits']):
         x['sentiment'] = sentiment_to_id[sentiments[i]]
+
+        if debugs is not None:
+            x['debug'] = debugs[i]
+
 
 
 def is_spam(unit_text, subject_text):
@@ -226,9 +233,16 @@ async def target_sentiment(request):
 
             parsed_doc = parse_doc(doc, io_format=io_format)
             sentiments = []
+            debugs = []
             for u in parsed_doc:
 
                 text, target_locs, subj_text = parse_labelunit(u, io_format=io_format)
+
+                # 1. check spam
+                # 2. model
+                # 3. check negative kws
+                debug = {}
+
                 if not is_spam(text, subj_text):
 
                     e = TargetDependentExample(
@@ -240,11 +254,21 @@ async def target_sentiment(request):
                         word2idx=model_runner.word2idx,
                     )
                     results = await model_runner.process_input(e)
+                    
+                    if results["sentiment"]=='negative':
+                        # check neg kws:
+                        if re.search(neg_kws, text) is None:
+                            results["sentiment"] = "neutral"
+                            debug['no_neg_kws'] = True
+
                     sentiments.append(results["sentiment"])
                 else:
+                    debug['is_spam'] = True
+
+                    debugs.append(debug)
                     sentiments.append("neutral")
 
-            insert_sentiment(doc, sentiments)
+            insert_sentiment(doc, sentiments, debugs=debugs)
 
         return sanic.response.json(raw_data, status=200)
 
