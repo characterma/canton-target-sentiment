@@ -218,8 +218,8 @@ class TGSAN(BaseModel):
             self.embed = nn.Embedding(num_embeddings=num_emb, embedding_dim=emb_dim)
 
         self.emb_dropout = (
-            nn.Dropout(model_config["embedding_dropout"])
-            if model_config["embedding_dropout"] > 0.0
+            nn.Dropout(model_config["emb_dropout"])
+            if model_config["emb_dropout"] > 0.0
             else None
         )  ## in case of overfitting, 50% neurals will be droped randomly
 
