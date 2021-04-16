@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "ccf9b50b-9ec3-4bc1-ae0b-e138e08e7740",
-		"name": "target_sentiment",
+		"name": "rolex_sentiment",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -14,8 +14,8 @@
 						"exec": [
 							"pm.test(\"target sentiment\", function () {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData.doclist[0].labelunits[2].sentiment).to.eql(\"0\");\r",
-							"});\r"
+							"    pm.expect(jsonData.doclist[0].labelunits[0].sentiment).to.eql(\"1\");\r",
+							"});"
 						],
 						"type": "text/javascript"
 					}
@@ -26,7 +26,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"language\": \"chinese\",\r\n  \"doclist\": [\r\n    {\r\n      \"labelunits\": [\r\n        {\r\n          \"unit_index\": [0,67],\r\n          \"unit_text\": \"蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。\",\r\n          \"subject_index\": [[0, 2], [58, 60]],\r\n          \"aspect_index\": []\r\n        }, \r\n        {\r\n          \"unit_index\": [0,100],\r\n          \"unit_text\": \"同樣道理，在黑暗中以紫外 燈照射roger dubuis excalibur blacklight所發出的七彩光芒，在剔透的鏤通機芯映襯下，也顯得更具深度及迷人。\",\r\n          \"subject_index\": [[16, 21], [22, 28], [29, 38], [39, 49], [64, 66]],\r\n          \"aspect_index\": []\r\n        }, \r\n        {\r\n          \"unit_index\": [0,13],\r\n          \"unit_text\": \"#cartier #美洲豹\",\r\n          \"subject_index\": [[1, 8]],\r\n          \"aspect_index\": []\r\n        }, \r\n        {\r\n          \"unit_index\": [0,220],\r\n          \"unit_text\": \"🤩🤩🤩🤩🤩🤩🤩🤩蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。\",\r\n          \"subject_index\": [[16, 18], [74, 76]],\r\n          \"aspect_index\": []\r\n        }\r\n        ]\r\n    }\r\n  ]\r\n}"
+					"raw": "{\r\n  \"language\": \"chinese\",\r\n  \"format\": \"syntactic\",\r\n  \"doclist\": [\r\n    {\r\n        \"docid\": \"123\",\r\n      \"labelunits\": [\r\n{\r\n            \"unit_index\": [0, 81], \r\n            \"unit_text\": \"同樣道理，在黑暗中以紫外 燈照射roger dubuis excalibur blacklight所發出的七彩光芒，在剔透的鏤通機芯映襯下，也顯得更具深度及迷人。\", \r\n            \"subject\": \"66e23c65607e444ca3f844eb8156d4bb\", \r\n            \"subject_name\": \"ROGER DUBUIS--Excalibur王者系列\", \r\n            \"subject_index\": [[16, 21], [22, 28], [29, 38], [39, 49]], \r\n            \"subject_text\": [\"roger\", \"dubuis\", \"excalibur\", \"blacklight\"], \r\n            \"aspect\": \"0e784175173349da824aa695148b484e\", \r\n            \"aspect_name\": \"机芯类型\", \r\n            \"aspect_index\": [[64, 66]], \r\n            \"aspect_text\": [\"機芯\"], \r\n            \"sentiment_index\": [], \r\n            \"sentiment_text\": []\r\n        }]\r\n    }\r\n  ]\r\n}"
 				},
 				"url": {
 					"raw": "http://{{server}}/target_sentiment",
