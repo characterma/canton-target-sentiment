@@ -15,8 +15,9 @@ app = Sanic(__name__)
 from pathlib import Path
 import os, sys
 import numpy as np
-from utils import load_yaml, SENTI_ID_MAP_INV
+from utils import load_yaml, SENTI_ID_MAP_INV, MODEL_EMB_TYPE
 from tokenizer import get_tokenizer
+from transformers_utils import PretrainedLM
 from model import *
 import pickle
 from dataset import TargetDependentExample
@@ -36,8 +37,8 @@ class ModelRunner:
         self.version = version
 
         self.load_configs()
-        self.load_model()
         self.load_tokenizer()
+        self.load_model()
         self.model.eval()
 
     def load_configs(self):
@@ -56,20 +57,41 @@ class ModelRunner:
 
     def load_model(self):
         self.device = self.deploy_config['device'] if torch.cuda.is_available() else "cpu"
-        word2idx_info = pickle.load(open(self.model_dir / "word2idx_info.pkl", "rb"))
-        self.word2idx = word2idx_info["word2idx"]
-        self.emb_dim = word2idx_info["emb_dim"]
-        emb_vectors = np.random.rand(len(self.word2idx), self.emb_dim)
-        num_emb = len(self.word2idx)
-        self.model = getattr(sys.modules[__name__], self.model_class)(
-            model_config=self.body_config,
-            num_labels=3,
-            pretrained_emb=emb_vectors,
-            num_emb=num_emb,
-            pretrained_lm=None,
-            device=self.device,
-        )
-        self.model.load_state(self.state_path)
+
+        if MODEL_EMB_TYPE[self.model_class] == "WORD":
+
+            word2idx_info = pickle.load(open(self.model_dir / "word2idx_info.pkl", "rb"))
+            self.word2idx = word2idx_info["word2idx"]
+            self.emb_dim = word2idx_info["emb_dim"]
+            emb_vectors = np.random.rand(len(self.word2idx), self.emb_dim)
+            num_emb = len(self.word2idx)
+            self.model = getattr(sys.modules[__name__], self.model_class)(
+                model_config=self.body_config,
+                num_labels=3,
+                pretrained_emb=emb_vectors,
+                num_emb=num_emb,
+                pretrained_lm=None,
+                device=self.device,
+            )
+            self.model.load_state(self.state_path)
+        elif MODEL_EMB_TYPE[self.model_class] == "BERT":
+
+            pretrained_lm = PretrainedLM(self.body_config["pretrained_lm"])
+            pretrained_lm.resize_token_embeddings(tokenizer=self.tokenizer)
+            self.word2idx = None
+            self.emb_dim = None
+
+            self.model = getattr(sys.modules[__name__], self.model_class)(
+                model_config=self.body_config,
+                num_labels=3,
+                pretrained_emb=None,
+                num_emb=None,
+                pretrained_lm=pretrained_lm,
+                device=self.device,
+            )
+            self.model.load_state(self.state_path)
+        else:
+            raise("Model not supported.")
 
     def load_tokenizer(self):
         self.tokenizer = get_tokenizer(
@@ -265,8 +287,10 @@ async def target_sentiment(request):
                 else:
                     debug['is_spam'] = True
 
-                    debugs.append(debug)
+                    
                     sentiments.append("neutral")
+
+                debugs.append(debug)
 
             insert_sentiment(doc, sentiments, debugs=debugs)
 
