@@ -22,7 +22,7 @@ import pandas as pd
 from dataset import TargetDependentDataset
 from trainer import Trainer
 from evaluater import Evaluater
-from transformers_utils import PretrainedLM, load_bert_config
+from transformers_utils import PretrainedLM
 from utils import (
     init_logger,
     set_seed,
@@ -59,7 +59,6 @@ def init_model(
         pretrained_emb=pretrained_emb,
         num_emb=num_emb,
         pretrained_lm=pretrained_lm,
-        bert_config=bert_config,
         device=device,
     )
     if state_path is not None:
@@ -162,16 +161,14 @@ def run(
         save_yaml(eval_config, eval_output_dir / eval_config_file)
 
     model_class = train_config["model_class"]
-    preprocess_config = model_config[model_class]["preprocess"]
-    body_config = model_config[model_class]["body"]
-    optim_config = model_config[model_class]["optim"]
+    model_config = model_config[model_class]
     set_seed(train_config["seed"])
     dataset_dir = base_dir / "data" / "datasets" / data_config["dataset"]
 
     # load pretrained language model
     tokenizer = get_tokenizer(
-        source=preprocess_config["tokenizer_source"],
-        name=preprocess_config["tokenizer_name"],
+        source=model_config["tokenizer_source"],
+        name=model_config["tokenizer_name"],
     )
     pretrained_lm = None
     pretrained_word_emb = None
@@ -180,30 +177,20 @@ def run(
     num_emb = None
     add_special_tokens = True
     label_map = get_label_map(dataset_dir / data_config["label_map"])
-    bert_config = None
 
     if MODEL_EMB_TYPE[model_class] == "BERT":
-        pretrained_lm = PretrainedLM(body_config["pretrained_lm"])
+        pretrained_lm = PretrainedLM(model_config["pretrained_lm"])
         pretrained_lm.resize_token_embeddings(tokenizer=tokenizer)
-        bert_config = None
 
     elif MODEL_EMB_TYPE[model_class] == "WORD":
         add_special_tokens = False
         if do_train:
 
-            # TODO
-            if model_class == "TGSAN2":
-                bert_config = load_bert_config(body_config["bert_config"])
-                bert_config.hidden_size = 120
-                bert_config.hidden_dropout_prob = 0.5
-            else:
-                bert_config = None
-
             _vocab = TargetDependentDataset(
                 dataset_dir / data_config["train"],
                 label_map,
                 tokenizer,
-                preprocess_config=preprocess_config,
+                preprocess_config=model_config,
                 word2idx=None,
                 add_special_tokens=False,
                 name="train",
@@ -224,13 +211,13 @@ def run(
                 word2idx[k] = len(word2idx)
             num_emb = len(word2idx)
 
-            if body_config["use_pretrained"]:
+            if model_config["use_pretrained"]:
 
                 word_emb_path = (
                     base_dir
                     / "data"
                     / "word_embeddings"
-                    / body_config["pretrained_word_emb"]
+                    / model_config["pretrained_word_emb"]
                 )
                 logger.info("***** Loading pretrained word embeddings *****")
                 logger.info("  Pretrained word embeddings = '%s'", str(word_emb_path))
@@ -251,12 +238,8 @@ def run(
                         emb_vectors[word2idx[k], :] = glove_vectors[glove_idx, :]
                 emb_dim = emb_vectors.shape[1]
             else:
-                emb_dim = body_config["emb_dim"]
+                emb_dim = model_config["emb_dim"]
 
-            if model_class == "TGSAN2":
-                bert_config.vocab_size = len(word2idx)
-                bert_config.max_position_embeddings = preprocess_config['max_length']
-                print(bert_config)
             word2idx_info = {"word2idx": word2idx, "emb_dim": emb_dim}
             pickle.dump(
                 word2idx_info, open(train_output_dir / "word2idx_info.pkl", "wb")
@@ -284,12 +267,11 @@ def run(
 
     model = init_model(
         model_class=model_class,
-        body_config=body_config,
+        body_config=model_config,
         num_labels=len(label_map),
         pretrained_emb=emb_vectors,
         num_emb=num_emb,
         pretrained_lm=pretrained_lm,
-        bert_config=bert_config, 
         device=device,
         state_path=train_state_path
         if train_state_path
@@ -298,7 +280,7 @@ def run(
 
     # load and preprocess data
     if do_train:
-        if body_config.get('kd', False):
+        if model_config.get('kd', False):
             required_features=model.INPUT_COLS
         else:
             required_features=[col for col in model.INPUT_COLS if col!='soft_label']
@@ -307,13 +289,13 @@ def run(
             dataset_dir / data_config["train"],
             label_map,
             tokenizer,
-            preprocess_config=preprocess_config,
+            preprocess_config=model_config,
             word2idx=word2idx,
             add_special_tokens=add_special_tokens,
             name="train",
             required_features=required_features, 
-            soft_label_path=dataset_dir / "logits.npy" if body_config.get('kd', False) else None, 
-            failed_ids_path=dataset_dir / "kd_failed_ids.pkl" if body_config.get('kd', False) else None, 
+            soft_label_path=dataset_dir / "logits.npy" if model_config.get('kd', False) else None, 
+            failed_ids_path=dataset_dir / "kd_failed_ids.pkl" if model_config.get('kd', False) else None, 
             source_data_fmt=data_config["format"]
         )
 
@@ -328,7 +310,7 @@ def run(
                 dataset_dir / dev_file,
                 label_map,
                 tokenizer,
-                preprocess_config=preprocess_config,
+                preprocess_config=model_config,
                 word2idx=word2idx,
                 add_special_tokens=add_special_tokens,
                 name=dev_name,
@@ -349,7 +331,7 @@ def run(
         trainer = Trainer(
             model=model,
             train_config=train_config,
-            optim_config=optim_config,
+            optim_config=model_config,
             output_dir=train_output_dir,
             dataset=train_dataset,
             dev_evaluaters=dev_evaluators,
@@ -373,7 +355,7 @@ def run(
                 dataset_dir / test_file,
                 label_map,
                 tokenizer,
-                preprocess_config=preprocess_config,
+                preprocess_config=model_config,
                 word2idx=word2idx,
                 add_special_tokens=add_special_tokens,
                 name=test_name,

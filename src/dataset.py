@@ -11,7 +11,8 @@ from tqdm import tqdm
 from torch.utils.data import Dataset
 from pathlib import Path
 from utils import SENTI_ID_MAP, SPEC_TOKEN
-from preprocess import preprocess_text_hk_beauty, standardize_text, emoji_index_conversion
+from preprocess import preprocess_text_hk_beauty, preprocess_text_hk_gov
+from preprocess import standardize_text, emoji_index_conversion
 from sklearn.utils import resample
 from tokenizer import tokenizer_internal
 from collections import Counter
@@ -65,19 +66,26 @@ class TargetDependentExample(object):
         get_vocab_only=False,
         vocab=None,
         soft_label=None, 
+        names=None,
     ):
 
         self.raw_text = standardize_text(str(raw_text))
+        if names is not None:
+            self.names = [standardize_text(str(nme)) for nme in names]
+        else:
+            self.names = names
+        
         self.target_locs = emoji_index_conversion(self.raw_text, target_locs)
-        # self.target_locs = target_locs
         self.succeeded = True
         self.label = label
         self.soft_label = soft_label
         self.word2idx = word2idx
         self.vocab = vocab
         self.tokenizer = tokenizer
+        self.preprocessed_text = ""
         self.preprocess_config = preprocess_config
         self.required_features = required_features
+        self.message = ""
 
         if get_vocab_only: # only non-bert tokenizer applies
             self.get_vocab_non_bert()
@@ -86,26 +94,44 @@ class TargetDependentExample(object):
             if not self.word2idx: # bert
                 if preprocess_config.get("text_preprocessing", "") == "hk_beauty":
                     tgt_sent, (st_idx, ed_idx), hl_sent, prev_sents, next_sents, tgt_in_hl, = preprocess_text_hk_beauty(
-                        raw_text, target_locs[0][0], target_locs[0][1]
+                        self.raw_text, self.target_locs[0][0], self.target_locs[0][1]
                     )
                     if st_idx is None or ed_idx is None:
                         self.succeeded = False
+
                     self.target_locs = [[st_idx, ed_idx]]
+                elif preprocess_config.get("text_preprocessing", "") == "hk_gov":
+
+                    tgt_sent, self.target_locs, msg = preprocess_text_hk_gov(content=self.raw_text, target_indices=self.target_locs, names=self.names)
+                    self.preprocessed_text = tgt_sent
+                    hl_sent = ""
+                    prev_sents = ""
+                    next_sents = ""
+                    tgt_in_hl = False
+
+                    if tgt_sent is None:
+                        self.succeeded = False
+                        self.message = f'preprocess_text_hk_gov failed: {msg}'
+
                 else:
                     tgt_sent = raw_text
                     hl_sent, prev_sents, next_sents = "", "", ""
                     tgt_in_hl = False
 
-                self.features = self.get_features_bert(
-                    tgt_sent=tgt_sent,
-                    hl_sent=hl_sent,
-                    prev_sents=prev_sents,
-                    next_sents=next_sents,
-                    tgt_in_hl=tgt_in_hl,
-                    label=label
-                )
-                if not self.features:
-                    self.succeeded = False
+                if self.succeeded:
+                    self.features, msg = self.get_features_bert(
+                        tgt_sent=tgt_sent,
+                        hl_sent=hl_sent,
+                        prev_sents=prev_sents,
+                        next_sents=next_sents,
+                        tgt_in_hl=tgt_in_hl,
+                        label=label
+                    )
+
+                    if not self.features:
+                        self.succeeded = False
+                        self.message = f"get_features_bert failed: {msg}"
+
             else: # non-bert
                 if preprocess_config.get("text_preprocessing", "") == "hk_beauty":
                     self.raw_text, (st_idx, ed_idx), _, _, _, _ = preprocess_text_hk_beauty(
@@ -230,7 +256,7 @@ class TargetDependentExample(object):
         features = dict()
 
         tgt_sent_encoded = self.tokenizer(
-            tgt_sent,
+            tgt_sent, # preprocessed text : merged target sentences + truncated by 180
             max_length=max_length * 10,
             truncation=True,
             padding=False,
@@ -244,16 +270,15 @@ class TargetDependentExample(object):
         target_mask = np.array([0] * len(raw_text_ids))
 
         # Find the token positions of target
-        tgt_token_ids = []
+        tgt_token_pos = []
         for (start_idx, end_idx) in self.target_locs:
             for char_idx in range(start_idx, end_idx):
                 token_idx = tgt_sent_encoded.char_to_token(char_idx)
                 if token_idx is not None and token_idx < len(raw_text_ids):
-                    # token_idx = token_idx - 1 # because CLS is removed
                     target_mask[token_idx] = 1
-                    tgt_token_ids.append(token_idx)
+                    tgt_token_pos.append(token_idx)
 
-        tgt_token_ids = np.array(tgt_token_ids)
+        tgt_token_pos = np.array(tgt_token_pos)
 
         cur_len = len(raw_text_ids)
         if max_length - cur_len > 0:
@@ -427,8 +452,8 @@ class TargetDependentExample(object):
                         ),
                         axis=None,
                     )
-                    tgt_token_ids = (
-                        tgt_token_ids
+                    tgt_token_pos = (
+                        tgt_token_pos
                         + len(prev_sents_encoded.token_type_ids[1:][-left_len:])
                         - 1
                     )
@@ -462,10 +487,10 @@ class TargetDependentExample(object):
                         ),
                         axis=None,
                     )
-                    tgt_token_ids = (
-                        tgt_token_ids + hl_sent_len
+                    tgt_token_pos = (
+                        tgt_token_pos + hl_sent_len
                         if left_len > 0
-                        else tgt_token_ids + hl_sent_len - 1
+                        else tgt_token_pos + hl_sent_len - 1
                     )
 
             (
@@ -498,11 +523,11 @@ class TargetDependentExample(object):
         else:
             label_id = None
 
-        start_token_pos = min(tgt_token_ids) if len(tgt_token_ids) > 0 else None
-        end_token_pos = max(tgt_token_ids) if len(tgt_token_ids) > 0 else None
+        start_token_pos = min(tgt_token_pos) if len(tgt_token_pos) > 0 else None
+        end_token_pos = max(tgt_token_pos) if len(tgt_token_pos) > 0 else None
 
         if start_token_pos is None or end_token_pos is None:
-            return features
+            return features, "target is not found."
 
         if "raw_text_without_target" in self.required_features:
             raw_text_without_target = np.concatenate(
@@ -527,13 +552,9 @@ class TargetDependentExample(object):
         if label_id is not None:
             features["label"] = torch.tensor(label_id).long()
 
-        # if "target" in required_features:
-        #     target_ids = raw_text_ids[start_token_pos : end_token_pos + 1]
-        #     target_ids = np.concatenate(
-        #         (target_ids, [0] * (len(raw_text_ids) - len(target_ids))), axis=None
-        #     )
-        # features["target"] = torch.tensor(tgt_token_ids).long()
-        # features["target_tokens"]= tokenizer.convert_ids_to_tokens(torch.tensor(tgt_token_ids).long())
+        features["target_tokens"]= self.tokenizer.convert_ids_to_tokens(
+            torch.index_select(torch.tensor(raw_text_ids).long(), 0, torch.tensor(tgt_token_pos).long())
+        )
 
         if "target_right" in self.required_features:
             target_right = raw_text_ids[attention_mask > 0][end_token_pos:][-1::-1]
@@ -577,16 +598,10 @@ class TargetDependentExample(object):
             features["attention_mask"] = torch.tensor(attention_mask).long()
 
         if "token_type_ids" in self.required_features:
-            # features["token_type_ids"] = torch.tensor(token_type_ids).long()
             features["token_type_ids"] = torch.zeros(len(attention_mask)).long()
-            # features["token_type_ids"][start_token_pos:end_token_pos+1] = 1
 
         features["target_span"] = torch.tensor([start_token_pos, end_token_pos]).long()
-        features["target_tokens"] = self.tokenizer.convert_ids_to_tokens(
-            raw_text_ids[start_token_pos : end_token_pos + 1]
-        )
-
-        return features
+        return features, ""
 
 
 class TargetDependentDataset(Dataset):
@@ -647,9 +662,10 @@ class TargetDependentDataset(Dataset):
             self.df = pd.DataFrame(
                 data={
                     "raw_text": [e.raw_text for e in self.data],
+                    "preprocessed_text": [e.preprocessed_text for e in self.data],
                     "target_locs": [e.target_locs for e in self.data],
                     "tokens": [e.features["tokens"] for e in self.data],
-                    # "target_tokens": [e.features["tokens"] for e in self.data],
+                    "target_tokens": [e.features["target_tokens"] for e in self.data],
                     "target_mask": [e.features["target_mask"].tolist() for e in self.data],
                     "label": [e.label for e in self.data],
                 }
@@ -679,7 +695,7 @@ class TargetDependentDataset(Dataset):
             soft_labels = None
 
         data = []
-        failed_ids = []
+        failed_ids = {}
 
         print("**", train_failed_ids)
         if soft_labels is not None:
@@ -697,10 +713,12 @@ class TargetDependentDataset(Dataset):
 
             if label not in self.label_map and label.lower() not in SENTI_ID_MAP:
                 logger.warning("  Illegal label : %s", label)
-                failed_ids.append(id)
+                failed_ids[id] = {
+                    'data': line, 
+                    'error': 'illegal label'
+                }
                 continue
 
-            # print(self.label_map[label])
             e = TargetDependentExample(
                 raw_text=line["content"],
                 target_locs=line['target_locs'],
@@ -711,17 +729,21 @@ class TargetDependentDataset(Dataset):
                 word2idx=word2idx,
                 get_vocab_only=self.get_vocab_only,
                 vocab=self.vocab,
-                soft_label=soft_labels[len(data), :] if soft_labels is not None else None 
+                soft_label=soft_labels[len(data), :] if soft_labels is not None else None,
+                names=line.get('names', None)
             )
 
             if e.succeeded:
                 data.append(e)
             else:
-                failed_ids.append(id)
+                failed_ids[id] = {
+                    'data': line, 
+                    'error': 'preprocessing failed' + e.message
+                }
 
         logger.info("  Loaded examples = %d", len(data))
-        logger.info("  Failed preprocessing = %d", preprocess_failed)
-        logger.info("  Failed max len = %d", feature_failed)
+        logger.info("  Failed preprocessing = %d", len(failed_ids))
+        # logger.info("  Failed max len = %d", feature_failed)
         return data, failed_ids
 
     def load_from_path(self, word2idx=None):

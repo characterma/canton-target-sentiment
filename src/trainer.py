@@ -233,10 +233,15 @@ class Trainer(object):
 
             # determine whether it is best
             # if evaluater.dataset_name!="train":
+            # if (
+            #     self.best_scores[evaluater.dataset_name]["macro_f1"] is None
+            #     or self.best_scores[evaluater.dataset_name]["macro_f1"]
+            #     < metrics["macro_f1"]
+            # ):
             if (
-                self.best_scores[evaluater.dataset_name]["macro_f1"] is None
-                or self.best_scores[evaluater.dataset_name]["macro_f1"]
-                < metrics["macro_f1"]
+                self.best_scores[evaluater.dataset_name]["loss"] is None
+                or self.best_scores[evaluater.dataset_name]["loss"]
+                < metrics["loss"]
             ):
                 self.best_scores[evaluater.dataset_name] = metrics
                 self.best_epoch[evaluater.dataset_name] = epoch

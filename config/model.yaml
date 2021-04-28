@@ -1,21 +1,21 @@
 TDBERT:
-  preprocess:
-    text_preprocessing: "hk_beauty" # "", hk_beauty
+  # preprocess:
+    text_preprocessing: "hk_gov" # "", hk_beauty
     mask_target: False
     max_length: 180
     tokenizer_source: "transformers"
     tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
-  body:
+  # body:
     pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
     target_pooling: "max"
     use_cls: False
     dropout_rate: 0.1
-  optim:
+  # optim:
     optimizer: "AdamW"
     sampler: "random"
     batch_size: 16
     learning_rate: 2e-5
-    num_train_epochs: 8
+    num_train_epochs: 1
     weight_decay: 0.0
     gradient_accumulation_steps: 1
     adam_epsilon: 1e-8
@@ -23,28 +23,23 @@ TDBERT:
     max_steps: -1
     warmup_steps: 0
 TGSAN2:
-  preprocess:
-    text_preprocessing: "hk_beauty" # "", hk_beauty
-    max_length: 80
+  # preprocess:
+    text_preprocessing: "" # "", hk_beauty
+    max_length: 150
     tokenizer_source: "spacy"
     tokenizer_name: "chinese" 
-  body:
+  # body:
     kd: False
     use_pretrained: False
     bert_config: "bert-base-chinese"
     pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
-    emb_dim: 150
-    embedding_trainable: True
-    embedding_dropout: 0.5
-    rnn_hidden_dim: 150
-    r: 2
-    tgt_san_dim: 64
-    san_dropout: 0.1
-    san_penal_coeff: 0.1
-    ffn_dim: 16
-    ffn_dropout: 0.1
-    att_dropout: 0.1
-  optim:
+    emb_dim: 360
+    emb_dropout: 0.5
+    emb_trainable: True
+    encoder_dropout: 0.1
+    fc_dropout: 0.1
+    n_encoder: 2
+  # optim:
     optimizer: "AdamW"
     batch_size: 64
     learning_rate: 0.0015
@@ -56,18 +51,18 @@ TGSAN2:
     max_steps: -1
     warmup_steps: 0
 TGSAN:
-  preprocess:
+  # preprocess:
     text_preprocessing: "" # "", hk_beauty
-    max_length: 80
+    max_length: 150
     tokenizer_source: "spacy"
     tokenizer_name: "chinese" 
-  body:
+  # body:
     kd: False
     use_pretrained: False
     pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
     emb_dim: 150
+    emb_dropout: 0.5
     embedding_trainable: True
-    embedding_dropout: 0.5
     rnn_hidden_dim: 150
     r: 2
     tgt_san_dim: 64
@@ -76,7 +71,7 @@ TGSAN:
     ffn_dim: 16
     ffn_dropout: 0.1
     att_dropout: 0.1
-  optim:
+  # optim:
     optimizer: "AdamW"
     batch_size: 64
     learning_rate: 0.0015

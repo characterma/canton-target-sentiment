@@ -1,5 +1,6 @@
 # coding=utf-8
 import re
+import numpy as np
 from utils import SPEC_TOKEN
 from hanziconv import HanziConv
 
@@ -45,7 +46,6 @@ def emoji_index_conversion(text, indices):
         else:
             x[1] = idx_map[x[1]]
     return indices
-
 
 
 def get_hl_content_spans(
@@ -112,6 +112,116 @@ def truncate_by_target_center(
 ):
     pass
 
+def preprocess_text_hk_gov(content, target_indices, names=None, n_prev=0, n_next=0):
+    """
+    Return:
+        reconst_content, reconst_target_indices, ""
+    """
+    def search_for_idx(name, content, st_idx_old):
+        matches = [m.span()[0] for m in re.finditer(name, content)]
+        if not matches:
+            return None
+        dist = np.absolute(np.array(matches) - st_idx_old)
+        st_idx_new = matches[np.argmin(dist)]
+        return st_idx_new
+
+    # target_indices = emoji_index_conversion(content, target_indices)
+    for t, nme in zip(target_indices, names):
+        if content[t[0]:t[1]]!=nme:
+            start_idx = search_for_idx(nme, content, t[0])
+            if start_idx is None:
+                return None, None, "start_idx is None"
+            end_idx = start_idx + len(nme)
+            t[0] = start_idx
+            t[1] = end_idx
+
+    sents = re.split("\?|!|。|？|！|\n|\r", content)
+    
+    def find_idices_after_split(start_idx, end_idx, sents):
+        text_len = end_idx - start_idx
+        cur_start_idx = 0
+        cur_end_idx = 0
+        for i, s in enumerate(sents):
+            cur_end_idx += len(s) + 1
+            if cur_start_idx <= start_idx < cur_end_idx:
+                if start_idx - cur_start_idx + text_len <= len(s):
+                    return i, start_idx - cur_start_idx, start_idx - cur_start_idx + text_len
+                else:
+                    return None, None, None
+                    
+            cur_start_idx += len(s) + 1
+        return None, None, None
+           
+    def neighbor_sentences(sentence_id, sents, n_prev=0, n_next=0):
+        prev = []
+        next = []
+        sents_with_id = list(zip(range(len(sents)), sents))
+        for s in sents_with_id[:sentence_id][-1::-1]:
+            if s[1].strip()!="":
+                prev.append(s[0])
+
+        if sentence_id!=len(sents)-1:
+            for s in sents_with_id[sentence_id+1:]:
+                if s[1].strip()!="":
+                    next.append(s[0])
+        
+        prev = prev[:n_prev][-1::-1]
+        next = next[:n_next]
+        return prev, next
+
+    paragraphs = []
+
+    for start_idx, end_idx in target_indices:
+        
+        sentence_id, start_idx, end_idx = find_idices_after_split(
+            start_idx,
+            end_idx,
+            sents
+        )
+        
+        if sentence_id is None:
+            return None, None, "sentence_id is None"
+        prev, next = neighbor_sentences(sentence_id, sents, n_prev=n_prev, n_next=n_next)
+        paragraphs.append({
+            'prev': prev, 
+            'next': next,
+            'sentence_id': sentence_id,
+            'start_idx': start_idx,
+            'end_idx': end_idx,
+        })
+    
+    reconst_sent_ids = []
+    reconst_target_indices = []
+    curr_len = 0
+    for s in paragraphs:
+        start_idx = s['start_idx'] + curr_len
+        end_idx = s['end_idx'] + curr_len
+        for idx in s['prev']:
+            if idx not in reconst_sent_ids and idx != s['sentence_id']:
+                reconst_sent_ids.append(idx)
+                start_idx += len(sents[idx])
+                end_idx += len(sents[idx])
+                curr_len += len(sents[idx])
+                
+        reconst_sent_ids.append(s['sentence_id'])
+        curr_len += len(sents[s['sentence_id']])
+        
+        for idx in s['next']:
+            if idx not in reconst_sent_ids and idx != s['sentence_id']:
+                reconst_sent_ids.append(idx)
+                curr_len += len(sents[idx])
+        reconst_target_indices.append([start_idx, end_idx])
+        
+    reconst_content = "".join([sents[i] for i in reconst_sent_ids])
+    
+    if names is not None:
+        assert(len(names)==len(reconst_target_indices))
+        for t, nme in zip(reconst_target_indices, names):
+            if not reconst_content[t[0]:t[1]]==nme:
+                return None, None, "reconst_content[t[0]:t[1]]!=nme"
+
+    return reconst_content, reconst_target_indices, ""
+        
 
 def preprocess_text_hk_beauty(
     text, tgt_st_idx, tgt_ed_idx, sent_sep="[SEP]", num_prev_sents=15, num_next_sents=15

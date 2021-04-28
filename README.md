@@ -236,23 +236,40 @@
 
 **Results -- CPU only**
 
-| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization |
-|----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|
-| 20                         | 6323                         | 91.53               | 0       | 600m                    | 4.88G                      |
-| 50                         | 10169                        | 147.38              | 0       | 600m                    | 4.88G                      |
-| 100                        | 9988                         | 144.53              | 0       | 600m                    | 4.88G                      |
-| 200                        | 11458                        | 165.8               | 0       | 1200m                   | 5.90G                      |
+| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization | GPU memory utilization |
+|----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|----------------------------|
+| 20                         | 6323                         | 91.53               | 0       | 600m                    | 4.88G                      ||
+| 50                         | 10169                        | 147.38              | 0       | 600m                    | 4.88G                      ||
+| 100                        | 9988                         | 144.53              | 0       | 600m                    | 4.88G                      ||
+| 200                        | 11458                        | 165.8               | 0       | 1200m                   | 5.90G                      ||
 
 **Results -- with GPU (TGSAN)**
 
-| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization |
-|----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|
-| 20                         | 10094                         | 146.19               | 0       | <1000m                    | <1.20G                      |
-| 50                         | 39730                        | 574.24              | 0       | <1000m                    | <1.20G                      |
-| 100                        | 49828                         | 719.14              | 0       | <1000m                    | <1.20G                      |
-| 200                        | 53229                        | 766.16               | 0       | <1000m                   | <1.20G                      |
+| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization | GPU memory utilization |
+|----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|----------------------------|
+| 20                         | 10094                         | 140.49               | 0       | <1000m                    | <1.20G                      |6.3GB|
+| 50                         | 39730                        | 492.39              | 0       | <1000m                    | <1.20G                      |6.3GB|
+| 100                        | 49828                         | 611.59              | 0       | <1000m                    | <1.20G                      |6.3GB|
+| 200                        | 53229                        | 664.67               | 0       | <1000m                   | <1.20G                      |6.3GB|
+
 
 **Results -- with GPU (TGSAN2)**
+| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization | GPU memory utilization |
+|----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|----------------------------|
+| 20                         | 2585                         | 133.43               | 0       | <1000m                    | <1.20G                      |6.25GB|
+| 50                         | 3425                        | 461.81              | 0       | <1000m                    | <1.20G                      |6.25GB|
+| 100                        | 3499                         | 673.52              | 0       | <1000m                    | <1.20G                      |6.25GB|
+| 200                        | 3534                        | 725.33               | 0       | <1000m                   | <1.20G                      |6.25GB|
+
+
+**Results -- with GPU (TDBERT)**
+| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization | GPU memory utilization |
+|----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|----------------------------|
+| 20                         | 2585                         | 36.97               | 0       | <1000m                    | <1.20G                      |7.75GB|
+| 50                         | 3425                        | 46.47              | 0       | <1000m                    | <1.20G                      |7.75GB|
+| 100                        | 3499                         | 50.12              | 0       | <1000m                    | <1.20G                      |7.75GB|
+| 200                        | 3534                        | 50.53               | 0       | <1000m                   | <1.20G                      |7.75GB|
+
 
 ## Accuracy
 
@@ -261,21 +278,61 @@
  * Up to 3000 samples from CN, HK, TW data.
  * Unseen during model training.
 
-**Results**
+**Results (TGSAN)**
 
 | Class    | Metric    | Score    |
 |----------|-----------|----------|
-| Overall  | Accuracy  | 0.88074 |
-|          | Macro F1  | 0.72378  |
-|          | Micro F1  | 0.88074 |
-| Neutral  | Precision | 0.91893  |
-|          | Recall    | 0.94270 |
-|          | F1        | 0.93066 |
-|          | Support   | 2513     |
-| Negative | Precision | 0.71111 |
-|          | Recall    | 0.51613 |
-|          | F1        | 0.59813 |
+| Overall  | Accuracy  | 0.8767 |
+|          | Macro F1  | 0.7160  |
+|          | Micro F1  | 0.8767 |
+| Neutral  | Precision | 0.9206  |
+|          | Recall    | 0.9345 |
+|          | F1        | 0.9274 |
+|          | Support   | 2519     |
+| Negative | Precision | 0.6071 |
+|          | Recall    | 0.5484 |
+|          | F1        | 0.5763 |
 |          | Support   | 62       |
+| Positive | Precision | 0.6667 |
+|          | Recall    | 0.6235 |
+|          | F1        | 0.6444 |
+|          | Support   | 494      |
+
+**Results (TGSAN2)**
+
+| Class    | Metric    | Score    |
+|----------|-----------|----------|
+| Overall  | Accuracy  | 0.8849 |
+|          | Macro F1  | 0.7118  |
+|          | Micro F1  | 0.8849 |
+| Neutral  | Precision | 0.9136  |
+|          | Recall    | 0.9571 |
+|          | F1        | 0.9349 |
+|          | Support   | 2519     |
+| Negative | Precision | 0.5538 |
+|          | Recall    | 0.5806 |
+|          | F1        | 0.5669 |
+|          | Support   | 62       |
+| Positive | Precision | 0.7385 |
+|          | Recall    | 0.5547 |
+|          | F1        | 0.6335 |
+|          | Support   | 494      |
+
+**Results (TDBERT)**
+
+| Class    | Metric    | Score    |
+|----------|-----------|----------|
+| Overall  | Accuracy  | 0.9273 |
+|          | Macro F1  | 0.8192  |
+|          | Micro F1  | 0.9273 |
+| Neutral  | Precision | 0.9538  |
+|          | Recall    | 0.9610|
+|          | F1        | 0.9574 |
+|          | Support   | 2513     |
+| Negative | Precision | 0.7547 |
+|          | Recall    | 0.6557 |
+|          | F1        | 0.7018 |
+|          | Support   | 61       |
 | Positive | Precision | 0.67713 |
 |          | Recall    | 0.61134 |
 |          | F1        | 0.64255 |
