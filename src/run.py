@@ -6,17 +6,6 @@ import uuid
 import numpy as np
 import pickle
 
-if __name__ == "__main__":
-    log_dir = Path(os.environ["CANTON_SA_DIR"]) / "log"
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    log_path = log_dir / str(uuid.uuid1())
-
-    print("Logging to", log_path)
-    handlers = [logging.FileHandler(log_path, "w+", "utf-8"), logging.StreamHandler()]
-    logging.basicConfig(handlers=handlers, format="%(message)s", level=logging.INFO)
-
 import argparse
 import pandas as pd
 from dataset import TargetDependentDataset
@@ -40,373 +29,112 @@ from gensim.models import KeyedVectors
 logger = logging.getLogger(__name__)
 
 
-def init_model(
-    model_class,
-    body_config,
-    num_labels,
-    pretrained_emb,
-    num_emb,
-    pretrained_lm,
-    device,
-    bert_config=None, 
-    state_path=None,
-):
-
+def init_bert_model(args):
+    pretrained_lm = PretrainedLM(args.model_config[model_class]["pretrained_lm"])
     MODEL = getattr(sys.modules[__name__], model_class)
-    model = MODEL(
-        model_config=body_config,
-        num_labels=num_labels,
-        pretrained_emb=pretrained_emb,
-        num_emb=num_emb,
-        pretrained_lm=pretrained_lm,
-        device=device,
-    )
+    model = BERT_MODEL(args=args)
     if state_path is not None:
         model.load_state(state_path)
     return model
 
 
-def run(
-    do_train=False,
-    do_eval=False,
-    data_config_file="data.yaml",
-    train_config_file="train.yaml",
-    eval_config_file="eval.yaml",
-    model_config_file="model.yaml",
-    log_path=None,
-    device="cpu",
-):
-    init_logger()
+def run_bert_unit_content(args):
 
-    base_dir = Path(os.environ["CANTON_SA_DIR"])
-    config_dir = base_dir / "config"
+    args.preprocess_mode = "unit_content"
 
-    if do_train:
-        data_config = load_yaml(
-            config_dir / data_config_file,
+    if args.train_config["state_file"]:
+        train_state_path = (
+            args.base_dir / "output" / "train" / args.train_config["state_file"]
         )
-        train_config = load_yaml(
-            config_dir / train_config_file,
-        )
-        model_config = load_yaml(
-            config_dir / model_config_file,
-        )
-        eval_config = load_yaml(
-            config_dir / eval_config_file,
-        )
-        if train_config["state_file"]:
-            train_state_path = (
-                base_dir / "output" / "train" / train_config["state_file"]
-            )
-        else:
-            train_state_path = None
-        train_output_dir = base_dir / "output" / "train" / train_config["output_dir"]
-
-        if not os.path.exists(train_output_dir):
-            os.makedirs(train_output_dir)
     else:
         train_state_path = None
+    train_output_dir = args.base_dir / "output" / "train" / args.train_config["output_dir"]
 
-    if do_eval:
-        if do_train:
-            eval_config = load_yaml(
-                config_dir / eval_config_file,
-            )
-            eval_input_dir = train_config["output_dir"]
-            eval_state_path = train_output_dir / eval_config["state_file"]
-            eval_output_dir = (
-                base_dir / "output" / "eval" / (train_config["output_dir"] + "_eval")
-            )
-        else:
-            eval_config = load_yaml(
-                config_dir / eval_config_file,
-            )
-            eval_input_dir = eval_config["input_dir"]
+    if not os.path.exists(train_output_dir):
+        os.makedirs(train_output_dir)
 
-            if eval_config["use_train_data_config"]:
-                data_config = load_yaml(
-                    base_dir / "output" / "train" / eval_input_dir / data_config_file,
-                )
-            else:
-                data_config = load_yaml(config_dir / data_config_file)
+    eval_input_dir = args.eval_config["input_dir"]
+    model_class = args.train_config["model_class"]
+    set_seed(args.train_config["seed"])
 
-            train_config = load_yaml(
-                base_dir / "output" / "train" / eval_input_dir / train_config_file,
-            )
-            model_config = load_yaml(
-                base_dir / "output" / "train" / eval_input_dir / model_config_file,
-            )
-
-            eval_state_path = (
-                base_dir
-                / "output"
-                / "train"
-                / eval_input_dir
-                / eval_config["state_file"]
-            )
-            eval_output_dir = base_dir / "output" / "eval" / eval_config["output_dir"]
-        if not os.path.exists(eval_output_dir):
-            os.makedirs(eval_output_dir)
-
-    if do_train:
-        save_yaml(model_config, train_output_dir / model_config_file)
-        save_yaml(train_config, train_output_dir / train_config_file)
-        save_yaml(data_config, train_output_dir / data_config_file)
-        # save_yaml(eval_config, train_output_dir / eval_config_file)
-
-    if do_eval:
-        save_yaml(model_config, eval_output_dir / model_config_file)
-        save_yaml(train_config, eval_output_dir / train_config_file)
-        save_yaml(data_config, eval_output_dir / data_config_file)
-        save_yaml(eval_config, eval_output_dir / eval_config_file)
-
-    model_class = train_config["model_class"]
-    model_config = model_config[model_class]
-    set_seed(train_config["seed"])
-    dataset_dir = base_dir / "data" / "datasets" / data_config["dataset"]
+    dataset_dir = args.base_dir / "data" / "datasets" / args.data_config["dataset"]
 
     # load pretrained language model
     tokenizer = get_tokenizer(
-        source=model_config["tokenizer_source"],
-        name=model_config["tokenizer_name"],
-    )
-    pretrained_lm = None
-    pretrained_word_emb = None
-    emb_vectors = None
-    word2idx = None
-    num_emb = None
-    add_special_tokens = True
-    label_map = get_label_map(dataset_dir / data_config["label_map"])
-
-    if MODEL_EMB_TYPE[model_class] == "BERT":
-        pretrained_lm = PretrainedLM(model_config["pretrained_lm"])
-        pretrained_lm.resize_token_embeddings(tokenizer=tokenizer)
-
-    elif MODEL_EMB_TYPE[model_class] == "WORD":
-        add_special_tokens = False
-        if do_train:
-
-            _vocab = TargetDependentDataset(
-                dataset_dir / data_config["train"],
-                label_map,
-                tokenizer,
-                preprocess_config=model_config,
-                word2idx=None,
-                add_special_tokens=False,
-                name="train",
-                required_features=None,
-                get_vocab_only=True,
-                source_data_fmt=data_config["format"]
-            ).vocab
-
-            vocab = dict()
-            for k, v in _vocab.items():
-                if v >= 2:
-                    vocab[k] = v
-
-            word2idx = dict()
-            word2idx["<PAD>"] = 0
-            word2idx["<OOV>"] = 1
-            for k in vocab.keys():
-                word2idx[k] = len(word2idx)
-            num_emb = len(word2idx)
-
-            if model_config["use_pretrained"]:
-
-                word_emb_path = (
-                    base_dir
-                    / "data"
-                    / "word_embeddings"
-                    / model_config["pretrained_word_emb"]
-                )
-                logger.info("***** Loading pretrained word embeddings *****")
-                logger.info("  Pretrained word embeddings = '%s'", str(word_emb_path))
-
-                pretrained_word_emb = KeyedVectors.load_word2vec_format(
-                    word_emb_path, binary=False
-                )
-
-                emb_dim = pretrained_word_emb.vectors.shape[1]
-
-                emb_vectors = np.random.rand(len(word2idx), emb_dim)
-                glove_vocab = pretrained_word_emb.vocab
-                glove_vectors = pretrained_word_emb.vectors
-
-                for k in vocab.keys():
-                    if k in glove_vocab:
-                        glove_idx = glove_vocab[k].index
-                        emb_vectors[word2idx[k], :] = glove_vectors[glove_idx, :]
-                emb_dim = emb_vectors.shape[1]
-            else:
-                emb_dim = model_config["emb_dim"]
-
-            word2idx_info = {"word2idx": word2idx, "emb_dim": emb_dim}
-            pickle.dump(
-                word2idx_info, open(train_output_dir / "word2idx_info.pkl", "wb")
-            )
-
-        elif do_eval:
-            word2idx_info = pickle.load(
-                open(
-                    base_dir
-                    / "output"
-                    / "train"
-                    / eval_input_dir
-                    / "word2idx_info.pkl",
-                    "rb",
-                )
-            )
-            word2idx = word2idx_info["word2idx"]
-            emb_dim = word2idx_info["emb_dim"]
-            emb_vectors = np.random.rand(len(word2idx), emb_dim)
-
-        num_emb = len(word2idx)
-        logger.info("***** Word embeddings *****")
-        logger.info("  Number of tokens = '%s'", num_emb)
-        logger.info("  Embedding dimension = '%s'", emb_dim)
-
-    model = init_model(
-        model_class=model_class,
-        body_config=model_config,
-        num_labels=len(label_map),
-        pretrained_emb=emb_vectors,
-        num_emb=num_emb,
-        pretrained_lm=pretrained_lm,
-        device=device,
-        state_path=train_state_path
-        if train_state_path
-        else (None if do_train else eval_state_path),
+        source=args.model_config[model_class]["tokenizer_source"],
+        name=args.model_config[model_class]["tokenizer_name"],
     )
 
-    # load and preprocess data
-    if do_train:
-        if model_config.get('kd', False):
-            required_features=model.INPUT_COLS
-        else:
-            required_features=[col for col in model.INPUT_COLS if col!='soft_label']
+    model = init_bert_model(args)
+
+    if args.do_train:
 
         train_dataset = TargetDependentDataset(
             dataset_dir / data_config["train"],
-            label_map,
             tokenizer,
-            preprocess_config=model_config,
-            word2idx=word2idx,
-            add_special_tokens=add_special_tokens,
-            name="train",
-            required_features=required_features, 
-            soft_label_path=dataset_dir / "logits.npy" if model_config.get('kd', False) else None, 
-            failed_ids_path=dataset_dir / "kd_failed_ids.pkl" if model_config.get('kd', False) else None, 
-            source_data_fmt=data_config["format"]
+            preprocess_config=rgs.model_config[model_class],
+            required_features=model.INPUT_COLS, 
         )
 
-        pickle.dump(train_dataset.failed_ids, open(train_output_dir / "train_failed_ids.pkl", "wb"))
-
-        dev_evaluators = []
-        for _, dev_info in data_config["dev"].items():
-            dev_name = dev_info["name"]
-            dev_file = dev_info["file"]
-
-            dev_dataset = TargetDependentDataset(
-                dataset_dir / dev_file,
-                label_map,
-                tokenizer,
-                preprocess_config=model_config,
-                word2idx=word2idx,
-                add_special_tokens=add_special_tokens,
-                name=dev_name,
-                required_features=[col for col in model.INPUT_COLS if col!='soft_label'],
-                source_data_fmt=data_config["format"]
-            )
-            dev_evaluators.append(
-                Evaluater(
-                    model=model,
-                    eval_config=eval_config,
-                    output_dir=train_output_dir,
-                    dataset=dev_dataset,
-                    no_save=True,
-                    device=device,
-                )
-            )
+        dev_dataset = TargetDependentDataset(
+            dataset_dir / data_config["dev"],
+            tokenizer,
+            preprocess_config=rgs.model_config[model_class],
+            required_features=model.INPUT_COLS, 
+        )
 
         trainer = Trainer(
             model=model,
-            train_config=train_config,
-            optim_config=model_config,
             output_dir=train_output_dir,
-            dataset=train_dataset,
-            dev_evaluaters=dev_evaluators,
-            device=device,
+            train_dataset=train_dataset,
+            dev_dataset=dev_dataset,
+            args=args,
         )
 
         trainer.train()
 
-        if log_path is not None:
-            shutil.copy(log_path, train_output_dir)
+    if args.do_test:
 
-    if do_eval:
-        timer = Timer(output_dir=eval_output_dir)
-        eval_results = dict()
-        test_evaluators = []
-        for _, test_info in data_config["test"].items():
-            test_name = test_info["name"]
-            test_file = test_info["file"]
+        test_dataset = TargetDependentDataset(
+            dataset_dir / data_config["test"],
+            tokenizer,
+            preprocess_config=rgs.model_config[model_class],
+            required_features=model.INPUT_COLS, 
+        )
 
-            test_dataset = TargetDependentDataset(
-                dataset_dir / test_file,
-                label_map,
-                tokenizer,
-                preprocess_config=model_config,
-                word2idx=word2idx,
-                add_special_tokens=add_special_tokens,
-                name=test_name,
-                timer=timer,
-                required_features=[col for col in model.INPUT_COLS if col!='soft_label'],
-                source_data_fmt=data_config["format"]
-            )
-
-            pickle.dump(test_dataset.failed_ids, open(eval_output_dir / "test_failed_ids.pkl", "wb"))
-
-            test_evaluator = Evaluater(
-                model=model,
-                eval_config=eval_config,
-                output_dir=eval_output_dir,
-                dataset=test_dataset,
-                timer=timer,
-                device=device,
-            )
-
-            test_evaluator.evaluate()
-            timer.save_timer()
-
-        if log_path is not None:
-            shutil.copy(log_path, eval_output_dir)
+        evaluate(
+            model=model,
+            dataset=test_dataset,
+            args=args,
+        )
 
 
 if __name__ == "__main__":
-    """
-    python run.py --do_train
-    """
+
+    log_dir = Path("../") / "log"
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    log_path = log_dir / str(uuid.uuid1())
+    print("Logging to", log_path)
+
+    logging.basicConfig(
+        handlers=[logging.FileHandler(log_path, "w+", "utf-8"), logging.StreamHandler()], 
+        format="%(message)s", 
+        level=logging.INFO
+    )
+
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--do_train", action="store_true", help="Whether to run training."
-    )
-    parser.add_argument(
-        "--do_eval", action="store_true", help="Whether to run eval on the test set."
-    )
-    parser.add_argument("--data_config", type=str, default="data.yaml")
-    parser.add_argument("--model_config", type=str, default="model.yaml")
-    parser.add_argument("--train_config", type=str, default="train.yaml")
-    parser.add_argument("--eval_config", type=str, default="eval.yaml")
+    parser.add_argument("--do_train", action="store_true")
+    parser.add_argument("--do_test", action="store_true")
     parser.add_argument("--device", type=int, default=0)
+    parser.add_argument("--config_dir", type=str, default="../config")
     args = parser.parse_args()
 
-    run(
-        do_train=True if args.do_train else False,
-        do_eval=True if args.do_eval else False,
-        data_config_file=args.data_config,
-        train_config_file=args.train_config,
-        eval_config_file=args.eval_config,
-        model_config_file=args.model_config,
-        log_path=log_path,
-        device=args.device,
-    )
+    config_dir = Path(config_dir)
+    args.config_dir = config_dir
+    args.data_config = load_yaml(config_dir / "data.yaml")
+    args.model_config = load_yaml(config_dir / "model.yaml")
+    args.train_config = load_yaml(config_dir / "train.yaml")
+    args.eval_config = load_yaml(config_dir / "eval.yaml")
+
+    run_bert_unit_content(args=args)
