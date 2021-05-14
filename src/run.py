@@ -90,8 +90,6 @@ def run_bert(args):
 
     if not args.test_only:
 
-        set_seed(args.train_config["seed"])
-
         train_dataset = TargetDependentDataset(
             dataset="train",
             tokenizer=tokenizer,
@@ -136,6 +134,6 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=int, default=0)
     args = parser.parse_args()
     args = load_config(args)
-
+    set_seed(args.train_config["seed"])
     # args.preprocess_mode = "unit_content" 
     run_bert(args=args)
