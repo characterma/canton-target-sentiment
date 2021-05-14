@@ -1,4 +1,3 @@
-from transformers import AutoTokenizer, PreTrainedTokenizerFast
 from transformers import (
     XLNetConfig,
     BertConfig,
@@ -64,28 +63,33 @@ MODEL_CLASS_MAP = {
 }
 
 
-class PretrainedBert(object):
-    def __init__(self, model_name):
-        """
-        model_name:
-            "toastynews/electra-hongkongese-large-discriminator"
-            "toastynews/xlnet-hongkongese-base"
-            "xlm-roberta-base"
-            "xlm-roberta-large"
-            "bert-base-multilingual-cased"
-            "bert-base-chinese"
-            "denpa92/bert-base-cantonese"
-        """
-        logger.info("***** Loading pretrained language model *****")
-        logger.info("  Pretrained language model = '%s'", str(model_name))
-        self.model_name = model_name
-        self.config = CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
-        self.model = MODEL_CLASS_MAP[model_name].from_pretrained(model_name)
-
-    def resize_token_embeddings(self, tokenizer):
-        self.model.resize_token_embeddings(len(tokenizer))
+def load_pretrained_bert(model_name):
+    logger.info("***** Loading pretrained language model *****")
+    logger.info("  Pretrained BERT = '%s'", str(model_name))
+    return MODEL_CLASS_MAP[model_name].from_pretrained(model_name)
 
 
-def load_bert_config(model_name):
+def load_pretrained_config(model_name):
     return CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
 
+
+# class PretrainedBert(object):
+#     def __init__(self, model_name):
+#         """
+#         model_name:
+#             "toastynews/electra-hongkongese-large-discriminator"
+#             "toastynews/xlnet-hongkongese-base"
+#             "xlm-roberta-base"
+#             "xlm-roberta-large"
+#             "bert-base-multilingual-cased"
+#             "bert-base-chinese"
+#             "denpa92/bert-base-cantonese"
+#         """
+#         logger.info("***** Loading pretrained language model *****")
+#         logger.info("  Pretrained language model = '%s'", str(model_name))
+#         self.model_name = model_name
+#         self.config = CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
+#         self.model = MODEL_CLASS_MAP[model_name].from_pretrained(model_name)
+
+#     def resize_token_embeddings(self, tokenizer):
+#         self.model.resize_token_embeddings(len(tokenizer))

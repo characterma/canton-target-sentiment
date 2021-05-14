@@ -1,0 +1,25 @@
+data:
+  model_dir: "20210511_rolex_tdbert"
+  data_dir: "rolex/data_0511"
+  train: train.json 
+  dev: dev.json 
+  test: test.json 
+text_prepro:
+  type: "post"
+  steps:
+    - simplified_chinese
+    - lower_case
+    # - convert_java_index
+    # - extract_post_context
+eval:
+  batch_size: 64
+train:
+  model_class: "TDBERT"
+  seed: 42
+  batch_size: 16
+model_params:
+  max_length: 180
+
+  
+
+

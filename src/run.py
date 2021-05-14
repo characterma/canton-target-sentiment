@@ -10,8 +10,7 @@ import argparse
 import pandas as pd
 from dataset import TargetDependentDataset
 from trainer import Trainer
-from evaluater import Evaluater
-from transformers_utils import PretrainedLM
+from transformers_utils import PretrainedBert
 from utils import (
     init_logger,
     set_seed,
@@ -29,63 +28,86 @@ from gensim.models import KeyedVectors
 logger = logging.getLogger(__name__)
 
 
+def set_log_path():
+    logging.basicConfig(
+        handlers=[logging.FileHandler(Path("../log/log"), "w+", "utf-8"), logging.StreamHandler()], 
+        format="%(message)s", 
+        level=logging.INFO
+    )
+
+
+def load_config(args):
+    config_dir = Path(args.config_dir)
+    run_config = load_yaml(config_dir / "run.yaml")
+    args.data_config = run_config['data']
+    args.eval_config = run_config['eval']
+
+    if args.test_only:
+        in_dir = Path("../output") / args.data_config['model_dir'] / 'train'
+        if in_dir.exists() and in_dir.isdir():
+            run_config_tr = load_yaml(in_dir / "run.yaml")
+            args.train_config = run_config_tr['train']
+            args.prepro_config = run_config_tr['text_prepro']
+            model_config = load_yaml(in_dir / "model.yaml")
+        else:
+            print("Experiment not found.")
+            raise
+    else:
+        args.train_config = run_config['train']
+        args.prepro_config = run_config['text_prepro']
+        model_config = load_yaml(config_dir / "model.yaml")
+    
+    model_class = args.train_config['model_class']
+    args.model_config = model_config[model_class]
+    return args
+
+
 def init_bert_model(args):
-    pretrained_lm = PretrainedLM(args.model_config[model_class]["pretrained_lm"])
+    model_class = args.train_config['model_class']
     MODEL = getattr(sys.modules[__name__], model_class)
-    model = BERT_MODEL(args=args)
-    if state_path is not None:
-        model.load_state(state_path)
+    model = MODEL(args=args)
+    if args.test_only:
+        in_dir = Path("../output") / args.data_config['model_dir'] / 'train'
+        model.load_state(in_dir / args.eval_config["state_file"])
     return model
 
 
-def run_bert_unit_content(args):
+def run_bert(args):
+    """
 
-    args.preprocess_mode = "unit_content"
-
-    if args.train_config["state_file"]:
-        train_state_path = (
-            args.base_dir / "output" / "train" / args.train_config["state_file"]
-        )
-    else:
-        train_state_path = None
-    train_output_dir = args.base_dir / "output" / "train" / args.train_config["output_dir"]
-
-    if not os.path.exists(train_output_dir):
-        os.makedirs(train_output_dir)
-
-    eval_input_dir = args.eval_config["input_dir"]
-    model_class = args.train_config["model_class"]
-    set_seed(args.train_config["seed"])
-
-    dataset_dir = args.base_dir / "data" / "datasets" / args.data_config["dataset"]
-
-    # load pretrained language model
-    tokenizer = get_tokenizer(
-        source=args.model_config[model_class]["tokenizer_source"],
-        name=args.model_config[model_class]["tokenizer_name"],
-    )
-
+    """
     model = init_bert_model(args)
+    tokenizer = get_tokenizer(args=args)
 
-    if args.do_train:
+    # if non_bert:
+    #     word_to_idx = TargetDependentDataset.build_vocab(
+    #         dataset="train",
+    #         tokenizer=tokenizer,
+    #         args=args
+    #     ) # keep top 95% frequent tokens
+    # else:
+    #     word_to_idx=None
+
+    if not args.test_only:
+
+        set_seed(args.train_config["seed"])
 
         train_dataset = TargetDependentDataset(
-            dataset_dir / data_config["train"],
-            tokenizer,
-            preprocess_config=rgs.model_config[model_class],
-            required_features=model.INPUT_COLS, 
+            dataset="train",
+            tokenizer=tokenizer,
+            word_to_idx=None, 
+            args=args
         )
 
         dev_dataset = TargetDependentDataset(
-            dataset_dir / data_config["dev"],
-            tokenizer,
-            preprocess_config=rgs.model_config[model_class],
-            required_features=model.INPUT_COLS, 
+            dataset="dev",
+            tokenizer=tokenizer,
+            word_to_idx=None, 
+            args=args
         )
 
         trainer = Trainer(
             model=model,
-            output_dir=train_output_dir,
             train_dataset=train_dataset,
             dev_dataset=dev_dataset,
             args=args,
@@ -93,48 +115,27 @@ def run_bert_unit_content(args):
 
         trainer.train()
 
-    if args.do_test:
+    test_dataset = TargetDependentDataset(
+        dataset="test",
+        tokenizer=tokenizer,
+        args=args
+    )
 
-        test_dataset = TargetDependentDataset(
-            dataset_dir / data_config["test"],
-            tokenizer,
-            preprocess_config=rgs.model_config[model_class],
-            required_features=model.INPUT_COLS, 
-        )
-
-        evaluate(
-            model=model,
-            dataset=test_dataset,
-            args=args,
-        )
+    evaluate(
+        model=model,
+        dataset=test_dataset,
+        args=args,
+    )
 
 
 if __name__ == "__main__":
-
-    log_dir = Path("../") / "log"
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    log_path = log_dir / str(uuid.uuid1())
-    print("Logging to", log_path)
-
-    logging.basicConfig(
-        handlers=[logging.FileHandler(log_path, "w+", "utf-8"), logging.StreamHandler()], 
-        format="%(message)s", 
-        level=logging.INFO
-    )
-
+    set_log_path()
     parser = argparse.ArgumentParser()
-    parser.add_argument("--do_train", action="store_true")
-    parser.add_argument("--do_test", action="store_true")
+    parser.add_argument("--config_dir", type=str, default="../config/")
+    parser.add_argument("--test_only", action="store_true")
     parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--config_dir", type=str, default="../config")
     args = parser.parse_args()
+    args = load_config(args)
 
-    config_dir = Path(config_dir)
-    args.config_dir = config_dir
-    args.data_config = load_yaml(config_dir / "data.yaml")
-    args.model_config = load_yaml(config_dir / "model.yaml")
-    args.train_config = load_yaml(config_dir / "train.yaml")
-    args.eval_config = load_yaml(config_dir / "eval.yaml")
-
-    run_bert_unit_content(args=args)
+    # args.preprocess_mode = "unit_content" 
+    run_bert(args=args)

@@ -1,21 +1,19 @@
 TDBERT:
-  # preprocess:
-    text_preprocessing: "hk_gov" # "", hk_beauty
+    text_preprocessing: "" # "", hk_beauty
     mask_target: False
-    max_length: 180
+    max_length: 210
     tokenizer_source: "transformers"
     tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
-  # body:
     pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+    num_labels: 3
     target_pooling: "max"
     use_cls: False
     dropout_rate: 0.1
-  # optim:
     optimizer: "AdamW"
     sampler: "random"
     batch_size: 16
     learning_rate: 2e-5
-    num_train_epochs: 1
+    num_train_epochs: 8
     weight_decay: 0.0
     gradient_accumulation_steps: 1
     adam_epsilon: 1e-8

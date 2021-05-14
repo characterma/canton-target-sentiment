@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from transformers import AlbertModel, BertModel, BertPreTrainedModel, RobertaModel
 from .base import BaseModel
+from .bert_utils import load_pretrained_bert, load_pretrained_config
 
 
 class FCLayer(nn.Module):
@@ -20,92 +21,55 @@ class FCLayer(nn.Module):
 
 
 class TDBERT(BertPreTrainedModel, BaseModel):
-    INPUT_COLS = [
+    INPUT = [
         "raw_text",
         "attention_mask",
         "token_type_ids",
         "target_mask",
         "label",
     ]
+    def __init__(self, args):
+        
+        # assert target_pooling in ["mean", "max"]
+        self.model_config = args.model_config
+        pretrained_model = load_pretrained_bert(
+            self.model_config['pretrained_lm']
+        )
+        pretrained_config = load_pretrained_config(
+            self.model_config['pretrained_lm']
+        )
+        super(TDBERT, self).__init__(pretrained_config)
 
-    def __init__(
-        self,
-        model_config,
-        num_labels,
-        pretrained_emb=None,
-        num_emb=None,
-        pretrained_lm=None,
-        target_pooling="max",
-        bert_config=None, 
-        device="cpu",
-    ):
-        super(TDBERT, self).__init__(pretrained_lm.config)
-        assert target_pooling in ["mean", "max"]
-        self._device = device
-        self.model_config = model_config
-        self.pretrained_lm = pretrained_lm.model
-        self.pretrained_lm_config = pretrained_lm.config
-        self.num_labels = num_labels
-        self.target_pooling = target_pooling
+        self.pretrained_model = pretrained_model
+        self.pretrained_config = pretrained_config
+        self.num_labels = self.model_config['num_labels']
         self.init_classifier()
         self.loss_func = nn.CrossEntropyLoss(reduction="none")
-        self.to(self._device)
+        self.to(args.device)
 
     def init_classifier(self):
-        """
-        TODO: (1) decide the activations, (2) chain it into one object
-        """
-
-        self.tgt_fc_layer = FCLayer(
-            input_dim=self.pretrained_lm_config.hidden_size,
-            output_dim=self.pretrained_lm_config.hidden_size,
+        self.fc_layer = FCLayer(
+            input_dim=self.pretrained_config.hidden_size,
+            output_dim=self.pretrained_config.hidden_size,
             dropout_rate=self.model_config["dropout_rate"],
         )
-
-        if self.model_config.get("use_cls", False):
-            self.cls_fc_layer = FCLayer(
-                input_dim=self.pretrained_lm_config.hidden_size,
-                output_dim=self.pretrained_lm_config.hidden_size,
-                dropout_rate=self.model_config["dropout_rate"],
-            )
-            label_classifier_input_dim = self.pretrained_lm_config.hidden_size * 2
-        else:
-            label_classifier_input_dim = self.pretrained_lm_config.hidden_size
-
-        self.label_classifier = FCLayer(
-            input_dim=label_classifier_input_dim,
+        self.classifier = FCLayer(
+            input_dim=self.pretrained_config.hidden_size,
             output_dim=self.num_labels,
             dropout_rate=self.model_config["dropout_rate"],
             use_activation=False,
         )
-        self.to(self._device)
 
     def pool_target(self, hidden_output, t_mask):
+        """Pool the entity hidden state vectors (H_i ~ H_j)
         """
-        Average the entity hidden state vectors (H_i ~ H_j)
-        :param hidden_output: [batch_size, j-i+1, dim]
-        :param t_mask: [batch_size, max_seq_len]
-                e.g. t_mask[0] == [0, 0, 0, 1, 1, 1, 0, 0, ... 0]
-        :return: [batch_size, dim]
-        """
-        if self.target_pooling == "mean":
-            t_mask_unsqueeze = t_mask.unsqueeze(1)  # [b, 1, j-i+1]
-            length_tensor = (t_mask != 0).sum(dim=1).unsqueeze(1)  # [batch_size, 1]
-            sum_vector = torch.bmm(t_mask_unsqueeze.float(), hidden_output).squeeze(
-                1
-            )  # [b, 1, j-i+1] * [b, j-i+1, dim] = [b, 1, dim] -> [b, dim]
-            avg_vector = sum_vector.float() / length_tensor.float()  # broadcasting
-            return avg_vector
-        elif self.target_pooling == "max":
-            t_h = torch.max(
-                hidden_output.float() * torch.unsqueeze(t_mask.float(), -1),
-                dim=1,
-                keepdim=False,
-            )
-            max_vector = t_h.values
-            return max_vector
-        else:
-            raise (Exception)
+        t_h = torch.max(
+            hidden_output.float() * torch.unsqueeze(t_mask.float(), -1),
+            dim=1,
+            keepdim=False,
+        )
+        return t_h.values
+
 
     def freeze_lm(self):
         # Freeze all parameters except self attention parameters
@@ -131,7 +95,7 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         return_all_repr=False,
         return_attn=False,
     ):
-        lm = self.pretrained_lm(
+        lm = self.pretrained_model(
             input_ids=raw_text,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
@@ -140,25 +104,16 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         )
 
         h = lm["last_hidden_state"]
-
         # Average or max
         tgt_h = self.pool_target(
             h, target_mask
         )  # outputs: [B, S, Dim], target_mask: [B, S]
 
-        tgt_h = self.tgt_fc_layer(tgt_h)
-
-        if self.model_config.get("use_cls", False):
-            cls_h = self.cls_fc_layer(h[:, :1, :]).squeeze(1)
-            # Concat -> fc_layer
-            h = torch.cat([cls_h, tgt_h], dim=-1)
-        else:
-            h = tgt_h
-
-        logits = self.label_classifier(h)
+        tgt_h = self.fc_layer(tgt_h)
+        logits = self.classifier(tgt_h)
 
         if label is not None:
-            losses = self.loss_func(logits.view(-1, self.num_labels), label.view(-1))
+            losses = self.loss_func(logits.view(-1, self.model_config['num_labels']), label.view(-1))
         else:
             losses = None
 
