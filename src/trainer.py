@@ -74,7 +74,7 @@ def evaluate(model, eval_dataset, args):
         with torch.no_grad():
             inputs = dict()
             for col in model.INPUT:
-                inputs[col] = batch[col].to(self.device).long()
+                inputs[col] = batch[col].to(args.device).long()
             x = model(
                 **inputs,
             )
@@ -118,6 +118,7 @@ class Trainer(object):
         dev_dataset,
         args
     ):
+        self.args = args
         self.train_dataset = train_dataset
         self.dev_dataset = dev_dataset
         self.model = model
@@ -288,25 +289,20 @@ class Trainer(object):
                     scheduler.step()  # Update learning rate schedule
                     self.model.zero_grad()
 
-            # self.on_epoch_end(epoch)
+            self.on_epoch_end(epoch)
         self.on_training_end()
 
-    # def on_epoch_end(self, epoch):
+    def on_epoch_end(self, epoch):
 
-    #     for evaluater in self.dev_evaluaters:
-    #         outputs = evaluater.evaluate(identifier=f"epoch{epoch}")
-    #         metrics = outputs[0]
+        metrics = evaluate(
+            model=self.model,
+            eval_dataset=self.dev_dataset,
+            args=self.args,
+        )
 
-    #         if (
-    #             self.best_scores[evaluater.dataset_name]["loss"] is None
-    #             or self.best_scores[evaluater.dataset_name]["loss"]
-    #             < metrics["loss"]
-    #         ):
-    #             self.best_scores[evaluater.dataset_name] = metrics
-    #             self.best_epoch[evaluater.dataset_name] = epoch
-    #             self.best_model[evaluater.dataset_name] = copy.deepcopy(
-    #                 self.model.state_dict()
-    #             )
+        if self.best_score is None or self.best_score < metrics["loss"]:
+            self.best_score = metrics["loss"]
+            self.best_model = copy.deepcopy(self.model.state_dict())
 
     def on_training_end(self):
         """
@@ -314,6 +310,6 @@ class Trainer(object):
         # 2. Save evaluation scores.
         """
         out_path = (
-            self.out_dir / f"best_state_epoch{self.best_epoch}.pt"
+            self.out_dir / f"best_state.pt"
         )
         torch.save(self.best_model, out_path)

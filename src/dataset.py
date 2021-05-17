@@ -172,7 +172,7 @@ class TargetDependentExample(object):
 
 
 class TargetDependentDataset(Dataset):
-    def __init__(self, dataset, tokenizer, word_to_idx, args):
+    def __init__(self, dataset, tokenizer, args, word_to_idx=None):
         """
         Args:
             data_path (Path object): a list of paths to .json (format of internal label tool)

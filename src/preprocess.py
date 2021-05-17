@@ -22,11 +22,14 @@ class TextPreprocessor:
         indent = 0
         for i in range(len(self.preprocessed_text)):
             for j in range(i, i + indent + 1):
-                index_map[j] = i
+                if j not in index_map:
+                    index_map[j] = i
             if len(self.preprocessed_text[i].encode('utf-8')) == 4:
                 indent += 1
         for t in self.preprocessed_target_locs:
+            # print(t[0])
             t[0] = index_map[t[0]]
+            # print(t[0])
             t[1] = index_map[t[1]]
 
     def extract_post_context(self, n_prev=0, n_next=0):
@@ -79,8 +82,8 @@ class TextPreprocessor:
             
             prev_sents, next_sents = neighbor_sentences(sentence_id, sents, n_prev=n_prev, n_next=n_next)
 
-            cur_start_idx = s['start_idx'] + cur_len
-            cur_end_idx = s['end_idx'] + cur_len
+            cur_start_idx = start_idx + cur_len
+            cur_end_idx = end_idx + cur_len
             for idx in prev_sents:
                 if idx not in reconst_sent_ids and idx!=sentence_id:
                     reconst_sent_ids.append(idx)

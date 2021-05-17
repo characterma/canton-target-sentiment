@@ -9,7 +9,7 @@ import pickle
 import argparse
 import pandas as pd
 from dataset import TargetDependentDataset
-from trainer import Trainer
+from trainer import Trainer, evaluate
 from transformers_utils import PretrainedBert
 from utils import (
     init_logger,
@@ -62,7 +62,7 @@ def load_config(args):
     return args
 
 
-def init_bert_model(args):
+def init_model(args):
     model_class = args.train_config['model_class']
     MODEL = getattr(sys.modules[__name__], model_class)
     model = MODEL(args=args)
@@ -76,7 +76,7 @@ def run_bert(args):
     """
 
     """
-    model = init_bert_model(args)
+    model = init_model(args)
     tokenizer = get_tokenizer(args=args)
 
     # if non_bert:
@@ -119,11 +119,14 @@ def run_bert(args):
         args=args
     )
 
-    evaluate(
+    metrics = evaluate(
         model=model,
-        dataset=test_dataset,
+        eval_dataset=test_dataset,
         args=args,
     )
+
+    eval_out_dir = Path("../output") / args.data_config['model_dir'] / 'eval'
+    json.dump(metrics, eval_out_dir / 'metrics.json')
 
 
 if __name__ == "__main__":
