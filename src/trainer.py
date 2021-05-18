@@ -48,6 +48,23 @@ def compute_metrics(labels, predictions):
     return metrics
 
 
+def evaluation_step(model, batch, device):
+    model.eval()
+    results = dict()
+    with torch.no_grad():
+        inputs = dict()
+        for col in model.INPUT:
+            inputs[col] = batch[col].to(device).long()
+        x = model(
+            **inputs,
+        )
+    results["sentiment_idx"] = torch.argmax(x[1], dim=1)
+    results["loss"] = torch.mean(x[0])
+    results["logits"] = x[1]
+    results["score"] = torch.nn.functional.softmax(x[1], dim=1)
+    return results
+
+
 def evaluate(model, eval_dataset, args):
 
     logger.info("***** Running evaluation *****")
@@ -69,20 +86,7 @@ def evaluate(model, eval_dataset, args):
 
     for batch in tqdm(dataloader, desc="Evaluating"):
 
-        model.eval()
-        results = dict()
-        with torch.no_grad():
-            inputs = dict()
-            for col in model.INPUT:
-                inputs[col] = batch[col].to(args.device).long()
-            x = model(
-                **inputs,
-            )
-
-            results["sentiment_idx"] = torch.argmax(x[1], dim=1)
-            results["loss"] = torch.mean(x[0])
-            results["logits"] = x[1]
-            results["score"] = torch.nn.functional.softmax(x[1], dim=1)
+        results = evaluation_step(model, batch, device=args.device)
 
         label = np.concatenate(
             [label, batch["label"].detach().cpu().numpy()], axis=None
@@ -126,15 +130,12 @@ class Trainer(object):
 
         self.model_config = args.model_config
         self.train_config = args.train_config
-        self.out_dir = Path('../output') / args.data_config['model_dir'] / 'train'
-
-        if not os.path.exists(self.out_dir):
-            os.makedirs(self.out_dir)
+        self.out_dir = args.out_dir
 
         self.best_score = None
         self.best_epoch = None
         self.best_step = None
-        self.best_model = None
+        self.best_model_state = None
 
     def _get_train_sampler(self):
 
@@ -229,12 +230,11 @@ class Trainer(object):
         )
         return optimizer, scheduler
 
-    def training_step(self, batch, step):
+    def training_step(self, batch):
         self.model.train()
         inputs = dict()
         for col in self.model.INPUT:
-            if col in batch:
-                inputs[col] = batch[col].to(self.device).long()
+            inputs[col] = batch[col].to(self.device).long()
         outputs = self.model(**inputs)
         losses = outputs[0]
         logits = outputs[1]
@@ -245,7 +245,7 @@ class Trainer(object):
 
         dataloader = DataLoader(
             self.train_dataset,
-            shuffle=True, 
+            sampler=self._get_train_sampler(), 
             batch_size=self.model_config["batch_size"],
             # collate_fn=self.train_dataset.pad_collate,
         )
@@ -273,9 +273,8 @@ class Trainer(object):
             last_step = len(epoch_iterator)
             for step, batch in enumerate(epoch_iterator):
 
-                losses = self.training_step(batch, step)
+                losses = self.training_step(batch)
                 losses = losses.cpu().numpy()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 
                 epoch_iterator.set_postfix({"tr_loss": np.mean(losses)})
 
@@ -302,7 +301,7 @@ class Trainer(object):
 
         if self.best_score is None or self.best_score < metrics["loss"]:
             self.best_score = metrics["loss"]
-            self.best_model = copy.deepcopy(self.model.state_dict())
+            self.best_model_state = copy.deepcopy(self.model.state_dict())
 
     def on_training_end(self):
         """
@@ -312,4 +311,8 @@ class Trainer(object):
         out_path = (
             self.out_dir / f"best_state.pt"
         )
-        torch.save(self.best_model, out_path)
+        torch.save(self.best_model_state, out_path)
+
+        self.model.load_state(
+            state_dict=self.best_model_state
+        )

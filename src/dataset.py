@@ -108,7 +108,8 @@ class TargetDependentExample(object):
             self.succeeded = False
             self.message = f"Features failed: {msg}"
 
-    def pad(self, arrays, max_length, value=0):
+    @staticmethod
+    def pad(arrays, max_length, value=0):
         for i in range(len(arrays)):
             d = max_length - len(arrays[i])
             if d >= 0:
@@ -117,8 +118,9 @@ class TargetDependentExample(object):
                 raise Exception("Array length should not exceed max_length.")
         return arrays
 
+    @staticmethod
     def get_bert_features(
-        self, raw_text, target_locs, tokenizer, required_features, max_length, label=None
+        raw_text, target_locs, tokenizer, required_features, max_length, label=None
     ):
 
         feature_dict = dict()
@@ -135,7 +137,7 @@ class TargetDependentExample(object):
         token_type_ids = np.array(tokens_encoded.token_type_ids)
         target_mask = np.array([0] * len(raw_text_ids))
 
-        raw_text_ids, attention_mask, token_type_ids, target_mask = self.pad([raw_text_ids, attention_mask, token_type_ids, target_mask], max_length, 0)
+        raw_text_ids, attention_mask, token_type_ids, target_mask = TargetDependentExample.pad([raw_text_ids, attention_mask, token_type_ids, target_mask], max_length, 0)
         target_pos = []
         for (start_idx, end_idx) in target_locs:
             for char_idx in range(start_idx, end_idx):
@@ -157,18 +159,48 @@ class TargetDependentExample(object):
 
         if "target_mask" in required_features:
             feature_dict["target_mask"] = torch.tensor(target_mask).long()
+            tokens = tokenizer.convert_ids_to_tokens(feature_dict["raw_text"])
+            feature_dict['target_tokens'] = tokenizer.convert_ids_to_tokens(torch.index_select(torch.tensor(raw_text_ids), 0, torch.tensor(target_pos)))
 
         if "attention_mask" in required_features:
             feature_dict["attention_mask"] = torch.tensor(attention_mask).long()
 
         if "token_type_ids" in required_features:
-            feature_dict["token_type_ids"] = torch.zeros(len(attention_mask)).long()
+            feature_dict["token_type_ids"] = torch.tensor(target_mask).long()
 
         if label is not None:
             label = SENTI_ID_MAP[label]
             feature_dict["label"] = torch.tensor(label).long()
 
         return feature_dict, ""
+
+
+# def build_vocab(dataset, tokenizer, args):
+
+#     data_path = (
+#         Path("../data/datasets") / args.data_config["data_dir"] / f"{self.dataset}.json"
+#     )
+#     logger.info("***** Building vocab *****")
+#     logger.info("  Data path = %s", str(data_path))
+#     raw_data = json.load(open(data_path, "r"))
+#     logger.info("  Number of raw samples = %d", len(raw_data))
+#     words = []
+#     word_to_idx = dict()
+#     word_counter = dict()
+
+#     for idx, data_dict in tqdm(enumerate(raw_data)):
+#         preprocessor = TextPreprocessor(
+#             text=data_dict['content'], 
+#             target_locs=data_dict['target_locs'], 
+#             steps=args.prepro_config['steps']
+#         )
+#         preprocessed_text = preprocessor.preprocessed_text
+#         words += [tkn tokenizer(preprocessed_text)]
+
+#     word_counter = Counter(words)
+
+#     logger.info("  Vocab size = %d", len(word_to_idx))
+#     return word_to_idx
 
 
 class TargetDependentDataset(Dataset):
