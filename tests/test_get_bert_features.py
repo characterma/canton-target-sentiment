@@ -9,7 +9,7 @@ from dataset import TargetDependentExample
 
 class TestGetBertFeatures(unittest.TestCase):
     def test_get_bert_features(self):
-        raw_text = "#仪式感不能少没有卡地亚，没有浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！"
+        raw_text = "#仪式感不能少没有卡地亚， 🔥浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！"
         target_locs = [[15, 17]]
         tokenizer = AutoTokenizer.from_pretrained("bert-base-chinese", use_fast=True)
         required_features = [
@@ -28,7 +28,6 @@ class TestGetBertFeatures(unittest.TestCase):
             max_length=80,
             label="positive",
         )
-
         raw_text = torch.tensor(
             [
                 101,
@@ -45,8 +44,7 @@ class TestGetBertFeatures(unittest.TestCase):
                 1765,
                 762,
                 8024,
-                3766,
-                3300,
+                8103,
                 3857,
                 4433,
                 8024,
@@ -111,6 +109,7 @@ class TestGetBertFeatures(unittest.TestCase):
                 0,
                 0,
                 0,
+                0,
             ]
         )
 
@@ -129,8 +128,7 @@ class TestGetBertFeatures(unittest.TestCase):
             "地",
             "亚",
             "，",
-            "没",
-            "有",
+            "🔥",
             "浪",
             "琴",
             "，",
@@ -195,9 +193,9 @@ class TestGetBertFeatures(unittest.TestCase):
             "[PAD]",
             "[PAD]",
             "[PAD]",
+            "[PAD]",
         ]
-
-        target_tokens = ['浪', '琴']
+        target_tokens = ["浪", "琴"]
 
         target_mask = torch.tensor(
             [
@@ -216,9 +214,9 @@ class TestGetBertFeatures(unittest.TestCase):
                 0,
                 0,
                 0,
+                1,
+                1,
                 0,
-                1,
-                1,
                 0,
                 0,
                 0,
@@ -339,7 +337,7 @@ class TestGetBertFeatures(unittest.TestCase):
                 1,
                 1,
                 1,
-                1,
+                0,
                 0,
                 0,
                 0,
@@ -368,7 +366,6 @@ class TestGetBertFeatures(unittest.TestCase):
                 0,
             ]
         )
-
         token_type_ids = torch.tensor(
             [
                 0,
@@ -386,9 +383,9 @@ class TestGetBertFeatures(unittest.TestCase):
                 0,
                 0,
                 0,
+                1,
+                1,
                 0,
-                1,
-                1,
                 0,
                 0,
                 0,
@@ -453,13 +450,13 @@ class TestGetBertFeatures(unittest.TestCase):
                 0,
             ]
         )
-
         label = torch.tensor(2)
-
+        # import pickle
+        # pickle.dump(feature_dict, open('./tmp.pkl', 'wb'))
         self.assertTrue(msg == "")
         self.assertTrue(torch.equal(feature_dict["raw_text"], raw_text))
-        self.assertTrue(feature_dict["tokens"]==tokens)
-        self.assertTrue(feature_dict["target_tokens"]==target_tokens)
+        self.assertTrue(feature_dict["tokens"] == tokens)
+        self.assertTrue(feature_dict["target_tokens"] == target_tokens)
         self.assertTrue(torch.equal(feature_dict["target_mask"], target_mask))
         self.assertTrue(torch.equal(feature_dict["attention_mask"], attention_mask))
         self.assertTrue(torch.equal(feature_dict["token_type_ids"], token_type_ids))
