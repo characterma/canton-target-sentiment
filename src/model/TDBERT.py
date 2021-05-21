@@ -28,6 +28,7 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         "target_mask",
         "label",
     ]
+    MODEL_TYPE = "bert"
     def __init__(self, args):
         
         # assert target_pooling in ["mean", "max"]

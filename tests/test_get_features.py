@@ -7,8 +7,8 @@ sys.path.append("../src/")
 from dataset import TargetDependentExample
 
 
-class TestGetBertFeatures(unittest.TestCase):
-    def test_get_bert_features(self):
+class TestGetFeatures(unittest.TestCase):
+    def test_get_features(self):
         raw_text = "#仪式感不能少没有卡地亚， 🔥浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！"
         target_locs = [[15, 17]]
         tokenizer = AutoTokenizer.from_pretrained("bert-base-chinese", use_fast=True)
@@ -20,7 +20,7 @@ class TestGetBertFeatures(unittest.TestCase):
             "label",
         ]
 
-        feature_dict, msg = TargetDependentExample.get_bert_features(
+        feature_dict, msg = TargetDependentExample.get_features(
             raw_text=raw_text,
             target_locs=target_locs,
             tokenizer=tokenizer,

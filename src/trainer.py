@@ -79,7 +79,9 @@ def evaluate(model, eval_dataset, args):
     )
 
     label = np.array([])
+    label2 = []
     sentiment_idx = np.array([])
+    sentiment_idx2 = []
     score = np.array([])
     logits = np.array([])
     losses = np.array([])
@@ -87,10 +89,10 @@ def evaluate(model, eval_dataset, args):
     for batch in tqdm(dataloader, desc="Evaluating"):
 
         results = evaluation_step(model, batch, device=args.device)
-
         label = np.concatenate(
             [label, batch["label"].detach().cpu().numpy()], axis=None
         )
+
         losses = np.concatenate(
             [losses, results["loss"].detach().cpu().numpy()], axis=None
         )
@@ -99,6 +101,7 @@ def evaluate(model, eval_dataset, args):
             [sentiment_idx, results["sentiment_idx"].detach().cpu().numpy()],
             axis=None,
         )
+
         score = np.concatenate(
             [score, results["score"].detach().cpu().numpy().max(axis=1)], axis=None
         )
@@ -111,6 +114,8 @@ def evaluate(model, eval_dataset, args):
 
     metrics = compute_metrics(label, sentiment_idx)
     metrics['loss'] = losses.mean()
+    for m in metrics:
+        logger.info("  %s = %f", m, metrics[m])
     return metrics
 
 
@@ -130,7 +135,7 @@ class Trainer(object):
 
         self.model_config = args.model_config
         self.train_config = args.train_config
-        self.out_dir = args.out_dir
+        self.model_dir = args.model_dir
 
         self.best_score = None
         self.best_epoch = None
@@ -309,7 +314,7 @@ class Trainer(object):
         # 2. Save evaluation scores.
         """
         out_path = (
-            self.out_dir / f"best_state.pt"
+            self.model_dir / f"best_state.pt"
         )
         torch.save(self.best_model_state, out_path)
 

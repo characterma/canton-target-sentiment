@@ -1,11 +1,10 @@
 data:
-  model_dir: "20210511_rolex_tdbert"
+  model_dir: "20210521_rolex_tdbert"
   data_dir: "rolex/data_0511"
   train: train.json 
   dev: dev.json 
   test: test.json 
 text_prepro:
-  type: "post"
   steps:
     - simplified_chinese
     - lower_case
@@ -13,8 +12,9 @@ text_prepro:
     # - extract_post_context
 eval:
   batch_size: 64
+  state_file: "*.pt"
 train:
-  model_class: "TDBERT"
+  model_class: "TGSAN"
   seed: 42
   batch_size: 16
 model_params:

@@ -13,7 +13,7 @@ TDBERT:
     sampler: "random"
     batch_size: 16
     learning_rate: 2e-5
-    num_train_epochs: 8
+    num_train_epochs: 1
     weight_decay: 0.0
     gradient_accumulation_steps: 1
     adam_epsilon: 1e-8
@@ -26,6 +26,7 @@ TGSAN2:
     max_length: 150
     tokenizer_source: "spacy"
     tokenizer_name: "chinese" 
+    num_labels: 3
   # body:
     kd: False
     use_pretrained: False
@@ -52,8 +53,10 @@ TGSAN:
   # preprocess:
     text_preprocessing: "" # "", hk_beauty
     max_length: 150
-    tokenizer_source: "spacy"
-    tokenizer_name: "chinese" 
+    tokenizer_source: "internal"
+    tokenizer_name: "" 
+    vocab_freq_cutoff: 0.1
+    num_labels: 3
   # body:
     kd: False
     use_pretrained: False
@@ -73,7 +76,7 @@ TGSAN:
     optimizer: "AdamW"
     batch_size: 64
     learning_rate: 0.0015
-    num_train_epochs: 100
+    num_train_epochs: 25
     weight_decay: 0.9
     gradient_accumulation_steps: 1
     adam_epsilon: 1e-8

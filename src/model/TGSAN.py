@@ -11,7 +11,6 @@ class StructuredSelfAttention(nn.Module):
     align(X) = W2*tanh(W1*X^T)
     Penalty-Term P = Frobenius(A*A^T - I)
     """
-
     def __init__(
         self, in_dim, h_dim, r=1, dropout=0.0, scaled_att=True, penal_coeff=0.0
     ):
@@ -182,51 +181,36 @@ class AddAndNorm(nn.Module):
 
 
 class TGSAN(BaseModel):
-    """Architecture:
-        Embedding + Memory Builder + SCU + CFU + OUTPUT Layer
-    Arguments:
-        text {tensor} -- in shape [B, L]; tokenized input sequence, L is the length of the sequence
-        tgt_idx {tensor} -- in shape [B, L]; target index of the input sequence, 1 for target tokens, 0 for others
-        length_idx {tensor} -- in shape [B, L]; length index of the input sequence, 0 for padding tokens, 1 for others
-    """
-
-    INPUT_COLS = ["raw_text", "attention_mask", "target_mask", "label", "soft_label"]
-
-    def __init__(
-        self,
-        model_config,
-        num_labels,
-        pretrained_emb=None,
-        num_emb=None,
-        pretrained_lm=None,
-        bert_config=None, 
-        device="cpu",
-    ):
+    INPUT = ["raw_text", "attention_mask", "target_mask", "label"]
+    MODEL_TYPE = "non_bert"
+    def __init__(self, args):
         super(TGSAN, self).__init__()
-        self.num_labels = num_labels
-        # hyper-params
-        d_model = 2 * model_config["rnn_hidden_dim"]
+        self.model_config = args.model_config
+        self.num_labels = args.model_config['num_labels']
+        d_model = 2 * args.model_config["rnn_hidden_dim"]
 
-        if pretrained_emb is not None:
-            _, emb_dim = pretrained_emb.shape
+        if args.word_embedding_path is not None:
+            # load wb
+            word_embeddings = np.load(args.word_embedding_path)
+            _, emb_dim = word_embeddings.shape
             self.embed = nn.Embedding.from_pretrained(
-                torch.tensor(pretrained_emb),
-                freeze=(not model_config["embedding_trainable"]),
+                torch.tensor(word_embeddings),
+                freeze=(not args.model_config["embedding_trainable"]),
             )
         else:
-            emb_dim = model_config["emb_dim"]
-            self.embed = nn.Embedding(num_embeddings=num_emb, embedding_dim=emb_dim)
+            emb_dim = args.model_config["emb_dim"]
+            self.embed = nn.Embedding(num_embeddings=args.vocab_size, embedding_dim=emb_dim)
 
         self.emb_dropout = (
-            nn.Dropout(model_config["emb_dropout"])
-            if model_config["emb_dropout"] > 0.0
+            nn.Dropout(args.model_config["emb_dropout"])
+            if args.model_config["emb_dropout"] > 0.0
             else None
-        )  ## in case of overfitting, 50% neurals will be droped randomly
+        )
 
         # Bi-LSTM encoder
         self.bilstm = nn.LSTM(
             emb_dim,
-            model_config["rnn_hidden_dim"],
+            args.model_config["rnn_hidden_dim"],
             1,  # 1 layer
             bidirectional=True,
             batch_first=True,
@@ -236,53 +220,53 @@ class TGSAN(BaseModel):
         # Target Structured-Self-Attention(r)
         self.tgt_self_san_r = StructuredSelfAttention(
             d_model,
-            model_config["tgt_san_dim"],
-            r=model_config["r"],
-            dropout=model_config["san_dropout"],
+            args.model_config["tgt_san_dim"],
+            r=args.model_config["r"],
+            dropout=args.model_config["san_dropout"],
             scaled_att=False,
-            penal_coeff=model_config["san_penal_coeff"],
+            penal_coeff=args.model_config["san_penal_coeff"],
         )
 
         # Context Structured-Attention(r)
         self.ctx_tgt_san_r = StructuredAttention(
             d_model,
             d_model,
-            model_config["r"],
-            dropout=model_config["san_dropout"],
+            args.model_config["r"],
+            dropout=args.model_config["san_dropout"],
             scaled_att=False,
-            penal_coeff=model_config["san_penal_coeff"],
+            penal_coeff=args.model_config["san_penal_coeff"],
         )
         # FFN + ADD & LN
         self.ffn = PositionWiseFeedForwardLayer(
-            d_model, h_dim=model_config["ffn_dim"], dropout=model_config["ffn_dropout"]
+            d_model, h_dim=args.model_config["ffn_dim"], dropout=args.model_config["ffn_dropout"]
         )
         self.ffn_add_norm = AddAndNorm(d_model, dropout=0.1)
         # Target Structured-Self-Attention(1)
         self.r_mask = nn.Parameter(
-            torch.ones(1, model_config["r"], dtype=torch.long), requires_grad=False
+            torch.ones(1, args.model_config["r"], dtype=torch.long), requires_grad=False
         )
         self.tgt_self_san_1 = StructuredSelfAttention(
             d_model,
-            model_config["tgt_san_dim"],
+            args.model_config["tgt_san_dim"],
             r=1,
-            dropout=model_config["san_dropout"],
+            dropout=args.model_config["san_dropout"],
             scaled_att=False,
             penal_coeff=0.0,
         )
         # Bilinear Attention(1) + Fusion
         self.ctx_tgt_an = BilinearAttention(
-            d_model, d_model, scaled_att=True, dropout=model_config["att_dropout"]
+            d_model, d_model, scaled_att=True, dropout=args.model_config["att_dropout"]
         )
         self.ctx_tgt_fuse = nn.Linear(2 * d_model, d_model, bias=True)
         self.ctx_tgt_fuse_active = nn.PReLU()
         # Dense Layer
-        self.fc = nn.Linear(d_model, num_labels)
+        self.fc = nn.Linear(d_model, self.num_labels)
         self.fc_active = nn.PReLU()
 
         # initialize weights
         self.init_weight()
-        self.device = device
-        self.to(device)
+        self.device = args.device
+        self.to(args.device)
 
     def init_weight(self):
         for name, param in self.bilstm.named_parameters():
@@ -306,12 +290,6 @@ class TGSAN(BaseModel):
                 nn.init.xavier_uniform_(param, gain=1.0)
 
     def forward(self, raw_text, attention_mask, target_mask, label=None, soft_label=None):
-        """
-        text: list of token id
-        tgt_idx: mask for the target terms
-        length_idx: mask for padded sentence
-        """
-
         x = self.embed(raw_text).to(torch.float32)  # [B, L, E]
         if self.emb_dropout is not None:
             x = self.emb_dropout(x)
