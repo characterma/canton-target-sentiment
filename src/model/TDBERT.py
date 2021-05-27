@@ -95,6 +95,7 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         return_tgt_mask=False,
         return_all_repr=False,
         return_attn=False,
+        **kwargs
     ):
         lm = self.pretrained_model(
             input_ids=raw_text,

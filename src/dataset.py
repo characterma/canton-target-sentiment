@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import pickle
+import random
 import pandas as pd
 import numpy as np
 import torch
@@ -60,23 +61,23 @@ class TargetDependentExample(object):
         data_dict,
         tokenizer,
         prepro_config,
-        model_type,
         required_features,
         max_length,
         word_to_idx=None,
+        diagnosis=False
     ):
         """
         data_dict: dict
         prepro_config: dict
-        model_type: str
         required_features: List
         """
         self.succeeded = True
+        self.msg = ""
+        self.intermediate = dict()
         raw_text = data_dict['content']
         target_locs = data_dict["target_locs"]
-        sentiment = data_dict["sentiment"]
-        assert sentiment in ["neutral", "negative", "positive"]
-
+        sentiment = data_dict.get("sentiment", None)
+        
         preprocessor = TextPreprocessor(
             text=raw_text, 
             target_locs=target_locs, 
@@ -84,20 +85,15 @@ class TargetDependentExample(object):
         )
         preprocessed_text = preprocessor.preprocessed_text
         preprocessed_target_locs = preprocessor.preprocessed_target_locs
-
-        # if model_type=="BERT":
-        self.feature_dict, msg = self.get_features(
+        self.feature_dict, self.diagnosis_dict = self.get_features(
             raw_text=preprocessed_text,
-            target_locs=preprocessed_target_locs,
+            target_char_loc=preprocessed_target_locs,
             tokenizer=tokenizer,
             required_features=required_features,
             max_length=max_length,
             label=sentiment,
+            diagnosis=diagnosis
         )
-
-        if not self.feature_dict:
-            self.succeeded = False
-            self.message = f"Features failed: {msg}"
 
     @staticmethod
     def pad(arrays, max_length, value=0):
@@ -111,49 +107,66 @@ class TargetDependentExample(object):
 
     @staticmethod
     def get_features(
-        raw_text, target_locs, tokenizer, required_features, max_length, label=None
+        raw_text, target_char_loc, tokenizer, required_features, max_length, label=None, diagnosis=False
     ):
+        diagnosis_dict = dict()
         feature_dict = dict()
         tokens_encoded = tokenizer(
             raw_text,
-            max_length=max_length,
-            truncation=True,
+            # max_length=max_length,
+            # truncation=True,
             add_special_tokens=True,
         )
 
-        raw_text_ids = np.array(tokens_encoded.input_ids)
-        attention_mask = np.array(tokens_encoded.attention_mask)
-        token_type_ids = np.array(tokens_encoded.token_type_ids)
+        raw_text_ids = np.array(tokens_encoded.input_ids)[:max_length]
+        attention_mask = np.array(tokens_encoded.attention_mask)[:max_length]
+        token_type_ids = np.array(tokens_encoded.token_type_ids)[:max_length]
         target_mask = np.array([0] * len(raw_text_ids))
-
         raw_text_ids, attention_mask, token_type_ids, target_mask = TargetDependentExample.pad([raw_text_ids, attention_mask, token_type_ids, target_mask], max_length, 0)
         tokens = tokenizer.convert_ids_to_tokens(raw_text_ids)
-        target_pos = []
-        for (start_idx, end_idx) in target_locs:
+        target_token_loc = []
+
+        for (start_idx, end_idx) in target_char_loc:
             for char_idx in range(start_idx, end_idx):
                 token_idx = tokens_encoded.char_to_token(char_idx)
-                if token_idx is not None and token_idx < len(raw_text_ids):
+                target_token_loc.append(token_idx)
+                if token_idx is not None and token_idx < max_length:
                     target_mask[token_idx] = 1
-                    target_pos.append(token_idx)
-            
-                    tkn = tokens[token_idx]
-                    if tkn.strip()!="" and tkn!="[UNK]":
-                        if tkn not in raw_text[start_idx:end_idx]:
-                            return None, "Target token"
+
+        if diagnosis:
+            diagnosis_dict['fea_text'] = raw_text
+            diagnosis_dict['fea_text_ids'] = raw_text_ids
+            diagnosis_dict['fea_target_char_loc'] = target_char_loc
+            diagnosis_dict['fea_tokens'] = tokens
+            diagnosis_dict['fea_target_token_loc'] = target_token_loc
+            diagnosis_dict['fea_target_char'] = [raw_text[si:ei] for (si, ei) in target_char_loc]
+            diagnosis_dict['fea_target_token'] = []
+            diagnosis_dict['fea_success'] = True
+            diagnosis_dict['fea_error_msg'] = []
+            for i, (st_char_idx, ed_char_idx) in zip():
+                if i is None:
+                    diagnosis_dict['fea_target_token'].append("NOT FOUND")
+                    diagnosis_dict['fea_error_msg'].append("TARGET NOT FOUND")
+                elif i < max_length:
+                    diagnosis_dict['fea_target_token'].append(tokens[i])
+                else:
+                    diagnosis_dict['fea_target_token'].append("> MAX_LEN")
+                    diagnosis_dict['fea_error_msg'].append("TARGET > MAX_LEN")
+
+            diagnosis_dict['fea_error_msg'] = sorted(list(set(diagnosis_dict['fea_error_msg'])))
+
+            if sum(target_mask)==0:
+                diagnosis_dict['fea_success'] = False
 
 
-        if len(target_pos)==0:
-            return None, "Target is not found."
-            
-        target_pos = np.array(target_pos)
+        if sum(target_mask)==0:
+            return None, diagnosis_dict
 
         if "raw_text" in required_features:
             feature_dict["raw_text"] = torch.tensor(raw_text_ids).long()
-            feature_dict["tokens"] = tokens
 
         if "target_mask" in required_features:
             feature_dict["target_mask"] = torch.tensor(target_mask).long()
-            feature_dict['target_tokens'] = tokenizer.convert_ids_to_tokens(torch.index_select(torch.tensor(raw_text_ids), 0, torch.tensor(target_pos)))
 
         if "attention_mask" in required_features:
             feature_dict["attention_mask"] = torch.tensor(attention_mask).long()
@@ -165,12 +178,12 @@ class TargetDependentExample(object):
             label = SENTI_ID_MAP[label]
             feature_dict["label"] = torch.tensor(label).long()
 
-        return feature_dict, ""
+        return feature_dict, diagnosis_dict
 
 
-def load_vocab(tokenizer, args):
+def load_vocab(tokenizer, vocab_path, args):
     logger.info("***** Loading vocab *****")
-    word_to_idx = json.load(open(args.model_dir / 'word_to_idx.json', 'r'))
+    word_to_idx = json.load(open(vocab_path, 'r'))
     tokenizer.update_word_idx(word_to_idx)
     args.vocab_size = len(word_to_idx)
     logger.info("  Vocab size = %d", len(word_to_idx))
@@ -204,17 +217,13 @@ def build_vocab_from_dataset(dataset, tokenizer, args):
         all_words.extend(tokenizer(raw_text=preprocessed_text, max_length=None).tokens)
     word_counter = Counter(all_words)
 
-    freq_cutoff = args.model_config['vocab_freq_cutoff']
-    cnt_cutoff = np.percentile(
-        list(word_counter.values()), 
-        q=freq_cutoff)
-
+    vocab_freq_cutoff = args.model_config['vocab_freq_cutoff']
     words = list(set(all_words))
-    infreq_words = np.random.choice(
-        [w for w in words if word_counter[w] <= cnt_cutoff],
-        size=int(0.1 * len(words)), 
-        replace=False
-    )
+    random.shuffle(words)
+    words = sorted(words, key=lambda w: word_counter[w])
+    infreq_words = words[:int(vocab_freq_cutoff * len(words))]
+    logger.info("  Number of infrequency words = %d", len(infreq_words))
+    json.dump(infreq_words, open("words.json", 'w'))
 
     word_to_idx['<OOV>'] = 0
     cur_idx = 1
@@ -223,7 +232,6 @@ def build_vocab_from_dataset(dataset, tokenizer, args):
             word_to_idx[w] = cur_idx
             cur_idx += 1
 
-    logger.info("  Count cutoff = %f", cnt_cutoff)
     logger.info("  Infrequenct words = %d", len(infreq_words))
     logger.info("  Vocab size = %d", len(word_to_idx))
 
@@ -239,51 +247,50 @@ class TargetDependentDataset(Dataset):
             data_path (Path object): a list of paths to .json (format of internal label tool)
         """
         self.args = args
-        self.model_type = ""
-        self.data_config = args.data_config
         self.dataset = dataset
         self.raw_data = None
-        self.data = []
-        self.failed_ids = dict()
+        self.features = []
+        self.diagnosis = []
         self.tokenizer = tokenizer
-        self.statistics = dict()
-
-        self.prepro_config = args.prepro_config
-        self.max_length = args.model_config["max_length"]
-        MODEL = getattr(sys.modules[__name__], args.train_config["model_class"])
-        self.required_features = MODEL.INPUT
+        Model = getattr(sys.modules[__name__], args.train_config["model_class"])
+        self.required_features = Model.INPUT
         self.load_from_path()
+        self.diagnosis_df = pd.DataFrame(data=self.diagnosis)
 
     def load_from_path(self):
         data_path = (
-            Path("../data/datasets") / self.data_config["data_dir"] / f"{self.dataset}.json"
+            Path("../data/datasets") / self.args.data_config["data_dir"] / f"{self.dataset}.json"
         )
         logger.info("***** Loading data *****")
         logger.info("  Data path = %s", str(data_path))
         self.raw_data = json.load(open(data_path, "r"))
         logger.info("  Number of raw samples = %d", len(self.raw_data))
 
-        # count raw
-
         for idx, data_dict in tqdm(enumerate(self.raw_data)):
+            diagnosis_dict = dict(zip(["raw_" + k for k in data_dict.keys()], data_dict.values()))
             x = TargetDependentExample(
                 data_dict=data_dict,
                 tokenizer=self.tokenizer,
-                prepro_config=self.prepro_config,
-                model_type=self.model_type,
+                prepro_config=self.args.prepro_config,
                 required_features=self.required_features,
-                max_length=self.max_length,
+                max_length=self.args.model_config["max_length"],
+                diagnosis=True
             )
+            if x.feature_dict is not None:
+                self.features.append(x.feature_dict)
+            diagnosis_dict.update(x.diagnosis_dict)
+            self.diagnosis.append(diagnosis_dict)
+        logger.info("  Number of loaded samples = %d", len(self.features))
 
-            if x.succeeded:
-                self.data.append(x)
-            else:
-                self.failed_ids[idx] = {
-                    "data": data_dict,
-                    "error": "preprocessing failed"
-                }
-
-        logger.info("  Number of loaded samples = %d", len(self.data))
+    def get_data_analysis(self):
+        statistics = {'dataset': self.dataset}
+        statistics['total_samples'] = self.diagnosis_df.shape[0]
+        statistics['fea_success'] = self.diagnosis_df[self.diagnosis_df['fea_success']].shape[0]
+        for s in self.diagnosis_df['raw_sentiment'].unique():
+            df = self.diagnosis_df[self.diagnosis_df['raw_sentiment']==s]
+            statistics[f"raw_{s}"] = df.shape[0]
+            statistics[f"fea_{s}"] = df[df['fea_success']].shape[0]
+        return statistics
 
     def get_class_balanced_weights(self):
         class_size = self.df["label"].value_counts()
@@ -293,7 +300,7 @@ class TargetDependentDataset(Dataset):
         return df["w"].tolist(), class_size.max(), class_size.min(), class_size.shape[0]
 
     def __getitem__(self, index):
-        return self.data[index].feature_dict
+        return self.features[index]
 
     def __len__(self):
-        return len(self.data)
+        return len(self.features)

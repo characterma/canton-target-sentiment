@@ -53,15 +53,18 @@ def evaluation_step(model, batch, device):
     results = dict()
     with torch.no_grad():
         inputs = dict()
-        for col in model.INPUT:
+        for col in batch:
             inputs[col] = batch[col].to(device).long()
         x = model(
             **inputs,
         )
-    results["sentiment_idx"] = torch.argmax(x[1], dim=1)
-    results["loss"] = torch.mean(x[0])
+    results["sentiment_idx"] = torch.argmax(x[1], dim=1).cpu().tolist()
+    results["sentiment"] = [SENTI_ID_MAP_INV[i] for i in results["sentiment_idx"]]
     results["logits"] = x[1]
     results["score"] = torch.nn.functional.softmax(x[1], dim=1)
+    if x[0]:
+        results["loss"] = torch.mean(x[0])
+    # add to cpu
     return results
 
 
@@ -89,6 +92,8 @@ def evaluate(model, eval_dataset, args):
     for batch in tqdm(dataloader, desc="Evaluating"):
 
         results = evaluation_step(model, batch, device=args.device)
+
+        # try list
         label = np.concatenate(
             [label, batch["label"].detach().cpu().numpy()], axis=None
         )
@@ -114,8 +119,9 @@ def evaluate(model, eval_dataset, args):
 
     metrics = compute_metrics(label, sentiment_idx)
     metrics['loss'] = losses.mean()
+    metrics['dataset'] = eval_dataset.dataset
     for m in metrics:
-        logger.info("  %s = %f", m, metrics[m])
+        logger.info("  %s = %s", m, str(metrics[m]))
     return metrics
 
 

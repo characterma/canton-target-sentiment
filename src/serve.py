@@ -1,5 +1,5 @@
 # coding=utf-8
-
+import argparse
 import asyncio
 import functools
 from sanic import Sanic
@@ -15,129 +15,67 @@ app = Sanic(__name__)
 from pathlib import Path
 import os, sys
 import numpy as np
-from utils import load_yaml, SENTI_ID_MAP_INV, MODEL_EMB_TYPE
-from tokenizer import get_tokenizer
-from transformers_utils import PretrainedLM
-from model import *
 import pickle
 from dataset import TargetDependentExample
 from neg_kws import neg_kws
 import traceback
 import torch
+from run import load_config, init_model, init_tokenizer
+from trainer import evaluation_step
+
+
+MAX_WAIT = 0.1
 
 
 class ModelRunner:
-    def __init__(self, version, base_dir, config_dir):
-        self.base_dir = base_dir
-        self.config_dir = config_dir
+    """
+    """
+    def __init__(self, args):
+        self.args = load_config(args=args)
+        self.model_config = self.args.model_config
+        self.prepro_config = self.args.prepro_config
+
+        self.tokenizer = init_tokenizer(args=args)
+        self.model = init_model(args=args)
+        self.batch_size = self.args.eval_config['batch_size']
+
         self.queue = []
         self.queue_lock = None
         self.needs_processing = None
         self.needs_processing_timer = None
-        self.version = version
-
-        self.load_configs()
-        self.load_tokenizer()
-        self.load_model()
-        self.model.eval()
-
-    def load_configs(self):
-
-        self.deploy_config = load_yaml(self.config_dir / f"deploy_{self.version}.yaml")
-        self.model_dir = self.base_dir / "models" / self.deploy_config["model_dir"]
-
-        print(os.listdir(self.model_dir))
-        self.model_config = load_yaml(self.model_dir / "model.yaml")
-        self.train_config = load_yaml(self.model_dir / "train.yaml")
-        self.state_path = self.model_dir / self.deploy_config["state_file"]
-        self.model_class = self.train_config["model_class"]
-        self.preprocess_config = self.model_config[self.model_class]
-        self.preprocess_config["text_preprocessing"] = ""
-        self.body_config = self.model_config[self.model_class]
-
-    def load_model(self):
-        self.device = self.deploy_config['device'] if torch.cuda.is_available() else "cpu"
-
-        if MODEL_EMB_TYPE[self.model_class] == "WORD":
-
-            word2idx_info = pickle.load(open(self.model_dir / "word2idx_info.pkl", "rb"))
-            self.word2idx = word2idx_info["word2idx"]
-            self.emb_dim = word2idx_info["emb_dim"]
-            emb_vectors = np.random.rand(len(self.word2idx), self.emb_dim)
-            num_emb = len(self.word2idx)
-            self.model = getattr(sys.modules[__name__], self.model_class)(
-                model_config=self.body_config,
-                num_labels=3,
-                pretrained_emb=emb_vectors,
-                num_emb=num_emb,
-                pretrained_lm=None,
-                device=self.device,
-            )
-            self.model.load_state(self.state_path)
-        elif MODEL_EMB_TYPE[self.model_class] == "BERT":
-
-            pretrained_lm = PretrainedLM(self.body_config["pretrained_lm"])
-            pretrained_lm.resize_token_embeddings(tokenizer=self.tokenizer)
-            self.word2idx = None
-            self.emb_dim = None
-
-            self.model = getattr(sys.modules[__name__], self.model_class)(
-                model_config=self.body_config,
-                num_labels=3,
-                pretrained_emb=None,
-                num_emb=None,
-                pretrained_lm=pretrained_lm,
-                device=self.device,
-            )
-            self.model.load_state(self.state_path)
-        else:
-            raise("Model not supported.")
-
-    def load_tokenizer(self):
-        self.tokenizer = get_tokenizer(
-            source=self.preprocess_config["tokenizer_source"],
-            name=self.preprocess_config["tokenizer_name"],
-        )
 
     def schedule_processing_if_needed(self):
-        if len(self.queue) >= self.deploy_config['max_batch_size']:
-            logger.debug("next batch ready when processing a batch")
+        if len(self.queue) >= self.batch_size:
             self.needs_processing.set()
         elif self.queue:
-            logger.debug("queue nonempty when processing a batch, setting next timer")
             self.needs_processing_timer = app.loop.call_at(
-                self.queue[0]["time"] + self.deploy_config['max_wait'], self.needs_processing.set
+                self.queue[0]["time"] + MAX_WAIT, self.needs_processing.set
             )
 
     async def process_input(self, input):
-        our_task = {
+        task = {
             "done_event": asyncio.Event(loop=app.loop),
-            "input": input,
             "time": app.loop.time(),
+            "input": input,
         }
         async with self.queue_lock:
-            self.queue.append(our_task)
+            self.queue.append(task)
             logger.debug("enqueued task. new queue size {}".format(len(self.queue)))
             self.schedule_processing_if_needed()
 
-        await our_task["done_event"].wait()
-        return our_task["output"]
+        await task["done_event"].wait()
+        return task["output"]
 
-    def run_model(self, input):  # runs in other thread
-        with torch.no_grad():
-            outputs = dict()
-            results = self.model(
-                **input,
-            )
-            outputs["sentiment_id"] = torch.argmax(results[1], dim=1)
-            outputs["score"] = torch.nn.functional.softmax(results[1], dim=1)[:, outputs["sentiment_id"]]
-            return outputs
+    def make_batch(self, to_process):
+        batch = dict()
+        for col in to_process[0]["input"].feature_dict:
+            batch[col] = torch.stack([t["input"].feature_dict[col] for t in to_process], dim=0)
+        return batch
 
     async def model_runner(self):
         self.queue_lock = asyncio.Lock(loop=app.loop)
         self.needs_processing = asyncio.Event(loop=app.loop)
         while True:
-
             await self.needs_processing.wait()
             self.needs_processing.clear()
             if self.needs_processing_timer is not None:
@@ -147,51 +85,21 @@ class ModelRunner:
             async with self.queue_lock:
                 if self.queue:
                     longest_wait = app.loop.time() - self.queue[0]["time"]
-                    logger.debug(
-                        "launching processing. queue size: {}. longest wait: {}".format(
-                            len(self.queue), longest_wait
-                        )
-                    )
-                else:  # oops
+                else: 
                     longest_wait = None
-                    logger.debug(
-                        "launching processing. queue size: {}. longest wait: {}".format(
-                            len(self.queue), longest_wait
-                        )
-                    )
                     continue
-
-                to_process = self.queue[:self.deploy_config['max_batch_size']]
+                to_process = self.queue[:self.batch_size]
                 del self.queue[: len(to_process)]
                 self.schedule_processing_if_needed()
-            # so here we copy, it would be neater to avoid this
 
-            input = dict()
-            for col in self.model.INPUT_COLS:
-
-                if col in to_process[0]["input"].features:
-                    if "label" not in col:
-                        input[col] = torch.stack(
-                            [t["input"].features[col] for t in to_process], dim=0
-                        ).to(self.device)
-
-            results = await app.loop.run_in_executor(
-                None, functools.partial(self.run_model, input)
+            batch = self.make_batch(to_process)
+            batch_results = await app.loop.run_in_executor(
+                None, functools.partial(evaluation_step, model=self.model, batch=batch, device=self.args.device)
             )
 
-            results["sentiment"] = [
-                SENTI_ID_MAP_INV[p]
-                for p in results["sentiment_id"].detach().cpu().numpy()
-            ]
-            results["score"] = [float(s[0]) for s in results["score"].detach().cpu().numpy()]
-
             for i in range(len(to_process)):
-                output = dict()
                 t = to_process[i]
-                output["sentiment_id"] = int(results["sentiment_id"][i])
-                output["sentiment"] = results["sentiment"][i]
-                output["score"] = results["score"][i]
-                t["output"] = output
+                t["output"] = {"sentiment": batch_results["sentiment"][i], "score": batch_results["score"][i]}
                 t["done_event"].set()
             del to_process
 
@@ -214,7 +122,6 @@ def parse_doc(doc, io_format):
 
 def parse_labelunit(u, io_format):
     if io_format=='syntactic':
-
         text = u['unit_text']
         target_locs = u["subject_index"] + u["aspect_index"]
         subj_text = [u['unit_text'][i[0]:i[1]] for i in u["subject_index"]]
@@ -231,7 +138,6 @@ def insert_sentiment(doc, sentiments, debugs=None):
 
         if debugs is not None:
             x['debug'] = debugs[i]
-
 
 
 def is_spam(unit_text, subject_text):
@@ -264,19 +170,22 @@ async def target_sentiment(request):
                 # 2. model
                 # 3. check negative kws
                 debug = {}
-
                 if not is_spam(text, subj_text):
 
-                    e = TargetDependentExample(
-                        raw_text=text,
-                        target_locs=target_locs, 
+                    data_dict = {
+                        'content': text, 
+                        'target_locs': target_locs, 
+                    }
+                    x = TargetDependentExample(
+                        data_dict=data_dict,
                         tokenizer=model_runner.tokenizer,
-                        preprocess_config=model_runner.preprocess_config,
-                        required_features=model_runner.model.INPUT_COLS,
-                        word2idx=model_runner.word2idx,
+                        prepro_config=model_runner.prepro_config,
+                        required_features=model_runner.model.INPUT,
+                        max_length=model_runner.model_config["max_length"],
+                        diagnosis=True
                     )
-                    results = await model_runner.process_input(e)
-                    
+                    results = await model_runner.process_input(x)
+
                     if results["sentiment"]=='negative':
                         # check neg kws:
                         if re.search(neg_kws, text) is None:
@@ -302,8 +211,10 @@ async def target_sentiment(request):
 
 
 if __name__=="__main__":
-    base_dir = Path("./")
-    config_dir = base_dir / "config"
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config_dir", type=str, default="../config/")
+    args = parser.parse_args()
 
     sentiment_to_id = {
         "neutral": "0",
@@ -312,9 +223,7 @@ if __name__=="__main__":
     }
 
     model_runner = ModelRunner(
-        "chinese", 
-        base_dir=base_dir, 
-        config_dir=config_dir, 
+        args=args
     )
     app.add_task(model_runner.model_runner())
     app.run(host="0.0.0.0", port=8080, debug=False)

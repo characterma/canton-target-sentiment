@@ -22,7 +22,7 @@ class TestGetFeatures(unittest.TestCase):
 
         feature_dict, msg = TargetDependentExample.get_features(
             raw_text=raw_text,
-            target_locs=target_locs,
+            target_char_loc=target_locs,
             tokenizer=tokenizer,
             required_features=required_features,
             max_length=80,
@@ -451,12 +451,7 @@ class TestGetFeatures(unittest.TestCase):
             ]
         )
         label = torch.tensor(2)
-        # import pickle
-        # pickle.dump(feature_dict, open('./tmp.pkl', 'wb'))
-        self.assertTrue(msg == "")
         self.assertTrue(torch.equal(feature_dict["raw_text"], raw_text))
-        self.assertTrue(feature_dict["tokens"] == tokens)
-        self.assertTrue(feature_dict["target_tokens"] == target_tokens)
         self.assertTrue(torch.equal(feature_dict["target_mask"], target_mask))
         self.assertTrue(torch.equal(feature_dict["attention_mask"], attention_mask))
         self.assertTrue(torch.equal(feature_dict["token_type_ids"], token_type_ids))

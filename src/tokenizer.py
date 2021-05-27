@@ -4,7 +4,7 @@ import unicodedata
 import re
 import logging
 import collections
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, BertTokenizer
 from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
 from utils import SPEC_TOKEN
@@ -12,15 +12,22 @@ from utils import SPEC_TOKEN
 
 logger = logging.getLogger(__name__)
 
+TOKENIZER_CLASS_MAP = {
+    "voidful/albert_chinese_tiny": BertTokenizer
+}
+
 
 def get_tokenizer(args, word_to_idx=None, required_token_types=None):
+    # add special tokens
+
     source = args.model_config['tokenizer_source']
     name = args.model_config['tokenizer_name']
     logger.info("***** Loading tokenizer *****")
     logger.info("  Tokenizer source = '%s'", source)
     logger.info("  Tokenizer name = '%s'", name)
     if source == "transformers":
-        tokenizer = AutoTokenizer.from_pretrained(name, use_fast=True)
+        Tokenizer = TOKENIZER_CLASS_MAP.get(name, AutoTokenizer)
+        tokenizer = Tokenizer.from_pretrained(name, use_fast=True)
         return tokenizer
     elif source == "internal":
         return InternalTokenizer(word_to_idx=word_to_idx, required_token_types=required_token_types)

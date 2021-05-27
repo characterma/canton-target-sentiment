@@ -191,7 +191,7 @@ class TGSAN(BaseModel):
 
         if args.word_embedding_path is not None:
             # load wb
-            word_embeddings = np.load(args.word_embedding_path)
+            word_embeddings = np.load(args.word_embedding_path) # dict
             _, emb_dim = word_embeddings.shape
             self.embed = nn.Embedding.from_pretrained(
                 torch.tensor(word_embeddings),
@@ -289,7 +289,7 @@ class TGSAN(BaseModel):
             elif "weight" in name:
                 nn.init.xavier_uniform_(param, gain=1.0)
 
-    def forward(self, raw_text, attention_mask, target_mask, label=None, soft_label=None):
+    def forward(self, raw_text, attention_mask, target_mask, label=None, soft_label=None, **kwargs):
         x = self.embed(raw_text).to(torch.float32)  # [B, L, E]
         if self.emb_dropout is not None:
             x = self.emb_dropout(x)
