@@ -4,7 +4,7 @@ import unicodedata
 import re
 import logging
 import collections
-from transformers import AutoTokenizer, BertTokenizer
+from transformers import AutoTokenizer, BertTokenizer, BertTokenizerFast
 from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
 from utils import SPEC_TOKEN
@@ -12,8 +12,25 @@ from utils import SPEC_TOKEN
 
 logger = logging.getLogger(__name__)
 
+
 TOKENIZER_CLASS_MAP = {
-    "voidful/albert_chinese_tiny": BertTokenizer
+    "toastynews/electra-hongkongese-large-discriminator": AutoTokenizer,
+    "toastynews/xlnet-hongkongese-base": AutoTokenizer,
+    "xlnet-base-cased": AutoTokenizer,
+    "xlm-roberta-base": AutoTokenizer,
+    "xlm-roberta-large": AutoTokenizer,
+    "bert-large-cased": AutoTokenizer,
+    "bert-base-cased": AutoTokenizer,  # https://huggingface.co/transformers/model_doc/bert.html#bertconfig
+    "bert-base-uncased": AutoTokenizer,
+    "bert-base-multilingual-cased": AutoTokenizer,  # tested
+    "bert-base-multilingual-uncased": AutoTokenizer,
+    "bert-base-chinese": AutoTokenizer,  # testing
+    "denpa92/bert-base-cantonese": BertTokenizerFast,  # missing tokenizer.
+    "voidful/albert_chinese_tiny": BertTokenizerFast,  #
+    "clue/albert_chinese_tiny": BertTokenizerFast,  #
+    "voidful/albert_chinese_small": BertTokenizerFast,  #
+    "clue/albert_chinese_small": BertTokenizerFast,
+    "voidful/albert_chinese_base": BertTokenizerFast,  #
 }
 
 
@@ -49,7 +66,7 @@ class TokensEncoded:
 
 
 class InternalTokenizer:
-    def __init__(self, word_to_idx=None, required_token_types=None):
+    def __init__(self, word_to_idx=None, required_token_types=None, return_offsets_mapping=False):
         self.word_to_idx = None
         self.idx_to_word = None
         if word_to_idx is not None:

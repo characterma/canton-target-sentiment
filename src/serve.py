@@ -21,7 +21,7 @@ from neg_kws import neg_kws
 import traceback
 import torch
 from run import load_config, init_model, init_tokenizer
-from trainer import evaluation_step
+from trainer import prediction_step
 
 
 MAX_WAIT = 0.1
@@ -94,7 +94,7 @@ class ModelRunner:
 
             batch = self.make_batch(to_process)
             batch_results = await app.loop.run_in_executor(
-                None, functools.partial(evaluation_step, model=self.model, batch=batch, device=self.args.device)
+                None, functools.partial(prediction_step, model=self.model, batch=batch, device=self.args.device)
             )
 
             for i in range(len(to_process)):

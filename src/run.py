@@ -10,7 +10,6 @@ import argparse
 import pandas as pd
 from dataset import TargetDependentDataset, build_vocab_from_dataset, build_vocab_from_pretrained, load_vocab
 from trainer import Trainer, evaluate
-from transformers_utils import PretrainedBert
 from utils import (
     init_logger,
     set_seed,

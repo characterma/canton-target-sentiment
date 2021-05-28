@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 
 def compute_metrics(labels, predictions):
     assert len(predictions) == len(labels)
+    labels = np.array(labels)
+    predictions = np.array(predictions)
     acc_repr = sklearn.metrics.classification_report(
         labels, predictions, labels=[0, 1, 2], output_dict=True
     )
@@ -48,7 +50,7 @@ def compute_metrics(labels, predictions):
     return metrics
 
 
-def evaluation_step(model, batch, device):
+def prediction_step(model, batch, device):
     model.eval()
     results = dict()
     with torch.no_grad():
@@ -58,13 +60,16 @@ def evaluation_step(model, batch, device):
         x = model(
             **inputs,
         )
+
+    # to cpu to list
     results["sentiment_idx"] = torch.argmax(x[1], dim=1).cpu().tolist()
     results["sentiment"] = [SENTI_ID_MAP_INV[i] for i in results["sentiment_idx"]]
-    results["logits"] = x[1]
-    results["score"] = torch.nn.functional.softmax(x[1], dim=1)
-    if x[0]:
-        results["loss"] = torch.mean(x[0])
-    # add to cpu
+    results["logits"] = x[1].cpu().tolist()
+    results["score"] = torch.nn.functional.softmax(x[1], dim=1).cpu().tolist()
+    if x[0] is not None:
+        results["loss"] = x[0].cpu().tolist()
+    else:
+        results["loss"] = None
     return results
 
 
@@ -81,44 +86,36 @@ def evaluate(model, eval_dataset, args):
         # collate_fn=eval_dataset.pad_collate,
     )
 
-    label = np.array([])
-    label2 = []
-    sentiment_idx = np.array([])
-    sentiment_idx2 = []
-    score = np.array([])
-    logits = np.array([])
-    losses = np.array([])
+    # label = np.array([])
+    # label2 = []
+    # sentiment_idx = np.array([])
+    # sentiment_idx2 = []
+    # score = np.array([])
+    # logits = np.array([])
+    # losses = np.array([])
+
+    labels = []
+    sentiment_ids = []
+    scores = []
+    logits = []
+    losses = []
 
     for batch in tqdm(dataloader, desc="Evaluating"):
 
-        results = evaluation_step(model, batch, device=args.device)
+        results = prediction_step(model, batch, device=args.device)
 
         # try list
-        label = np.concatenate(
-            [label, batch["label"].detach().cpu().numpy()], axis=None
-        )
-
-        losses = np.concatenate(
-            [losses, results["loss"].detach().cpu().numpy()], axis=None
-        )
-
-        sentiment_idx = np.concatenate(
-            [sentiment_idx, results["sentiment_idx"].detach().cpu().numpy()],
-            axis=None,
-        )
-
-        score = np.concatenate(
-            [score, results["score"].detach().cpu().numpy().max(axis=1)], axis=None
-        )
+        labels.extend(batch["label"].cpu().tolist())
+        losses.extend(results["loss"])
+        scores.extend(results["score"])
+        sentiment_ids.extend(results["sentiment_idx"])
         if len(logits)==0:
-            logits = results["logits"].detach().cpu().numpy()
+            logits = results["logits"]
         else:
-            logits = np.concatenate(
-                [logits, results["logits"].detach().cpu().numpy()], axis=0
-            )
+            logits.extend(results["logits"])
 
-    metrics = compute_metrics(label, sentiment_idx)
-    metrics['loss'] = losses.mean()
+    metrics = compute_metrics(labels, sentiment_ids)
+    metrics['loss'] = np.mean(losses)
     metrics['dataset'] = eval_dataset.dataset
     for m in metrics:
         logger.info("  %s = %s", m, str(metrics[m]))

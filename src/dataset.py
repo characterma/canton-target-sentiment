@@ -116,6 +116,7 @@ class TargetDependentExample(object):
             # max_length=max_length,
             # truncation=True,
             add_special_tokens=True,
+            return_offsets_mapping=True
         )
 
         raw_text_ids = np.array(tokens_encoded.input_ids)[:max_length]
