@@ -1,28 +1,17 @@
 # coding=utf-8
-import logging
-from pathlib import Path
-import os, shutil, sys
-import uuid
-import numpy as np
-import pickle
-
 import argparse
+import json
+import logging
+import os
 import pandas as pd
+import shutil
+from pathlib import Path
 from dataset import TargetDependentDataset, build_vocab_from_dataset, build_vocab_from_pretrained, load_vocab
 from trainer import Trainer, evaluate
-from utils import (
-    init_logger,
-    set_seed,
-    load_yaml,
-    save_yaml,
-    get_label_map,
-    Timer,
-    MODEL_EMB_TYPE,
-)
+from utils import set_seed, load_yaml
 from tokenizer import get_tokenizer
 from model import get_model, get_model_type
-import json
-from gensim.models import KeyedVectors
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +24,22 @@ def set_log_path():
     )
 
 
+def get_label_to_id(labels):
+    if labels=="2_ways":
+        label_to_id = {"neutral": 0, "non_neutral": 1}
+    elif labels=="3_ways":
+        label_to_id = {"neutral": 0, "negative": 1, "positive": 2}
+    else:
+        raise ValueError("Label type not supported.")
+    label_to_id_inv = dict(zip(label_to_id.values(), label_to_id.keys()))
+    return label_to_id, label_to_id_inv
+
+
 def load_config(args):
     config_dir = Path(args.config_dir)
     run_config = load_yaml(config_dir / "run.yaml")
     args.data_config = run_config['data']
+    args.label_to_id, args.label_to_id_inv = get_label_to_id(run_config['data']['labels'])
     args.eval_config = run_config['eval']
     args.device = run_config['device']
     args.train_config = run_config['train']
@@ -103,8 +104,6 @@ def run(args):
             args=args
         )
 
-        datasets.extend([train_dataset, dev_dataset])
-
         trainer = Trainer(
             model=model,
             train_dataset=train_dataset,
@@ -113,15 +112,15 @@ def run(args):
         )
 
         trainer.train()
+    else:
+        train_dataset = None
+        dev_dataset = None
 
     test_dataset = TargetDependentDataset(
         dataset="test",
         tokenizer=tokenizer,
         args=args
     )
-    datasets.append(test_dataset)
-
-    metrics = []
 
     if not args.test_only:
         train_metrics = evaluate(
@@ -134,32 +133,36 @@ def run(args):
             eval_dataset=dev_dataset,
             args=args,
         )
-        metrics.extend([train_metrics, dev_metrics])
+    else:
+        train_metrics = None
+        dev_metrics = None
 
     test_metrics = evaluate(
         model=model,
         eval_dataset=test_dataset,
         args=args,
     )
-    metrics.append(test_metrics)
 
-    combine_and_save_metrics(metrics=metrics, args=args)
-    combine_and_save_diagnosis(datasets=datasets, args=args)
-    combine_and_save_statistics(datasets=datasets, args=args)
+    combine_and_save_metrics(metrics=[train_metrics, dev_metrics, test_metrics], args=args)
+    combine_and_save_diagnosis(datasets=[train_dataset, dev_dataset, test_dataset], args=args)
+    combine_and_save_statistics(datasets=[train_dataset, dev_dataset, test_dataset], args=args)
     save_config(args)
 
 
 def combine_and_save_metrics(metrics, args):
+    metrics = [m for m in metrics if m is not None]
     metrics_df = pd.DataFrame(data=metrics)
     metrics_df.to_csv(args.model_dir / 'result.csv', index=False)
 
 
 def combine_and_save_diagnosis(datasets, args):
+    datasets = [ds for ds in datasets if ds is not None]
     diagnosis_df = pd.concat([ds.diagnosis_df for ds in datasets])
     diagnosis_df.to_excel(args.model_dir / 'diagnosis.xlsx', index=False)
 
 
 def combine_and_save_statistics(datasets, args):
+    datasets = [ds for ds in datasets if ds is not None]
     statistics_df = pd.DataFrame(data=[ds.get_data_analysis() for ds in datasets])
     statistics_df.to_csv(args.model_dir / 'statistics.csv', index=False)
 

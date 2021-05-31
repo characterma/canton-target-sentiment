@@ -1,13 +1,7 @@
-
-
-import unicodedata
-import re
 import logging
-import collections
+import re
+import unicodedata
 from transformers import AutoTokenizer, BertTokenizer, BertTokenizerFast
-from spacy.tokenizer import Tokenizer
-from spacy.lang.en import English
-from utils import SPEC_TOKEN
 
 
 logger = logging.getLogger(__name__)

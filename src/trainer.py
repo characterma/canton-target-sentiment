@@ -1,15 +1,9 @@
 # coding=utf-8
 import logging
-import os
-import sys
-import time
 import numpy as np
-import pandas as pd
-from pathlib import Path
 import copy
 import sklearn
 import torch
-import torch.nn as nn
 from torch.utils.data import (
     DataLoader,
     RandomSampler,
@@ -18,52 +12,42 @@ from torch.utils.data import (
 from torch.optim import RMSprop
 from tqdm import tqdm, trange
 from transformers import AdamW, get_linear_schedule_with_warmup
-from utils import SENTI_ID_MAP_INV
 
 
 logger = logging.getLogger(__name__)
 
 
 def compute_metrics(labels, predictions):
-    assert len(predictions) == len(labels)
-    labels = np.array(labels)
-    predictions = np.array(predictions)
-    acc_repr = sklearn.metrics.classification_report(
-        labels, predictions, labels=[0, 1, 2], output_dict=True
+    report = sklearn.metrics.classification_report(
+        labels, predictions, output_dict=True
     )
+    labels_unique = set(labels)
     metrics = {
-        "acc": (predictions == labels).mean(),
-        "macro_f1": sklearn.metrics.f1_score(
-            labels, predictions, labels=[0, 1, 2], average="macro"
-        ),
-        "micro_f1": sklearn.metrics.f1_score(
-            labels, predictions, labels=[0, 1, 2], average="micro"
-        ),
+        "acc": report['accuracy'],
+        "macro_f1": report['macro avg']['f1-score'],
+        "micro_f1": report['weighted avg']['f1-score']
     }
-    for senti_id, v1 in acc_repr.items():
-        if not senti_id.isdigit():
-            continue
-        senti_name = SENTI_ID_MAP_INV.get(int(senti_id), None)
-        if senti_name is not None:
+    for label, v1 in report.items():
+        if label in labels_unique:
             for score_name, v2 in v1.items():
-                metrics[f"{senti_name}-{score_name}"] = v2
+                metrics[f"{label}-{score_name}"] = v2
     return metrics
 
 
-def prediction_step(model, batch, device):
+def prediction_step(model, batch, args):
     model.eval()
     results = dict()
     with torch.no_grad():
         inputs = dict()
         for col in batch:
-            inputs[col] = batch[col].to(device).long()
+            inputs[col] = batch[col].to(args.device).long()
         x = model(
             **inputs,
         )
 
     # to cpu to list
-    results["sentiment_idx"] = torch.argmax(x[1], dim=1).cpu().tolist()
-    results["sentiment"] = [SENTI_ID_MAP_INV[i] for i in results["sentiment_idx"]]
+    results["sentiment_id"] = torch.argmax(x[1], dim=1).cpu().tolist()
+    results["sentiment"] = list(map(lambda x: args.label_to_id_inv[x], results["sentiment_id"]))
     results["logits"] = x[1].cpu().tolist()
     results["score"] = torch.nn.functional.softmax(x[1], dim=1).cpu().tolist()
     if x[0] is not None:
@@ -86,35 +70,25 @@ def evaluate(model, eval_dataset, args):
         # collate_fn=eval_dataset.pad_collate,
     )
 
-    # label = np.array([])
-    # label2 = []
-    # sentiment_idx = np.array([])
-    # sentiment_idx2 = []
-    # score = np.array([])
-    # logits = np.array([])
-    # losses = np.array([])
-
-    labels = []
-    sentiment_ids = []
+    label_ids = []
+    sentiments = []
     scores = []
     logits = []
     losses = []
 
     for batch in tqdm(dataloader, desc="Evaluating"):
-
-        results = prediction_step(model, batch, device=args.device)
-
-        # try list
-        labels.extend(batch["label"].cpu().tolist())
+        results = prediction_step(model, batch, args=args)
+        label_ids.extend(batch["label"].cpu().tolist())
         losses.extend(results["loss"])
         scores.extend(results["score"])
-        sentiment_ids.extend(results["sentiment_idx"])
+        sentiments.extend(results["sentiment"])
         if len(logits)==0:
             logits = results["logits"]
         else:
             logits.extend(results["logits"])
 
-    metrics = compute_metrics(labels, sentiment_ids)
+    labels = list(map(lambda x: args.label_to_id_inv[x], label_ids))
+    metrics = compute_metrics(labels, sentiments)
     metrics['loss'] = np.mean(losses)
     metrics['dataset'] = eval_dataset.dataset
     for m in metrics:

@@ -16,17 +16,6 @@ import yaml
 # from ruamel.yaml import YAML
 from sklearn.model_selection import ParameterGrid
 
-
-SENTI_ID_MAP = {
-    "neutral": 0,
-    "negative": 1,
-    "positive": 2,
-}
-
-SENTI_ID_MAP_INV = {}
-for k, v in SENTI_ID_MAP.items():
-    SENTI_ID_MAP_INV[v] = k
-
 MODEL_EMB_TYPE = {
     "TGSAN": "WORD",
     "TGSAN2": "WORD",
@@ -43,12 +32,6 @@ MODEL_EMB_TYPE = {
 
 class SPEC_TOKEN:
     TARGET = "[TGT]"
-
-
-def get_label_map(label_map_path):
-    with open(label_map_path, encoding="utf-8") as json_file:
-        data = json.load(json_file)
-        return data
 
 
 def join_eval_details(data_config, details, preds, keys):

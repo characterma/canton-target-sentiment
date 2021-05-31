@@ -1,20 +1,14 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 import json
 import logging
-import os
-import sys
-import pickle
 import random
-import pandas as pd
-import numpy as np
 import torch
+import numpy as np
+import pandas as pd
 from tqdm import tqdm
 from torch.utils.data import Dataset
 from pathlib import Path
-from utils import SENTI_ID_MAP, SPEC_TOKEN
 from preprocess import TextPreprocessor
-from sklearn.utils import resample
 from collections import Counter
 from model import *
 
@@ -63,6 +57,7 @@ class TargetDependentExample(object):
         prepro_config,
         required_features,
         max_length,
+        label_to_id=None,
         word_to_idx=None,
         diagnosis=False
     ):
@@ -92,6 +87,7 @@ class TargetDependentExample(object):
             required_features=required_features,
             max_length=max_length,
             label=sentiment,
+            label_to_id=label_to_id,
             diagnosis=diagnosis
         )
 
@@ -107,7 +103,7 @@ class TargetDependentExample(object):
 
     @staticmethod
     def get_features(
-        raw_text, target_char_loc, tokenizer, required_features, max_length, label=None, diagnosis=False
+        raw_text, target_char_loc, tokenizer, required_features, max_length, label=None, label_to_id=None, diagnosis=False
     ):
         diagnosis_dict = dict()
         feature_dict = dict()
@@ -175,8 +171,8 @@ class TargetDependentExample(object):
         if "token_type_ids" in required_features:
             feature_dict["token_type_ids"] = torch.tensor(target_mask).long()
 
-        if label is not None:
-            label = SENTI_ID_MAP[label]
+        if label is not None and label_to_id is not None:
+            label = label_to_id[label]
             feature_dict["label"] = torch.tensor(label).long()
 
         return feature_dict, diagnosis_dict
@@ -275,6 +271,7 @@ class TargetDependentDataset(Dataset):
                 prepro_config=self.args.prepro_config,
                 required_features=self.required_features,
                 max_length=self.args.model_config["max_length"],
+                label_to_id=self.args.label_to_id,
                 diagnosis=True
             )
             if x.feature_dict is not None:

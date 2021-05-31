@@ -2,28 +2,19 @@
 import argparse
 import asyncio
 import functools
-from sanic import Sanic
-from sanic.response import text
 import json
 import re
-from sanic.log import logger
-from sanic.exceptions import ServerError
 import sanic
-
-app = Sanic(__name__)
-
-from pathlib import Path
-import os, sys
-import numpy as np
-import pickle
+import torch
+import traceback
+from sanic.log import logger
 from dataset import TargetDependentExample
 from neg_kws import neg_kws
-import traceback
-import torch
 from run import load_config, init_model, init_tokenizer
 from trainer import prediction_step
 
 
+app = sanic.Sanic(__name__)
 MAX_WAIT = 0.1
 
 
@@ -94,7 +85,7 @@ class ModelRunner:
 
             batch = self.make_batch(to_process)
             batch_results = await app.loop.run_in_executor(
-                None, functools.partial(prediction_step, model=self.model, batch=batch, device=self.args.device)
+                None, functools.partial(prediction_step, model=self.model, batch=batch, args=self.args)
             )
 
             for i in range(len(to_process)):
