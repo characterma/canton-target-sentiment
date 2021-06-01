@@ -118,7 +118,7 @@ class Trainer(object):
         self.best_epoch = None
         self.best_step = None
         self.best_model_state = None
-
+        
     def _get_train_sampler(self):
 
         # create sampler for training
@@ -250,6 +250,7 @@ class Trainer(object):
             int(self.model_config["num_train_epochs"]),
             desc=f"Epoch",
         )
+
         for epoch, _ in enumerate(train_iterator):
             epoch_iterator = tqdm(dataloader, desc="Iteration")
             last_step = len(epoch_iterator)

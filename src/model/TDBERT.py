@@ -32,15 +32,16 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         
         # assert target_pooling in ["mean", "max"]
         self.model_config = args.model_config
-        pretrained_model = load_pretrained_bert(
+        self.pretrained_model = load_pretrained_bert(
             self.model_config['pretrained_lm']
         )
+        if not args.model_config["embedding_trainable"]:
+            self.freeze_emb()
         pretrained_config = load_pretrained_config(
             self.model_config['pretrained_lm']
         )
         super(TDBERT, self).__init__(pretrained_config)
 
-        self.pretrained_model = pretrained_model
         self.pretrained_config = pretrained_config
         self.num_labels = self.model_config['num_labels']
         self.init_classifier()
@@ -70,16 +71,15 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         )
         return t_h.values
 
-
-    def freeze_lm(self):
+    def freeze_emb(self):
         # Freeze all parameters except self attention parameters
-        for param_name, param in self.pretrained_lm.named_parameters():
+        for param_name, param in self.pretrained_model.named_parameters():
             if "selfatt" not in param_name and "fc" not in param_name:
                 param.requires_grad = False
 
-    def unfreeze_lm(self):
+    def unfreeze_emb(self):
         # Unfreeze all parameters except self attention parameters
-        for param_name, param in self.pretrained_lm.named_parameters():
+        for param_name, param in self.pretrained_model.named_parameters():
             if "selfatt" not in param_name and "fc" not in param_name:
                 param.requires_grad = True
 

@@ -61,6 +61,7 @@ def load_config(args):
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
     args.model_dir = model_dir
+    args.pretrained_emb_path = args.model_config.get("pretrained_emb_path", None)
     return args
 
 

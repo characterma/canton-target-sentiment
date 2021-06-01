@@ -1,17 +1,18 @@
 # coding=utf-8
 import re
-from hanziconv import HanziConv
+from opencc import OpenCC
 
 
 class TextPreprocessor:
     def __init__(self, text, target_locs, steps):
+        self.cc = OpenCC('t2s')
         self.preprocessed_text = str(text) 
         self.preprocessed_target_locs = target_locs.copy()
         for s in steps:
             getattr(self, s)()
 
     def simplified_chinese(self):
-        self.preprocessed_text = HanziConv.toSimplified(self.preprocessed_text)
+        self.preprocessed_text = self.cc.convert(self.preprocessed_text)
 
     def lower_case(self):
         self.preprocessed_text = self.preprocessed_text.lower()

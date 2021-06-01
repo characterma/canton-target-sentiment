@@ -77,12 +77,9 @@ def load_pretrained_config(model_name):
 
 
 def load_pretrained_emb(emb_path):
-#     emb_path = Path("../data/word_embeddings") / args.model_config['pretrained_word_emb']
     vectors = []
-    # dim = None
     with open(emb_path, encoding='utf-8', errors='ignore') as f:
         for line in f:
-            # dim = int(line.rstrip().split()[1])
             break
         for line in tqdm(f):
             vectors.append(line.rstrip().split(' ')[1:])

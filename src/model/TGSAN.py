@@ -192,6 +192,7 @@ class TGSAN(BaseModel):
         if args.pretrained_emb_path is not None:
             embeddings = load_pretrained_emb(args.pretrained_emb_path)
             _, emb_dim = embeddings.shape
+            embeddings = np.concatenate([np.zeros([1, emb_dim]), vec], axis=0) 
             self.embed = nn.Embedding.from_pretrained(
                 torch.tensor(embeddings),
                 freeze=(not args.model_config["embedding_trainable"]),
