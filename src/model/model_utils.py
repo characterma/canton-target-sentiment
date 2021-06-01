@@ -1,3 +1,9 @@
+import logging
+import torch.nn as nn
+import torch
+import numpy as np
+from tqdm import tqdm
+from collections import defaultdict
 from transformers import (
     XLNetConfig,
     BertConfig,
@@ -16,9 +22,6 @@ from transformers import (
     BertModel,
     AlbertModel,
 )
-from utils import SPEC_TOKEN
-import torch.nn as nn
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -73,23 +76,43 @@ def load_pretrained_config(model_name):
     return CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
 
 
-# class PretrainedBert(object):
-#     def __init__(self, model_name):
-#         """
-#         model_name:
-#             "toastynews/electra-hongkongese-large-discriminator"
-#             "toastynews/xlnet-hongkongese-base"
-#             "xlm-roberta-base"
-#             "xlm-roberta-large"
-#             "bert-base-multilingual-cased"
-#             "bert-base-chinese"
-#             "denpa92/bert-base-cantonese"
-#         """
-#         logger.info("***** Loading pretrained language model *****")
-#         logger.info("  Pretrained language model = '%s'", str(model_name))
-#         self.model_name = model_name
-#         self.config = CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
-#         self.model = MODEL_CLASS_MAP[model_name].from_pretrained(model_name)
+def load_pretrained_emb(emb_path):
+#     emb_path = Path("../data/word_embeddings") / args.model_config['pretrained_word_emb']
+    vectors = []
+    # dim = None
+    with open(emb_path, encoding='utf-8', errors='ignore') as f:
+        for line in f:
+            # dim = int(line.rstrip().split()[1])
+            break
+        for line in tqdm(f):
+            vectors.append(line.rstrip().split(' ')[1:])
+    return np.array(vectors, dtype=float)
 
-#     def resize_token_embeddings(self, tokenizer):
-#         self.model.resize_token_embeddings(len(tokenizer))
+
+class BaseModel(nn.Module):
+    INPUT = []
+
+    def __init__(self):
+        super(BaseModel, self).__init__()
+        pass
+
+    def load_state(self, state_path=None, state_dict=None):
+        if state_path is not None:
+            if "*." in state_path.name:
+                file_ext = "." + state_path.name.split(".")[-1]
+                for f in list(state_path.parent.glob("*"))[
+                    -1::-1
+                ]:  # use the last saved model
+                    if f.name.endswith(file_ext):
+                        state_path = f
+                        break
+            logger.info("***** Loading model state *****")
+            logger.info("  Path = %s", str(state_path))
+            assert state_path.is_file()
+            state_dict = torch.load(state_path, map_location="cpu")
+        elif state_dict is not None:
+            pass
+        else:
+            return
+        self.load_state_dict(state_dict)
+        self.to(self.device)

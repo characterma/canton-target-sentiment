@@ -3,7 +3,7 @@ import math
 import torch.nn as nn
 
 import transformers
-from .base import BaseModel
+from .model_utils import BaseModel, load_pretrained_emb
 
 
 class StructuredSelfAttention(nn.Module):
@@ -189,12 +189,11 @@ class TGSAN(BaseModel):
         self.num_labels = args.model_config['num_labels']
         d_model = 2 * args.model_config["rnn_hidden_dim"]
 
-        if args.word_embedding_path is not None:
-            # load wb
-            word_embeddings = np.load(args.word_embedding_path) # dict
-            _, emb_dim = word_embeddings.shape
+        if args.pretrained_emb_path is not None:
+            embeddings = load_pretrained_emb(args.pretrained_emb_path)
+            _, emb_dim = embeddings.shape
             self.embed = nn.Embedding.from_pretrained(
-                torch.tensor(word_embeddings),
+                torch.tensor(embeddings),
                 freeze=(not args.model_config["embedding_trainable"]),
             )
         else:

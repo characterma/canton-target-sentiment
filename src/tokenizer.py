@@ -60,7 +60,7 @@ class TokensEncoded:
 
 
 class InternalTokenizer:
-    def __init__(self, word_to_idx=None, required_token_types=None, return_offsets_mapping=False):
+    def __init__(self, word_to_idx=None, required_token_types=None):
         self.word_to_idx = None
         self.idx_to_word = None
         if word_to_idx is not None:
@@ -73,7 +73,7 @@ class InternalTokenizer:
         for k, v in word_to_idx.items():
             self.idx_to_word[v] = k
 
-    def __call__(self, raw_text, max_length=None, truncation=True, add_special_tokens=True):
+    def __call__(self, raw_text, max_length=None, truncation=True, add_special_tokens=True, return_offsets_mapping=False):
         token_spec = [
             ('REPLY', r'(引用(?:.|\n)*?發表)|(回覆樓主:)|(回覆(?:.|\n)*?帖子)'),
             ('URL', r'(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)'

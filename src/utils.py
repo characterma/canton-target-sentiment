@@ -1,62 +1,14 @@
 # coding=utf-8
 import logging
-import os
-from pathlib import Path
-import random
-import json
-from argparse import Namespace
-
-# from ruamel.yaml.comments import CommentedMap
 import numpy as np
+import os
 import pandas as pd
+import random
+import shutil
 import torch
-import time
 import yaml
-
-# from ruamel.yaml import YAML
-from sklearn.model_selection import ParameterGrid
-
-MODEL_EMB_TYPE = {
-    "TGSAN": "WORD",
-    "TGSAN2": "WORD",
-    "TDLSTM": "WORD",
-    "ATAE_LSTM": "WORD",
-    "IAN": "WORD",
-    "MEMNET": "WORD",
-    "RAM": "WORD",
-    "TNET_LF": "WORD",
-    "TDBERT": "BERT",
-    "TDBERT_INTE": "BERT",
-}
-
-
-class SPEC_TOKEN:
-    TARGET = "[TGT]"
-
-
-def join_eval_details(data_config, details, preds, keys):
-    """
-    For official evaluation script
-    :param output_file: prediction_file_path (e.g. eval/proposed_answers.txt)
-    :param preds: [0,1,0,2,18,...]
-    """
-    # relation_labels = get_label(data_config)
-    preds = pd.DataFrame(
-        data={"key": keys, "pred": [SENTI_ID_MAP_INV[p] for p in preds]}
-    )
-    details = details.set_index("key")
-    preds = preds.set_index("key")
-    details = details.join(preds, how="inner")
-    return details
-    #
-
-
-def init_logger():
-    logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-        level=logging.INFO,
-    )
+from argparse import Namespace
+from pathlib import Path
 
 
 def set_seed(seed):
@@ -67,99 +19,57 @@ def set_seed(seed):
         torch.cuda.manual_seed_all(seed)
 
 
-def save_yaml(data, file_path):
-    yaml.dump(data, open(file_path, "w"), default_flow_style=False)
-
-
 def load_yaml(file_path):
     data = yaml.load(open(file_path, "r"), Loader=yaml.FullLoader)
     return data
 
 
-def generate_grid_search_params(grid_config):
-    param_grid = dict()
-    body_config = grid_config["body"]
-    optim_config = grid_config["optim"]
-    for k, v in body_config.items():
-        param_grid[f"body:::{k}"] = v
-    for k, v in optim_config.items():
-        param_grid[f"optim:::{k}"] = v
-    param_comb = list(ParameterGrid(param_grid))
-    return param_comb
+def set_log_path():
+    logging.basicConfig(
+        handlers=[logging.FileHandler(Path("../log/log"), "w+", "utf-8"), logging.StreamHandler()], 
+        format="%(message)s", 
+        level=logging.INFO
+    )
 
 
-def apply_overwriting_config(overwriting_config, config):
-    for k, v in overwriting_config.items():
-        if k in config:
-            if isinstance(v, CommentedMap) or isinstance(v, dict):
-                config[k] = apply_overwriting_config(v, config[k])
-            else:
-                config[k] = v
-        else:
-            config[k] = v
-    return config
-
-
-def apply_grid_search_params(params, body_config, optim_config):
-    """
-    overwrite a dict
-    """
-    for k, v in params.items():
-        p_type, p_name = k.split(":::")
-        if p_type == "body":
-            body_config[p_name] = v
-        elif p_type == "optim":
-            optim_config[p_name] = v
-        else:
-            assert False
-    return body_config, optim_config
-
-
-def parse_api_req(req_dict):
-    left_sep = "## Headline ##\n"
-    right_sep = "\n## Content ##\n"
-
-    output_dict = req_dict
-    if req_dict["target_in_hl"] == 0:  # target in content
-        hl_with_sep = left_sep + req_dict["headline"] + right_sep
-        output_dict["content"] = hl_with_sep + req_dict["content"]
-        output_dict["start_ind"] = req_dict["start_ind"] + len(hl_with_sep)
-        output_dict["end_ind"] = req_dict["end_ind"] + len(hl_with_sep)
+def get_label_to_id(labels):
+    if labels=="2_ways":
+        label_to_id = {"neutral": 0, "non_neutral": 1}
+    elif labels=="3_ways":
+        label_to_id = {"neutral": 0, "negative": 1, "positive": 2}
     else:
-        hl_with_sep = left_sep + req_dict["headline"] + right_sep
-        output_dict["content"] = hl_with_sep + req_dict["content"]
-        output_dict["start_ind"] = req_dict["start_ind"] + len(left_sep)
-        output_dict["end_ind"] = req_dict["end_ind"] + len(left_sep)
-
-    return output_dict
+        raise ValueError("Label type not supported.")
+    label_to_id_inv = dict(zip(label_to_id.values(), label_to_id.keys()))
+    return label_to_id, label_to_id_inv
 
 
-class Timer:
-    def __init__(self, output_dir):
-        self.preprocessing_start_time = None
-        self.inference_start_time = None
-        self.durations = {
-            "preprocessing": 0,
-            "inference": 0,
-        }
-        self.output_dir = output_dir
+def load_config(args):
+    config_dir = Path(args.config_dir)
+    run_config = load_yaml(config_dir / "run.yaml")
+    args.data_config = run_config['data']
+    args.label_to_id, args.label_to_id_inv = get_label_to_id(run_config['data']['labels'])
+    args.eval_config = run_config['eval']
+    args.device = run_config['device']
+    args.train_config = run_config['train']
+    args.prepro_config = run_config['text_prepro']
+    model_config = load_yaml(config_dir / "model.yaml")
+    model_class = args.train_config['model_class']
+    args.model_config = model_config[model_class]
+    args.model_config.update(run_config['model_params'])
+    args.config_dir = config_dir
+    model_dir = Path(args.data_config['model_dir'])
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+    args.model_dir = model_dir
+    return args
 
-    def on_preprocessing_start(self):
-        self.preprocessing_start_time = time.time()
+            
+def save_config(args):
+    if not os.path.exists(args.model_dir / "run.yaml"):
+        shutil.copy(args.config_dir / "run.yaml", args.model_dir / "run.yaml")
+    if not os.path.exists(args.model_dir / "model.yaml"):
+        shutil.copy(args.config_dir / "model.yaml", args.model_dir / "model.yaml")
 
-    def on_preprocessing_end(self):
-        self.durations["preprocessing"] += time.time() - self.preprocessing_start_time
 
-    def on_inference_start(self):
-        self.inference_start_time = time.time()
 
-    def on_inference_end(self):
-        self.durations["inference"] += time.time() - self.inference_start_time
 
-    # @property
-    # def durations(self):
-    #     return self.durations
-
-    def save_timer(self):
-        with open(self.output_dir / "timer.json", "w") as fp:
-            json.dump(self.durations, fp)

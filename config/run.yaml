@@ -1,11 +1,11 @@
-device: 1
+device: 0
 data:
-  model_dir: "../output/20210531_rolex_tdbert2"
+  model_dir: "../output/20210601_rolex_tgsan"
   data_dir: "rolex/data_0524"
   train: train.json 
   dev: dev.json 
   test: test.json 
-  labels: 3_ways
+  labels: 3_ways # 2_ways
 text_prepro:
   steps:
     - simplified_chinese
@@ -17,12 +17,12 @@ eval:
   batch_size: 64
   state_file: "*.pt"
 train:
-  model_class: "TDBERT"
+  model_class: "TGSAN"
   seed: 42
-  batch_size: 16
+  batch_size: 4
 model_params:
   xxxxx: xxxxx
-  max_length: 180
-  num_train_epochs: 10
-  tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
-  pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  max_length: 20
+  num_train_epochs: 30
+  # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+  # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 

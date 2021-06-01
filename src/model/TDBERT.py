@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
 from transformers import AlbertModel, BertModel, BertPreTrainedModel, RobertaModel
-from .base import BaseModel
-from .bert_utils import load_pretrained_bert, load_pretrained_config
+from .model_utils import BaseModel, load_pretrained_bert, load_pretrained_config
 
 
 class FCLayer(nn.Module):

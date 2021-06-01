@@ -3,8 +3,8 @@ TDBERT:
     mask_target: False
     max_length: 210
     tokenizer_source: "transformers"
-    tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
-    pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+    tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+    pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
     num_labels: 3
     target_pooling: "max"
     use_cls: False
@@ -51,16 +51,13 @@ TGSAN2:
     warmup_steps: 0
 TGSAN:
   # preprocess:
-    text_preprocessing: "" # "", hk_beauty
     max_length: 150
     tokenizer_source: "internal"
     tokenizer_name: "" 
     vocab_freq_cutoff: 0.1
     num_labels: 3
   # body:
-    kd: False
-    use_pretrained: False
-    pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
+    pretrained_emb: "sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5" # gensim format
     emb_dim: 150
     emb_dropout: 0.5
     embedding_trainable: True
@@ -89,7 +86,7 @@ TDLSTM:
     tokenizer: "huggingface:::bert-base-uncased"  # source:::tokenizer_type
   body:
     use_pretrained: False
-    pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
+    pretrained_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
     emb_dim: 100
     embedding_trainable: False
     hidden_dim: 200

@@ -187,7 +187,19 @@ def load_vocab(tokenizer, vocab_path, args):
 
 
 def build_vocab_from_pretrained(tokenizer, args):
-    #
+    emb_path = Path("../data/word_embeddings") / args.model_config['pretrained_word_emb']
+    words = []
+    logger.info("***** Building vocab from pretrained *****")
+    logger.info("  Embedding path = %s", str(emb_path))
+    with open(emb_path, encoding='utf-8', errors='ignore') as f:
+        for line in f:
+            break
+        for line in tqdm(f):
+            words.append(line.split(' ')[0])
+    word_to_idx = {}
+    word_to_idx['<OOV>'] = 0
+    word_to_idx.update(dict(zip(words, range(1, len(words) + 1))))
+    logger.info("  Vocab size = %d", len(word_to_idx))
     json.dump(word_to_idx, open(args.model_dir / 'word_to_idx.json', 'w'))
     tokenizer.update_word_idx(word_to_idx)
     args.vocab_size = len(word_to_idx)
@@ -198,7 +210,7 @@ def build_vocab_from_dataset(dataset, tokenizer, args):
         Path("../data/datasets") / args.data_config["data_dir"] / f"{dataset}.json"
     )
     raw_data = json.load(open(data_path, "r"))
-    logger.info("***** Building vocab *****")
+    logger.info("***** Building vocab from dataset *****")
     logger.info("  Data path = %s", str(data_path))
     logger.info("  Number of raw samples = %d", len(raw_data))
     all_words = []

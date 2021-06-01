@@ -5,7 +5,8 @@ import torch.nn as nn
 import transformers
 from transformers.modeling_bert import BertEmbeddings
 from transformers import BertConfig
-from .base import BaseModel
+from .model_utils import BaseModel
+
 
 class FCLayer(nn.Module):
     def __init__(self, input_dim, output_dim, dropout_rate=0.0, use_activation=True):
