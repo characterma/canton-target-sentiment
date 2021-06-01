@@ -63,13 +63,6 @@ def load_config(args):
     args.model_dir = model_dir
     return args
 
-            
-def save_config(args):
-    if not os.path.exists(args.model_dir / "run.yaml"):
-        shutil.copy(args.config_dir / "run.yaml", args.model_dir / "run.yaml")
-    if not os.path.exists(args.model_dir / "model.yaml"):
-        shutil.copy(args.config_dir / "model.yaml", args.model_dir / "model.yaml")
-
 
 
 
