@@ -29,6 +29,10 @@ class TDBERT(BertPreTrainedModel, BaseModel):
     ]
     MODEL_TYPE = "bert"
     def __init__(self, args):
+        pretrained_config = load_pretrained_config(
+            args.model_config['pretrained_lm']
+        )
+        super(TDBERT, self).__init__(pretrained_config)
         
         # assert target_pooling in ["mean", "max"]
         self.model_config = args.model_config
@@ -37,13 +41,9 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         )
         if not args.model_config["embedding_trainable"]:
             self.freeze_emb()
-        pretrained_config = load_pretrained_config(
-            self.model_config['pretrained_lm']
-        )
-        super(TDBERT, self).__init__(pretrained_config)
 
         self.pretrained_config = pretrained_config
-        self.num_labels = self.model_config['num_labels']
+        self.num_labels = len(args.label_to_id)
         self.init_classifier()
         self.loss_func = nn.CrossEntropyLoss(reduction="none")
         self.to(args.device)
@@ -118,7 +118,7 @@ class TDBERT(BertPreTrainedModel, BaseModel):
         else:
             losses = None
 
-        outputs = [losses, logits]
+        outputs = [losses.mean(), logits]
 
         if return_tgt_pool:
             outputs += [tgt_h]

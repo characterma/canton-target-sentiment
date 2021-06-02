@@ -79,7 +79,7 @@ def evaluate(model, eval_dataset, args):
     for batch in tqdm(dataloader, desc="Evaluating"):
         results = prediction_step(model, batch, args=args)
         label_ids.extend(batch["label"].cpu().tolist())
-        losses.extend(results["loss"])
+        losses.append(results["loss"])
         scores.extend(results["score"])
         sentiments.extend(results["sentiment"])
         if len(logits)==0:

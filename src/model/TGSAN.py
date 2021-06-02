@@ -186,7 +186,7 @@ class TGSAN(BaseModel):
     def __init__(self, args):
         super(TGSAN, self).__init__()
         self.model_config = args.model_config
-        self.num_labels = args.model_config['num_labels']
+        self.num_labels = len(args.label_to_id)
         d_model = 2 * args.model_config["rnn_hidden_dim"]
 
         if args.pretrained_emb_path is not None:
