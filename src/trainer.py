@@ -115,8 +115,6 @@ class Trainer(object):
         self.model_dir = args.model_dir
 
         self.best_score = None
-        self.best_epoch = None
-        self.best_step = None
         self.best_model_state = None
         
     def _get_train_sampler(self):
