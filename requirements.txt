@@ -4,4 +4,5 @@ transformers==3.4.0
 scikit-learn==0.23.1
 asyncio==3.4.3
 sanic
+openpyxl
 opencc-python-reimplemented==0.1.6
