@@ -1,4 +1,4 @@
-device: 2
+device: 0
 data:
   model_dir: "../output/20210601_rolex_tdbert2"
   data_dir: "../data/datasets/rolex/data_0524"

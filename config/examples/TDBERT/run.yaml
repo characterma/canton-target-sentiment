@@ -1,4 +1,4 @@
-device: 2
+device: 0
 data:
   model_dir: "../config/examples/TDBERT/"
   data_dir: "../config/examples/TDBERT/"
