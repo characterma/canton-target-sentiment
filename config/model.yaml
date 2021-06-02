@@ -50,14 +50,11 @@ TGSAN2:
     max_steps: -1
     warmup_steps: 0
 TGSAN:
-  # preprocess:
     max_length: 150
     tokenizer_source: "internal"
     tokenizer_name: "" 
     vocab_freq_cutoff: 0.1
     num_labels: 3
-  # body:
-    pretrained_emb: "sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5" # gensim format
     emb_dim: 150
     emb_dropout: 0.5
     embedding_trainable: True
