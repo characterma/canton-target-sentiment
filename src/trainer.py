@@ -290,9 +290,12 @@ class Trainer(object):
         # 2. Save evaluation scores.
         """
         out_path = (
-            self.model_dir / f"best_state.pt"
+            self.model_dir / f"model_state.pt"
         )
-        torch.save(self.best_model_state, out_path)
+        if self.train_config.get("final_model", "best")=="best":
+            torch.save(self.best_model_state, out_path)
+        else:
+            torch.save(self.model.state_dict(), out_path)
 
         self.model.load_state(
             state_dict=self.best_model_state

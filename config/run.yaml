@@ -20,6 +20,7 @@ train:
   model_class: "TDBERT"
   seed: 42
   batch_size: 16
+  final_model: "best" # or "last"
 model_params:
   xxxxx: xxxxx
   max_length: 180

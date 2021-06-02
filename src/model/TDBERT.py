@@ -74,14 +74,17 @@ class TDBERT(BertPreTrainedModel, BaseModel):
     def freeze_emb(self):
         # Freeze all parameters except self attention parameters
         for param_name, param in self.pretrained_model.named_parameters():
-            if "selfatt" not in param_name and "fc" not in param_name:
+            if "embeddings.word_embeddings" in param_name:
                 param.requires_grad = False
 
-    def unfreeze_emb(self):
-        # Unfreeze all parameters except self attention parameters
-        for param_name, param in self.pretrained_model.named_parameters():
-            if "selfatt" not in param_name and "fc" not in param_name:
-                param.requires_grad = True
+            # if "selfatt" not in param_name and "fc" not in param_name:
+            #     param.requires_grad = False
+
+    # def unfreeze_emb(self):
+    #     # Unfreeze all parameters except self attention parameters
+    #     for param_name, param in self.pretrained_model.named_parameters():
+    #         if "selfatt" not in param_name and "fc" not in param_name:
+    #             param.requires_grad = True
 
     def forward(
         self,
