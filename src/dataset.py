@@ -207,7 +207,7 @@ def build_vocab_from_pretrained(tokenizer, args):
 
 def build_vocab_from_dataset(dataset, tokenizer, args):
     data_path = (
-        Path("../data/datasets") / args.data_config["data_dir"] / f"{dataset}.json"
+        Path(args.data_config["data_dir"]) / f"{dataset}.json"
     )
     raw_data = json.load(open(data_path, "r"))
     logger.info("***** Building vocab from dataset *****")
@@ -268,7 +268,7 @@ class TargetDependentDataset(Dataset):
 
     def load_from_path(self):
         data_path = (
-            Path("../data/datasets") / self.args.data_config["data_dir"] / f"{self.dataset}.json"
+            Path(self.args.data_config["data_dir"]) / f"{self.dataset}.json"
         )
         logger.info("***** Loading data *****")
         logger.info("  Data path = %s", str(data_path))

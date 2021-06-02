@@ -1,10 +1,10 @@
 device: 2
 data:
-  model_dir: "../output/20210601_rolex_tdbert2"
-  data_dir: "../data/datasets/rolex/data_0524"
-  train: train.json 
-  dev: dev.json 
-  test: test.json 
+  model_dir: "../config/examples/TDBERT/"
+  data_dir: "../config/examples/TDBERT/"
+  train: sample.json 
+  dev: sample.json 
+  test: sample.json 
   labels: 3_ways # 2_ways
 text_prepro:
   steps:
