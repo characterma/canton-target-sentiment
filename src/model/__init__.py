@@ -1,17 +1,24 @@
 import sys
+import logging
+import torch
 from pathlib import Path
 from model.TDBERT import TDBERT
 from model.TGSAN import TGSAN
 from model.TGSAN2 import TGSAN2 
 
 
-def get_model(args, state_path=None):
+logger = logging.getLogger(__name__)
+
+
+def get_model(args, model_path=None):
+    logger.info("***** Initializing model *****")
+    logger.info("  Model class = %s",  args.train_config['model_class'])
+
     Model = getattr(sys.modules[__name__], args.train_config['model_class'])
-    if state_path is None :
+    if model_path is None :
         model = Model(args=args)
     else:
-        model = Model(args=args)
-        model.load_state(state_path=state_path)
+        model = torch.load(model_path)
     return model
 
 

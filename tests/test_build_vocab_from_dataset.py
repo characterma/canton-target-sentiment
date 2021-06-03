@@ -13,7 +13,7 @@ from dataset import build_vocab_from_dataset
 class TestBuildVocabFromDataset(unittest.TestCase):
 
     args = namedtuple('args', 'data_config prepro_config model_config')
-    args.data_config = {'data_dir': 'sample'}
+    args.data_config = {'data_dir': '../data/datasets/sample/', "train": "sample_for_build_vocab.json"}
     args.prepro_config = {'steps': []}
     args.model_config = {'vocab_freq_cutoff': 0}
     args.model_dir = Path("./")
@@ -77,14 +77,14 @@ class TestBuildVocabFromDataset(unittest.TestCase):
         # case I: no infrequent word filter , check exact value
         self.args.model_config['vocab_freq_cutoff'] = 0
         tokenizer = InternalTokenizer(word_to_idx=None, required_token_types=['CHAR', 'LETTERS'])
-        build_vocab_from_dataset(dataset='sample_for_build_vocab', tokenizer=tokenizer,args=self.args)
+        build_vocab_from_dataset(dataset='train', tokenizer=tokenizer,args=self.args)
         self.assertEqual(set(tokenizer.word_to_idx.keys()), set(self.word_to_idx_0.keys()))
 
     def test_single_frequency_filter(self):
         # case II: 90% infrequent word filter , check remaining words
         self.args.model_config['vocab_freq_cutoff'] = 0.9 
         tokenizer = InternalTokenizer(word_to_idx=None, required_token_types=['CHAR', 'LETTERS'])
-        build_vocab_from_dataset(dataset='sample_for_build_vocab', tokenizer=tokenizer,args=self.args)
+        build_vocab_from_dataset(dataset='train', tokenizer=tokenizer,args=self.args)
         self.assertEqual(len(tokenizer.word_to_idx), 4)
         for w in tokenizer.word_to_idx:
             self.assertIn(w, ['<OOV>', '地', '亞', '卡', '一'])
@@ -94,7 +94,7 @@ class TestBuildVocabFromDataset(unittest.TestCase):
         tokenizer = InternalTokenizer(word_to_idx=None, required_token_types=['CHAR', 'LETTERS'])
         for i in range(1, 10):
             self.args.model_config['vocab_freq_cutoff'] = i / 10
-            build_vocab_from_dataset(dataset='sample_for_build_vocab', tokenizer=tokenizer,args=self.args)
+            build_vocab_from_dataset(dataset='train', tokenizer=tokenizer,args=self.args)
             acutal_vocab_size = len(tokenizer.word_to_idx)
             expected_vocab_size = len(self.word_to_idx_0) - int((len(self.word_to_idx_0) - 1) * (i / 10))
             self.assertEqual(acutal_vocab_size, expected_vocab_size)

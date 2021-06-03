@@ -27,6 +27,7 @@ class TestGetFeatures(unittest.TestCase):
             required_features=required_features,
             max_length=80,
             label="positive",
+            label_to_id={"neutral": 0, "negative": 1, "positive": 2},
         )
         raw_text = torch.tensor(
             [

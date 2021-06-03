@@ -1,11 +1,11 @@
 device: 0
 data:
-  model_dir: "../tests/test_e2e_samples/2/"
-  data_dir: "../tests/test_e2e_samples/2/"
+  output_dir: "../tests/test_end_to_end_samples/1/"
+  data_dir: "../tests/test_end_to_end_samples/1/"
   train: sample.json 
   dev: sample.json 
   test: sample.json 
-  labels: 3_ways # 2_ways
+  labels: 3_ways # or 2_ways
 text_prepro:
   steps:
     - simplified_chinese
@@ -15,16 +15,19 @@ text_prepro:
     # - extract_post_context_2
 eval:
   batch_size: 64
-  state_file: "*.pt"
+  model_file: "model.pt" # under output_dir / "model" 
 train:
   model_class: "TDBERT"
   seed: 42
   batch_size: 16
-  final_model: "last"
+  final_model: "last" # or "last"
 model_params:
-  xxxxx: xxxxx
-  max_length: 180
-  num_train_epochs: 3
+  # ================= TDBERT =================
+  num_train_epochs: 1
   embedding_trainable: False
   # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
   # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  # ================= TGSAN =================
+  # num_train_epochs: 50
+  # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"
+  # embedding_trainable: False
