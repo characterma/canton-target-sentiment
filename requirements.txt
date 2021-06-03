@@ -6,3 +6,4 @@ asyncio==3.4.3
 sanic
 openpyxl
 opencc-python-reimplemented==0.1.6
+PyYAML
