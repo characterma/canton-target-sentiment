@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from transformers import AlbertModel, BertModel, BertPreTrainedModel, RobertaModel
-from .model_utils import BaseModel, load_pretrained_bert, load_pretrained_config
+from .model_utils import load_pretrained_bert, load_pretrained_config
 
 
 class FCLayer(nn.Module):
@@ -19,7 +19,7 @@ class FCLayer(nn.Module):
         return self.linear(x)
 
 
-class TDBERT(BertPreTrainedModel, BaseModel):
+class TDBERT(BertPreTrainedModel):
     INPUT = [
         "raw_text",
         "attention_mask",
@@ -74,7 +74,7 @@ class TDBERT(BertPreTrainedModel, BaseModel):
     def freeze_emb(self):
         # Freeze all parameters except self attention parameters
         for param_name, param in self.pretrained_model.named_parameters():
-            if "embeddings.word_embeddings" in param_name:
+            if "embeddings" in param_name:
                 param.requires_grad = False
 
             # if "selfatt" not in param_name and "fc" not in param_name:

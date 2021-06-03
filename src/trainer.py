@@ -285,18 +285,10 @@ class Trainer(object):
             self.best_model_state = copy.deepcopy(self.model.state_dict())
 
     def on_training_end(self):
-        """
-        # 1. Save best model states.
-        # 2. Save evaluation scores.
-        """
         out_path = (
-            self.model_dir / f"model_state.pt"
+            self.model_dir / f"model.pt"
         )
         if self.train_config.get("final_model", "best")=="best":
-            torch.save(self.best_model_state, out_path)
-        else:
-            torch.save(self.model.state_dict(), out_path)
+            self.model.load_state_dict(self.best_model_state)
+        torch.save(self.model, out_path)
 
-        self.model.load_state(
-            state_dict=self.best_model_state
-        )

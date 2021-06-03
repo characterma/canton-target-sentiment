@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 
 def init_model(args):
-    state_path = args.model_dir / args.eval_config["state_file"]
-    if not os.path.exists(state_path):
-        state_path = None 
-    model = get_model(args, state_path=state_path)
+    model_path = args.model_dir / args.eval_config["model_file"]
+    if not os.path.exists(model_path):
+        model_path = None 
+    model = get_model(args, model_path=model_path)
     return model
 
 
@@ -104,15 +104,18 @@ def run(args):
 def combine_and_save_metrics(metrics, args):
     metrics = [m for m in metrics if m is not None]
     metrics_df = pd.DataFrame(data=metrics)
-    metrics_df.to_csv(args.model_dir / 'result.csv', index=False)
+    filename = 'result_test_only.csv' if args.test_only else 'result.csv'
+    metrics_df.to_csv(args.result_dir / filename, index=False)
 
 
 def combine_and_save_statistics(datasets, args):
     datasets = [ds for ds in datasets if ds is not None]
     diagnosis_df = pd.concat([ds.diagnosis_df for ds in datasets])
-    diagnosis_df.to_excel(args.model_dir / 'diagnosis.xlsx', index=False)
+    filename = 'diagnosis_test_only.xlsx' if args.test_only else 'diagnosis.xlsx'
+    diagnosis_df.to_excel(args.result_dir / filename, index=False)
     statistics_df = pd.DataFrame(data=[ds.get_data_analysis() for ds in datasets])
-    statistics_df.to_csv(args.model_dir / 'statistics.csv', index=False)
+    filename = 'statistics_test_only.csv' if args.test_only else 'statistics.csv'
+    statistics_df.to_csv(args.result_dir / filename, index=False)
 
 
 if __name__ == "__main__":
@@ -124,7 +127,7 @@ if __name__ == "__main__":
 
     if args.test_only:
         run_config = load_yaml(Path(args.config_dir) / "run.yaml")
-        args.config_dir = Path(run_config['data']['model_dir'])
+        args.config_dir = Path(run_config['data']['output_dir'])
 
     args = load_config(args)
     set_seed(args.train_config["seed"])

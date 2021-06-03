@@ -5,7 +5,6 @@ import torch.nn as nn
 import transformers
 from transformers.modeling_bert import BertEmbeddings
 from transformers import BertConfig
-from .model_utils import BaseModel
 
 
 class FCLayer(nn.Module):
@@ -23,7 +22,7 @@ class FCLayer(nn.Module):
         return self.linear(x)
 
 
-class TGSAN2(BaseModel):
+class TGSAN2(nn.Module):
     """Architecture:
         Embedding + Memory Builder + SCU + CFU + OUTPUT Layer
     Arguments:

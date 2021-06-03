@@ -1,9 +1,10 @@
 import torch
 import math
+import numpy as np
 import torch.nn as nn
 
 import transformers
-from .model_utils import BaseModel, load_pretrained_emb
+from .model_utils import load_pretrained_emb
 
 
 class StructuredSelfAttention(nn.Module):
@@ -180,7 +181,7 @@ class AddAndNorm(nn.Module):
         return x + out
 
 
-class TGSAN(BaseModel):
+class TGSAN(nn.Module):
     INPUT = ["raw_text", "attention_mask", "target_mask", "label"]
     MODEL_TYPE = "non_bert"
     def __init__(self, args):
@@ -192,7 +193,7 @@ class TGSAN(BaseModel):
         if args.pretrained_emb_path is not None:
             embeddings = load_pretrained_emb(args.pretrained_emb_path)
             _, emb_dim = embeddings.shape
-            embeddings = np.concatenate([np.zeros([1, emb_dim]), vec], axis=0) 
+            embeddings = np.concatenate([np.zeros([1, emb_dim]), embeddings], axis=0) 
             self.embed = nn.Embedding.from_pretrained(
                 torch.tensor(embeddings),
                 freeze=(not args.model_config["embedding_trainable"]),

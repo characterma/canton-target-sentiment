@@ -77,39 +77,13 @@ def load_pretrained_config(model_name):
 
 
 def load_pretrained_emb(emb_path):
+    logger.info("***** Loading pretrained embeddings *****")
     vectors = []
     with open(emb_path, encoding='utf-8', errors='ignore') as f:
         for line in f:
             break
         for line in tqdm(f):
             vectors.append(line.rstrip().split(' ')[1:])
-    return np.array(vectors, dtype=float)
-
-
-class BaseModel(nn.Module):
-    INPUT = []
-
-    def __init__(self):
-        super(BaseModel, self).__init__()
-        pass
-
-    def load_state(self, state_path=None, state_dict=None):
-        if state_path is not None:
-            if "*." in state_path.name:
-                file_ext = "." + state_path.name.split(".")[-1]
-                for f in list(state_path.parent.glob("*"))[
-                    -1::-1
-                ]:  # use the last saved model
-                    if f.name.endswith(file_ext):
-                        state_path = f
-                        break
-            logger.info("***** Loading model state *****")
-            logger.info("  Path = %s", str(state_path))
-            assert state_path.is_file()
-            state_dict = torch.load(state_path, map_location="cpu")
-        elif state_dict is not None:
-            pass
-        else:
-            return
-        self.load_state_dict(state_dict)
-        self.to(self.device)
+    vectors = np.array(vectors, dtype=float)
+    logger.info("  Embeddings size = '%s'", str(vectors.shape))
+    return vectors

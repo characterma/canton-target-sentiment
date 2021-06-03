@@ -57,10 +57,16 @@ def load_config(args):
     args.model_config = model_config[model_class]
     args.model_config.update(run_config['model_params'])
     args.config_dir = config_dir
-    model_dir = Path(args.data_config['model_dir'])
-    if not os.path.exists(model_dir):
-        os.makedirs(model_dir)
-    args.model_dir = model_dir
+    output_dir = Path(args.data_config['output_dir'])
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    args.output_dir = output_dir
+    args.model_dir = output_dir / "model"
+    args.result_dir = output_dir / "result"
+    if not os.path.exists(args.model_dir):
+        os.makedirs(args.model_dir)
+    if not os.path.exists(args.result_dir):
+        os.makedirs(args.result_dir)
     args.pretrained_emb_path = args.model_config.get("pretrained_emb_path", None)
     return args
 
