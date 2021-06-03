@@ -1,6 +1,6 @@
 device: 0
 data:
-  model_dir: "../output/20210601_rolex_tdbert2"
+  output_dir: "../output/20210601_rolex_tdbert2"
   data_dir: "../data/datasets/rolex/data_0524"
   train: train.json 
   dev: dev.json 
@@ -15,17 +15,19 @@ text_prepro:
     # - extract_post_context_2
 eval:
   batch_size: 64
-  state_file: "*.pt"
+  model_file: "model.pt" # under output_dir / "model"
 train:
   model_class: "TDBERT"
   seed: 42
   batch_size: 16
   final_model: "best" # or "last"
 model_params:
-  xxxxx: xxxxx
-  max_length: 180
+  # ================= TDBERT =================
   num_train_epochs: 10
-  pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"
   embedding_trainable: False
   # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
   # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  # ================= TGSAN =================
+  # num_train_epochs: 50
+  # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"
+  # embedding_trainable: False

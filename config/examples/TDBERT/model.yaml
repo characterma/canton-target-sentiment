@@ -1,19 +1,48 @@
 TDBERT:
-    text_preprocessing: "" # "", hk_beauty
-    mask_target: False
+    # ================= Preprocessing params =================
     max_length: 210
     tokenizer_source: "transformers"
     tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+    # ================= Model params =================
     pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
-    target_pooling: "max"
-    use_cls: False
     dropout_rate: 0.1
     optimizer: "AdamW"
     sampler: "random"
     batch_size: 16
     learning_rate: 2e-5
-    num_train_epochs: 1
+    # ================= Training params =================
+    num_train_epochs: 10
     weight_decay: 0.0
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8
+    max_grad_norm: 1.0
+    max_steps: -1
+    warmup_steps: 0
+TGSAN:
+    # ================= Preprocessing params =================
+    max_length: 150
+    tokenizer_source: "internal"
+    tokenizer_name: "" 
+    vocab_freq_cutoff: 0.1
+    # ================= Model params =================
+    pretrained_emb_path: null
+    embedding_trainable: True
+    emb_dim: 150
+    emb_dropout: 0.5
+    rnn_hidden_dim: 150
+    r: 2
+    tgt_san_dim: 64
+    san_dropout: 0.1
+    san_penal_coeff: 0.1
+    ffn_dim: 16
+    ffn_dropout: 0.1
+    att_dropout: 0.1
+    # ================= Training params =================
+    num_train_epochs: 40
+    batch_size: 64
+    optimizer: "AdamW"
+    learning_rate: 0.0015
+    weight_decay: 0.9
     gradient_accumulation_steps: 1
     adam_epsilon: 1e-8
     max_grad_norm: 1.0
@@ -21,22 +50,18 @@ TDBERT:
     warmup_steps: 0
 TGSAN2:
   # preprocess:
-    text_preprocessing: "" # "", hk_beauty
     max_length: 150
-    tokenizer_source: "spacy"
-    tokenizer_name: "chinese" 
-  # body:
+    tokenizer_source: "internal"
+    tokenizer_name: "" 
     kd: False
     use_pretrained: False
     bert_config: "bert-base-chinese"
-    pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
     emb_dim: 360
     emb_dropout: 0.5
     emb_trainable: True
     encoder_dropout: 0.1
     fc_dropout: 0.1
     n_encoder: 2
-  # optim:
     optimizer: "AdamW"
     batch_size: 64
     learning_rate: 0.0015
@@ -47,159 +72,3 @@ TGSAN2:
     max_grad_norm: 1.0
     max_steps: -1
     warmup_steps: 0
-TGSAN:
-  # preprocess:
-    text_preprocessing: "" # "", hk_beauty
-    max_length: 150
-    tokenizer_source: "internal"
-    tokenizer_name: "" 
-    vocab_freq_cutoff: 0.1
-  # body:
-    kd: False
-    use_pretrained: False
-    pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
-    emb_dim: 150
-    emb_dropout: 0.5
-    embedding_trainable: True
-    rnn_hidden_dim: 150
-    r: 2
-    tgt_san_dim: 64
-    san_dropout: 0.1
-    san_penal_coeff: 0.1
-    ffn_dim: 16
-    ffn_dropout: 0.1
-    att_dropout: 0.1
-  # optim:
-    optimizer: "AdamW"
-    batch_size: 64
-    learning_rate: 0.0015
-    num_train_epochs: 25
-    weight_decay: 0.9
-    gradient_accumulation_steps: 1
-    adam_epsilon: 1e-8
-    max_grad_norm: 1.0
-    max_steps: -1
-    warmup_steps: 0
-TDLSTM:
-  preprocess:
-    sentence_length: 180
-    tokenizer: "huggingface:::bert-base-uncased"  # source:::tokenizer_type
-  body:
-    use_pretrained: False
-    pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
-    emb_dim: 100
-    embedding_trainable: False
-    hidden_dim: 200
-  optim:
-    optimizer: "AdamW"
-    train_batch_size: 32
-    eval_batch_size: 128
-    learning_rate: 0.005
-    num_train_epochs: 25
-    weight_decay: 0.8
-    gradient_accumulation_steps: 1
-    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
-    max_grad_norm: 0.8
-    max_steps: -1
-    warmup_steps: 0    
-RAM:
-  preprocess:
-    sentence_length: 180
-    tokenizer: "huggingface:::bert-base-uncased"  # source:::tokenizer_type
-  body:
-    pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
-    embedding_trainable: False
-    hops: 3
-    hidden_dim: 150
-  optim:
-    optimizer: "AdamW"
-    train_batch_size: 32
-    eval_batch_size: 128
-    learning_rate: 0.005
-    num_train_epochs: 25
-    weight_decay: 0.8
-    gradient_accumulation_steps: 1
-    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
-    max_grad_norm: 0.8
-    max_steps: -1
-    warmup_steps: 0  
-TNET_LF:
-  preprocess:
-    sentence_length: 180
-    tokenizer: "huggingface:::bert-base-uncased"  # source:::tokenizer_type
-  body:
-    pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
-    embedding_trainable: False
-    hidden_dim: 150  
-  optim:
-    optimizer: "AdamW"
-    train_batch_size: 32
-    eval_batch_size: 128
-    learning_rate: 0.005
-    num_train_epochs: 25
-    weight_decay: 0.8
-    gradient_accumulation_steps: 1
-    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
-    max_grad_norm: 0.8
-    max_steps: -1
-    warmup_steps: 0  
-MEMNET:
-  preprocess:
-    sentence_length: 180
-    tokenizer: "huggingface:::bert-base-uncased"  # source:::tokenizer_type 
-  body:
-    pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
-    embedding_trainable: False
-    hops: 3
-  optim:
-    optimizer: "AdamW"
-    train_batch_size: 32
-    eval_batch_size: 128
-    learning_rate: 0.005
-    num_train_epochs: 25
-    weight_decay: 0.8
-    gradient_accumulation_steps: 1
-    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
-    max_grad_norm: 0.8
-    max_steps: -1
-    warmup_steps: 0  
-IAN:
-  preprocess:
-    sentence_length: 180
-    tokenizer: "huggingface:::bert-base-uncased"  # source:::tokenizer_type 
-  body:
-    pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt" # gensim format
-    embedding_trainable: False
-    hidden_dim: 150
-  optim:
-    optimizer: "AdamW"
-    train_batch_size: 32
-    eval_batch_size: 128
-    learning_rate: 0.005
-    num_train_epochs: 25
-    weight_decay: 0.8
-    gradient_accumulation_steps: 1
-    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
-    max_grad_norm: 0.8
-    max_steps: -1
-    warmup_steps: 0  
-ATAE_LSTM:
-  preprocess:
-    sentence_length: 180
-    tokenizer: "huggingface:::bert-base-uncased"  # source:::tokenizer_type 
-  body:
-    pretrained_word_emb: "glove_twitter_27B_100d_vectors.txt"
-    embedding_trainable: False
-    hidden_dim: 150
-  optim:
-    optimizer: "AdamW"
-    train_batch_size: 32
-    eval_batch_size: 128
-    learning_rate: 0.005
-    num_train_epochs: 25
-    weight_decay: 0.8
-    gradient_accumulation_steps: 1
-    adam_epsilon: 1e-8 # term added to the denominator to improve numerical stability (default: 1e-8)
-    max_grad_norm: 0.8
-    max_steps: -1
-    warmup_steps: 0  
