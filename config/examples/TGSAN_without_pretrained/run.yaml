@@ -1,7 +1,7 @@
 device: 0
 data:
-  output_dir: "../config/examples/TGSAN"
-  data_dir: "../config/examples/TGSAN"
+  output_dir: "../config/examples/TGSAN_without_pretrained"
+  data_dir: "../config/examples/TGSAN_without_pretrained"
   train: sample.json 
   dev: sample.json 
   test: sample.json 
@@ -30,4 +30,3 @@ model_params:
   # ================= TGSAN =================
   num_train_epochs: 2
   pretrained_emb_path: null
-  embedding_trainable: False
