@@ -24,9 +24,9 @@ def load_yaml(file_path):
     return data
 
 
-def set_log_path():
+def set_log_path(log_dir):
     logging.basicConfig(
-        handlers=[logging.FileHandler(Path("../log"), "w+", "utf-8"), logging.StreamHandler()], 
+        handlers=[logging.FileHandler(log_dir / "log", "w+", "utf-8"), logging.StreamHandler()], 
         format="%(message)s", 
         level=logging.INFO
     )

@@ -1,7 +1,7 @@
 device: 0
 data:
   output_dir: "../config/examples/TGSAN"
-  data_dir: "../config/examples/TGSAN"
+  data_dir: "../data/datasets/sample"
   train: sample.json 
   dev: sample.json 
   test: sample.json 

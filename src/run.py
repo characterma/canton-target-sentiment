@@ -119,7 +119,6 @@ def combine_and_save_statistics(datasets, args):
 
 
 if __name__ == "__main__":
-    set_log_path()
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", type=str, default="../config/")
     parser.add_argument("--test_only", action="store_true")
@@ -130,5 +129,6 @@ if __name__ == "__main__":
         args.config_dir = Path(run_config['data']['output_dir'])
 
     args = load_config(args)
+    set_log_path(args.output_dir)
     set_seed(args.train_config["seed"])
     run(args=args)

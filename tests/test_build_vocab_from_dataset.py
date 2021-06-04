@@ -79,6 +79,7 @@ class TestBuildVocabFromDataset(unittest.TestCase):
         tokenizer = InternalTokenizer(word_to_idx=None, required_token_types=['CHAR', 'LETTERS'])
         build_vocab_from_dataset(dataset='train', tokenizer=tokenizer,args=self.args)
         self.assertEqual(set(tokenizer.word_to_idx.keys()), set(self.word_to_idx_0.keys()))
+        os.system("rm ./word_to_idx.json")
 
     def test_single_frequency_filter(self):
         # case II: 90% infrequent word filter , check remaining words
@@ -88,7 +89,8 @@ class TestBuildVocabFromDataset(unittest.TestCase):
         self.assertEqual(len(tokenizer.word_to_idx), 4)
         for w in tokenizer.word_to_idx:
             self.assertIn(w, ['<OOV>', '地', '亞', '卡', '一'])
-
+        os.system("rm ./word_to_idx.json")
+        
     def test_increasing_frequency_filter(self):
         # case III: increasing % infrequent word filter , check vocab size
         tokenizer = InternalTokenizer(word_to_idx=None, required_token_types=['CHAR', 'LETTERS'])
@@ -98,6 +100,7 @@ class TestBuildVocabFromDataset(unittest.TestCase):
             acutal_vocab_size = len(tokenizer.word_to_idx)
             expected_vocab_size = len(self.word_to_idx_0) - int((len(self.word_to_idx_0) - 1) * (i / 10))
             self.assertEqual(acutal_vocab_size, expected_vocab_size)
+        os.system("rm ./word_to_idx.json")
 
 
 

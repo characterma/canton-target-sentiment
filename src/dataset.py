@@ -233,7 +233,6 @@ def build_vocab_from_dataset(dataset, tokenizer, args):
     words = sorted(words, key=lambda w: word_counter[w])
     infreq_words = words[:int(vocab_freq_cutoff * len(words))]
     logger.info("  Number of infrequency words = %d", len(infreq_words))
-    json.dump(infreq_words, open("words.json", 'w'))
 
     word_to_idx['<OOV>'] = 0
     cur_idx = 1
