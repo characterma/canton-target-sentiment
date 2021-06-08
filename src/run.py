@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 from dataset import TargetDependentDataset, build_vocab_from_dataset, build_vocab_from_pretrained, load_vocab
 from trainer import Trainer, evaluate
-from utils import set_seed, set_log_path, load_config, save_config, load_yaml
+from utils import set_seed, set_log_path, load_config, save_config, load_yaml, log_args
 from tokenizer import get_tokenizer
 from model import get_model, get_model_type
 
@@ -130,5 +130,6 @@ if __name__ == "__main__":
 
     args = load_config(args)
     set_log_path(args.output_dir)
+    log_args(logger, args)
     set_seed(args.train_config["seed"])
     run(args=args)

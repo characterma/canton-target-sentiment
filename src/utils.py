@@ -6,15 +6,25 @@ import pandas as pd
 import random
 import shutil
 import torch
+import transformers 
 import yaml
 from argparse import Namespace
 from pathlib import Path
 
 
+def log_args(logger, args):
+    logger.info("***** Args *****")
+    for k1, v1 in args.run_config.items():
+        logger.info(f"   {k1}: {str(v1)}")
+
+
 def set_seed(seed):
+    torch.backends.cudnn.deterministic = True 
+    torch.backends.cudnn.benchmark = False
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    transformers.set_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
@@ -46,6 +56,7 @@ def get_label_to_id(labels):
 def load_config(args):
     config_dir = Path(args.config_dir)
     run_config = load_yaml(config_dir / "run.yaml")
+    args.run_config = run_config
     args.data_config = run_config['data']
     args.label_to_id, args.label_to_id_inv = get_label_to_id(run_config['data']['labels'])
     args.eval_config = run_config['eval']
