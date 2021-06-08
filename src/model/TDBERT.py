@@ -118,10 +118,11 @@ class TDBERT(BertPreTrainedModel):
 
         if label is not None:
             losses = self.loss_func(logits.view(-1, self.num_labels), label.view(-1))
+            losses = losses.mean()
         else:
             losses = None
 
-        outputs = [losses.mean(), logits]
+        outputs = [losses, logits]
 
         if return_tgt_pool:
             outputs += [tgt_h]

@@ -339,17 +339,17 @@ class TGSAN(nn.Module):
             penal_term = (
                 penal_term + ctx_penal if (penal_term is not None) else ctx_penal
             )
-        loss = 0
-
 
         if soft_label is not None:
             loss_fct = nn.MSELoss()
-            loss = loss_fct(logits.view(-1), soft_label.view(-1))            
+            loss = loss_fct(logits.view(-1), soft_label.view(-1)) + penal_term       
         elif label is not None:
             if self.num_labels == 1:
                 loss_fct = nn.MSELoss()
-                loss = loss_fct(logits.view(-1), label.view(-1))
+                loss = loss_fct(logits.view(-1), label.view(-1)) + penal_term
             else:
                 loss_fct = nn.CrossEntropyLoss()
-                loss = loss_fct(logits.view(-1, self.num_labels), label.view(-1))
-        return loss + penal_term, logits
+                loss = loss_fct(logits.view(-1, self.num_labels), label.view(-1)) + penal_term
+        else:
+            loss = None
+        return loss, logits
