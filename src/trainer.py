@@ -213,7 +213,7 @@ class Trainer(object):
     def training_step(self, batch):
         self.model.train()
         inputs = dict()
-        for col in self.model.INPUT:
+        for col in batch:
             inputs[col] = batch[col].to(self.device).long()
         outputs = self.model(**inputs)
         losses = outputs[0]
@@ -273,7 +273,7 @@ class Trainer(object):
         self.on_training_end()
 
     def on_epoch_end(self, epoch):
-
+        logger.info(f"***** Epoch end: {epoch} *****")
         metrics = evaluate(
             model=self.model,
             eval_dataset=self.dev_dataset,
@@ -285,6 +285,7 @@ class Trainer(object):
             self.best_model_state = copy.deepcopy(self.model.state_dict())
 
     def on_training_end(self):
+        logger.info("***** Training end *****")
         out_path = (
             self.model_dir / f"model.pt"
         )
