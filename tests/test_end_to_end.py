@@ -5,8 +5,10 @@ from pathlib import Path
 
 sys.path.append("../src/")
 from dataset import TargetDependentExample
-from utils import load_yaml
-from transformers import BertTokenizerFast
+from utils import load_config
+from trainer import prediction_step
+from run import init_model, init_tokenizer
+from collections import namedtuple
 
 
 class TestEndToEnd(unittest.TestCase):
@@ -50,59 +52,42 @@ class TestEndToEnd(unittest.TestCase):
         os.system("rm -rf ../tests/test_end_to_end_samples/4/model")
         os.system("rm -rf ../tests/test_end_to_end_samples/4/result")
 
-    def test_inference(self):
+    def test_train_and_inference(self):
         os.chdir("../src/")
         sample_id = 7
         os.system(f"python run.py --config_dir='../tests/test_end_to_end_samples/{sample_id}/'")
 
-        # load configs and models
-        run_config = load_yaml(
-            Path(f"../tests/test_end_to_end_samples/{sample_id}/run.yaml")
-        )
-        model_config = load_yaml(
-            Path(f"../tests/test_end_to_end_samples/{sample_id}/model.yaml")
-        )
-        model_class = run_config['train']['model_class']
-        model_path = f'../tests/test_end_to_end_samples/{sample_id}/model/model.pt'
-        model = torch.load(model_path)
-        tokenizer = BertTokenizerFast.from_pretrained(model_config[model_class]['pretrained_lm'])
+        args = namedtuple('args', 'config_dir')
+        args.config_dir = Path(f"../tests/test_end_to_end_samples/{sample_id}")
+        args = load_config(args)
 
-        # raw data without label
+        tokenizer = init_tokenizer(args=args)
+        model = init_model(args=args)
+
         data_dict = {
-            'content': "#仪式感不能少没有卡地亚， 🔥浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！", 
-            'target_locs': [[15, 17]]
+            "content": "標題[心得] Tudor Black Bay 58 M79030B", 
+            "target_locs": [[7, 12], [13, 18], [19, 22]]
         }
 
-        # prepare feature
         data = TargetDependentExample(
             data_dict=data_dict,
             tokenizer=tokenizer,
-            prepro_config=run_config['text_prepro'],
-            max_length=model_config[model_class]['max_length'],
+            prepro_config=args.run_config['text_prepro'],
+            max_length=args.model_config['max_length'],
             required_features=model.INPUT,
             label_to_id=None,
         )
 
-        # make batch
         batch = dict()
         for col in data.feature_dict:
             batch[col] = torch.stack([data.feature_dict[col]], dim=0)
 
-        # predict
-        model.eval()
-        with torch.no_grad():
-            inputs = dict()
-            for col in batch:
-                inputs[col] = batch[col].to(run_config['device']).long()
-            x = model(
-                **inputs,
-            )
+        results = prediction_step(model, batch, args)
 
-        loss = x[0]
-        logits = x[1]
-        self.assertTrue(loss is None, "Loss is not expected.")
-        self.assertTrue(logits is not None)
-
+        self.assertTrue(results['sentiment'][0]=='neutral')
+        self.assertTrue(results['loss'] is None)
+        os.system(f"rm -rf ../tests/test_end_to_end_samples/{sample_id}/model")
+        os.system(f"rm -rf ../tests/test_end_to_end_samples/{sample_id}/result")
 
 
     # def test_set_seed(self):
