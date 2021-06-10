@@ -4,7 +4,7 @@ import numpy as np
 import torch.nn as nn
 
 import transformers
-from .model_utils import load_pretrained_emb
+from model.utils import load_pretrained_emb
 
 
 class StructuredSelfAttention(nn.Module):

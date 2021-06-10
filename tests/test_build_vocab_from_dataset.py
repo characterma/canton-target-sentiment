@@ -6,8 +6,7 @@ import os
 from pathlib import Path
 from collections import namedtuple
 sys.path.append("../src/")
-from tokenizer import InternalTokenizer
-from dataset import build_vocab_from_dataset
+from tokenizer import InternalTokenizer, build_vocab_from_dataset
 
 
 class TestBuildVocabFromDataset(unittest.TestCase):

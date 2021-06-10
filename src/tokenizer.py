@@ -1,7 +1,14 @@
 import logging
+import json
 import re
+import os
 import unicodedata
+import random
+from collections import Counter
+from tqdm import tqdm
+from pathlib import Path
 from transformers import AutoTokenizer, BertTokenizer, BertTokenizerFast
+from preprocess import TextPreprocessor
 
 
 logger = logging.getLogger(__name__)
@@ -28,9 +35,77 @@ TOKENIZER_CLASS_MAP = {
 }
 
 
-def get_tokenizer(args, word_to_idx=None, required_token_types=None):
-    # add special tokens
+def load_vocab(tokenizer, vocab_path, args):
+    logger.info("***** Loading vocab *****")
+    word_to_idx = json.load(open(vocab_path, 'r'))
+    tokenizer.update_word_idx(word_to_idx)
+    args.vocab_size = len(word_to_idx)
+    logger.info("  Vocab size = %d", len(word_to_idx))
 
+
+def build_vocab_from_pretrained(tokenizer, args):
+    emb_path = Path("../data/word_embeddings") / args.model_config['pretrained_word_emb']
+    words = []
+    logger.info("***** Building vocab from pretrained *****")
+    logger.info("  Embedding path = %s", str(emb_path))
+    with open(emb_path, encoding='utf-8', errors='ignore') as f:
+        for line in f:
+            break
+        for line in tqdm(f):
+            words.append(line.split(' ')[0])
+    word_to_idx = {}
+    word_to_idx['<OOV>'] = 0
+    word_to_idx.update(dict(zip(words, range(1, len(words) + 1))))
+    logger.info("  Vocab size = %d", len(word_to_idx))
+    json.dump(word_to_idx, open(args.model_dir / 'word_to_idx.json', 'w'))
+    tokenizer.update_word_idx(word_to_idx)
+    args.vocab_size = len(word_to_idx)
+
+
+def build_vocab_from_dataset(dataset, tokenizer, args):
+    filename = args.data_config[dataset]
+    data_path = (
+        Path(args.data_config["data_dir"]) / filename
+    )
+    raw_data = json.load(open(data_path, "r"))
+    logger.info("***** Building vocab from dataset *****")
+    logger.info("  Data path = %s", str(data_path))
+    logger.info("  Number of raw samples = %d", len(raw_data))
+    all_words = []
+    word_to_idx = dict()
+
+    for idx, data_dict in tqdm(enumerate(raw_data)):
+        preprocessor = TextPreprocessor(
+            text=data_dict['content'], 
+            target_locs=data_dict['target_locs'], 
+            steps=args.prepro_config['steps']
+        )
+        preprocessed_text = preprocessor.preprocessed_text
+        all_words.extend(tokenizer(raw_text=preprocessed_text, max_length=None).tokens)
+    word_counter = Counter(all_words)
+    vocab_freq_cutoff = args.model_config['vocab_freq_cutoff']
+    words = list(set(all_words))
+    random.shuffle(words)
+    words = sorted(words, key=lambda w: word_counter[w])
+    infreq_words = words[:int(vocab_freq_cutoff * len(words))]
+    logger.info("  Number of infrequency words = %d", len(infreq_words))
+
+    word_to_idx['<OOV>'] = 0
+    cur_idx = 1
+    for w in words:
+        if w not in infreq_words:
+            word_to_idx[w] = cur_idx
+            cur_idx += 1
+
+    logger.info("  Infrequenct words = %d", len(infreq_words))
+    logger.info("  Vocab size = %d", len(word_to_idx))
+
+    json.dump(word_to_idx, open(args.model_dir / 'word_to_idx.json', 'w'))
+    tokenizer.update_word_idx(word_to_idx)
+    args.vocab_size = len(word_to_idx)
+
+
+def get_tokenizer(args, word_to_idx=None, required_token_types=None):
     source = args.model_config['tokenizer_source']
     name = args.model_config['tokenizer_name']
     logger.info("***** Loading tokenizer *****")
@@ -41,7 +116,16 @@ def get_tokenizer(args, word_to_idx=None, required_token_types=None):
         tokenizer = Tokenizer.from_pretrained(name, use_fast=True)
         return tokenizer
     elif source == "internal":
-        return InternalTokenizer(word_to_idx=word_to_idx, required_token_types=required_token_types)
+        tokenizer = InternalTokenizer(word_to_idx=word_to_idx, required_token_types=required_token_types)
+        vocab_path = args.model_dir / 'word_to_idx.json'
+        if os.path.exists(vocab_path):
+            load_vocab(tokenizer=tokenizer, vocab_path=vocab_path, args=args)
+        else:
+            if args.model_config.get("pretrained_emb", None) is not None:
+                build_vocab_from_pretrained(tokenizer=tokenizer, args=args)
+            else:
+                build_vocab_from_dataset(dataset="train", tokenizer=tokenizer, args=args)
+        return tokenizer
     else:
         raise ValueError("Unsupported tokenizer source.")
 

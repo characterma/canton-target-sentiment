@@ -4,10 +4,11 @@ import torch
 from pathlib import Path 
 
 sys.path.append("../src/")
-from dataset import TargetDependentExample
 from utils import load_config
 from trainer import prediction_step
-from run import init_model, init_tokenizer
+from dataset.target_classification import TargetClassificationFeature
+from model import get_model
+from tokenizer import get_tokenizer
 from collections import namedtuple
 
 
@@ -61,15 +62,15 @@ class TestEndToEnd(unittest.TestCase):
         args.config_dir = Path(f"../tests/test_end_to_end_samples/{sample_id}")
         args = load_config(args)
 
-        tokenizer = init_tokenizer(args=args)
-        model = init_model(args=args)
+        tokenizer = get_tokenizer(args=args)
+        model = get_model(args=args)
 
         data_dict = {
             "content": "標題[心得] Tudor Black Bay 58 M79030B", 
             "target_locs": [[7, 12], [13, 18], [19, 22]]
         }
 
-        data = TargetDependentExample(
+        data = TargetClassificationFeature(
             data_dict=data_dict,
             tokenizer=tokenizer,
             prepro_config=args.run_config['text_prepro'],

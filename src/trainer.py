@@ -291,5 +291,9 @@ class Trainer(object):
         )
         if self.train_config.get("final_model", "best")=="best":
             self.model.load_state_dict(self.best_model_state)
+
+
+
+        logger.info("  Model path = %s", str(out_path))
         torch.save(self.model, out_path)
 

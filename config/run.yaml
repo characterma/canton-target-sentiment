@@ -17,6 +17,7 @@ eval:
   batch_size: 64
   model_file: "model.pt" # under output_dir / "model"
 train:
+  task: "target_sentiment"
   model_class: "TDBERT"
   seed: 42
   batch_size: 16

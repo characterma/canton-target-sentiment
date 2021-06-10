@@ -3,6 +3,7 @@ import json
 import logging
 import random
 import torch
+import importlib
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -49,7 +50,7 @@ class PadCollate:
         return self.pad_collate(batch)
 
 
-class TargetDependentExample(object):
+class TargetClassificationFeature(object):
     def __init__(
         self,
         data_dict,
@@ -119,7 +120,7 @@ class TargetDependentExample(object):
         attention_mask = np.array(tokens_encoded.attention_mask)[:max_length]
         token_type_ids = np.array(tokens_encoded.token_type_ids)[:max_length]
         target_mask = np.array([0] * len(raw_text_ids))
-        raw_text_ids, attention_mask, token_type_ids, target_mask = TargetDependentExample.pad([raw_text_ids, attention_mask, token_type_ids, target_mask], max_length, 0)
+        raw_text_ids, attention_mask, token_type_ids, target_mask = TargetClassificationFeature.pad([raw_text_ids, attention_mask, token_type_ids, target_mask], max_length, 0)
         tokens = tokenizer.convert_ids_to_tokens(raw_text_ids)
         target_token_loc = []
 
@@ -178,78 +179,7 @@ class TargetDependentExample(object):
         return feature_dict, diagnosis_dict
 
 
-def load_vocab(tokenizer, vocab_path, args):
-    logger.info("***** Loading vocab *****")
-    word_to_idx = json.load(open(vocab_path, 'r'))
-    tokenizer.update_word_idx(word_to_idx)
-    args.vocab_size = len(word_to_idx)
-    logger.info("  Vocab size = %d", len(word_to_idx))
-
-
-def build_vocab_from_pretrained(tokenizer, args):
-    emb_path = Path("../data/word_embeddings") / args.model_config['pretrained_word_emb']
-    words = []
-    logger.info("***** Building vocab from pretrained *****")
-    logger.info("  Embedding path = %s", str(emb_path))
-    with open(emb_path, encoding='utf-8', errors='ignore') as f:
-        for line in f:
-            break
-        for line in tqdm(f):
-            words.append(line.split(' ')[0])
-    word_to_idx = {}
-    word_to_idx['<OOV>'] = 0
-    word_to_idx.update(dict(zip(words, range(1, len(words) + 1))))
-    logger.info("  Vocab size = %d", len(word_to_idx))
-    json.dump(word_to_idx, open(args.model_dir / 'word_to_idx.json', 'w'))
-    tokenizer.update_word_idx(word_to_idx)
-    args.vocab_size = len(word_to_idx)
-
-
-def build_vocab_from_dataset(dataset, tokenizer, args):
-    filename = args.data_config[dataset]
-    data_path = (
-        Path(args.data_config["data_dir"]) / filename
-    )
-    raw_data = json.load(open(data_path, "r"))
-    logger.info("***** Building vocab from dataset *****")
-    logger.info("  Data path = %s", str(data_path))
-    logger.info("  Number of raw samples = %d", len(raw_data))
-    all_words = []
-    word_to_idx = dict()
-
-    for idx, data_dict in tqdm(enumerate(raw_data)):
-        preprocessor = TextPreprocessor(
-            text=data_dict['content'], 
-            target_locs=data_dict['target_locs'], 
-            steps=args.prepro_config['steps']
-        )
-        preprocessed_text = preprocessor.preprocessed_text
-        all_words.extend(tokenizer(raw_text=preprocessed_text, max_length=None).tokens)
-    word_counter = Counter(all_words)
-
-    vocab_freq_cutoff = args.model_config['vocab_freq_cutoff']
-    words = list(set(all_words))
-    random.shuffle(words)
-    words = sorted(words, key=lambda w: word_counter[w])
-    infreq_words = words[:int(vocab_freq_cutoff * len(words))]
-    logger.info("  Number of infrequency words = %d", len(infreq_words))
-
-    word_to_idx['<OOV>'] = 0
-    cur_idx = 1
-    for w in words:
-        if w not in infreq_words:
-            word_to_idx[w] = cur_idx
-            cur_idx += 1
-
-    logger.info("  Infrequenct words = %d", len(infreq_words))
-    logger.info("  Vocab size = %d", len(word_to_idx))
-
-    json.dump(word_to_idx, open(args.model_dir / 'word_to_idx.json', 'w'))
-    tokenizer.update_word_idx(word_to_idx)
-    args.vocab_size = len(word_to_idx)
-
-
-class TargetDependentDataset(Dataset):
+class TargetClassificationDataset(Dataset):
     def __init__(self, dataset, tokenizer, args):
         """
         Args:
@@ -262,7 +192,9 @@ class TargetDependentDataset(Dataset):
         self.features = []
         self.diagnosis = []
         self.tokenizer = tokenizer
-        Model = getattr(sys.modules[__name__], args.train_config["model_class"])
+        task = args.train_config['task']
+        model_class = args.train_config['model_class']
+        Model = getattr(importlib.import_module(f"model.{task}"), model_class)
         self.required_features = Model.INPUT
         self.load_from_path()
         self.diagnosis_df = pd.DataFrame(data=self.diagnosis)
@@ -278,7 +210,7 @@ class TargetDependentDataset(Dataset):
 
         for idx, data_dict in tqdm(enumerate(self.raw_data)):
             diagnosis_dict = dict(zip(["raw_" + k for k in data_dict.keys()], data_dict.values()))
-            x = TargetDependentExample(
+            x = TargetClassificationFeature(
                 data_dict=data_dict,
                 tokenizer=self.tokenizer,
                 prepro_config=self.args.prepro_config,
@@ -302,13 +234,6 @@ class TargetDependentDataset(Dataset):
             statistics[f"raw_{s}"] = df.shape[0]
             statistics[f"fea_{s}"] = df[df['fea_success']].shape[0]
         return statistics
-
-    def get_class_balanced_weights(self):
-        class_size = self.df["label"].value_counts()
-        weights = 1 / (class_size * class_size.shape[0])
-        weights.rename("w", inplace=True)
-        df = self.df.join(weights, on="label", how="left")
-        return df["w"].tolist(), class_size.max(), class_size.min(), class_size.shape[0]
 
     def __getitem__(self, index):
         return self.features[index]

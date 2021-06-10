@@ -4,7 +4,7 @@ import torch
 from transformers import AutoTokenizer
 
 sys.path.append("../src/")
-from dataset import TargetDependentExample
+from dataset.target_classification import TargetClassificationFeature
 
 
 class TestGetFeatures(unittest.TestCase):
@@ -20,7 +20,7 @@ class TestGetFeatures(unittest.TestCase):
             "label",
         ]
 
-        feature_dict, msg = TargetDependentExample.get_features(
+        feature_dict, msg = TargetClassificationFeature.get_features(
             raw_text=raw_text,
             target_char_loc=target_locs,
             tokenizer=tokenizer,
