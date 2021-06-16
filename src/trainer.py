@@ -12,26 +12,10 @@ from torch.utils.data import (
 from torch.optim import RMSprop
 from tqdm import tqdm, trange
 from transformers import AdamW, get_linear_schedule_with_warmup
+from metric import compute_metrics
 
 
 logger = logging.getLogger(__name__)
-
-
-def compute_metrics(labels, predictions):
-    report = sklearn.metrics.classification_report(
-        labels, predictions, output_dict=True
-    )
-    labels_unique = set(labels)
-    metrics = {
-        "acc": report['accuracy'],
-        "macro_f1": report['macro avg']['f1-score'],
-        "micro_f1": report['weighted avg']['f1-score']
-    }
-    for label, v1 in report.items():
-        if label in labels_unique:
-            for score_name, v2 in v1.items():
-                metrics[f"{label}-{score_name}"] = v2
-    return metrics
 
 
 def prediction_step(model, batch, args):
@@ -45,11 +29,14 @@ def prediction_step(model, batch, args):
             **inputs,
         )
 
-    # to cpu to list
-    results["sentiment_id"] = torch.argmax(x[1], dim=1).cpu().tolist()
-    results["sentiment"] = list(map(lambda x: args.label_to_id_inv[x], results["sentiment_id"]))
-    results["logits"] = x[1].cpu().tolist()
-    results["score"] = torch.nn.functional.softmax(x[1], dim=1).cpu().tolist()
+    if isinstance(x[1], list):
+        # [B, 1]
+        # [B, L]
+        results["prediction"] = []
+        for x1 in x[1]:
+            results["prediction"].append(list(map(lambda x: args.label_to_id_inv[x], x1)))
+
+    results["logits"] = x[2].cpu().tolist()
     if x[0] is not None:
         results["loss"] = x[0].cpu().tolist()
     else:
@@ -71,8 +58,7 @@ def evaluate(model, eval_dataset, args):
     )
 
     label_ids = []
-    sentiments = []
-    scores = []
+    predictions = []
     logits = []
     losses = []
 
@@ -80,15 +66,19 @@ def evaluate(model, eval_dataset, args):
         results = prediction_step(model, batch, args=args)
         label_ids.extend(batch["label"].cpu().tolist())
         losses.append(results["loss"])
-        scores.extend(results["score"])
-        sentiments.extend(results["sentiment"])
+        predictions.extend(results["prediction"])
         if len(logits)==0:
             logits = results["logits"]
         else:
             logits.extend(results["logits"])
 
-    labels = list(map(lambda x: args.label_to_id_inv[x], label_ids))
-    metrics = compute_metrics(labels, sentiments)
+    # [[1], [2]]
+    # use attention mask to filter PAD
+    labels = []
+    for l1, p1 in zip(label_ids, predictions):
+        labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[:len(p1)])
+
+    metrics = compute_metrics(task=args.run_config['train']['task'], labels=labels, predictions=predictions) 
     metrics['loss'] = np.mean(losses)
     metrics['dataset'] = eval_dataset.dataset
     for m in metrics:
@@ -279,9 +269,9 @@ class Trainer(object):
             eval_dataset=self.dev_dataset,
             args=self.args,
         )
-
-        if self.best_score is None or self.best_score < metrics["loss"]:
-            self.best_score = metrics["loss"]
+        # all tasks use F1 
+        if self.best_score is None or self.best_score < metrics["macro_f1"]:
+            self.best_score = metrics["macro_f1"]
             self.best_model_state = copy.deepcopy(self.model.state_dict())
 
     def on_training_end(self):

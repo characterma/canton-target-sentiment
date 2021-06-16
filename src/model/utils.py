@@ -76,14 +76,3 @@ def load_pretrained_config(model_name):
     return CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
 
 
-def load_pretrained_emb(emb_path):
-    logger.info("***** Loading pretrained embeddings *****")
-    vectors = []
-    with open(emb_path, encoding='utf-8', errors='ignore') as f:
-        for line in f:
-            break
-        for line in tqdm(f):
-            vectors.append(line.rstrip().split(' ')[1:])
-    vectors = np.array(vectors, dtype=float)
-    logger.info("  Embeddings size = '%s'", str(vectors.shape))
-    return vectors

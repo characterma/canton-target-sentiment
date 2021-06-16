@@ -3,13 +3,23 @@ import re
 from opencc import OpenCC
 
 
+FULL2HALF = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
+FULL2HALF[0x3000] = 0x20
+
+
 class TextPreprocessor:
-    def __init__(self, text, target_locs, steps):
+    def __init__(self, text, steps , target_locs=None):
         self.cc = OpenCC('t2s')
-        self.preprocessed_text = str(text) 
-        self.preprocessed_target_locs = target_locs.copy()
+        self.preprocessed_text = str(text)
+        if target_locs is not None:
+            self.preprocessed_target_locs = target_locs.copy()
+        else:
+            self.preprocessed_target_locs = None
         for s in steps:
             getattr(self, s)()
+
+    def full_to_half(self):
+        self.preprocessed_text = str(self.preprocessed_text).translate(FULL2HALF)
 
     def simplified_chinese(self):
         self.preprocessed_text = self.cc.convert(self.preprocessed_text)

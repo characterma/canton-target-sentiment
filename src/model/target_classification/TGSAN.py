@@ -4,7 +4,7 @@ import numpy as np
 import torch.nn as nn
 
 import transformers
-from model.utils import load_pretrained_emb
+from model.utils import WordEmbeddings
 
 
 class StructuredSelfAttention(nn.Module):
@@ -189,25 +189,15 @@ class TGSAN(nn.Module):
         self.model_config = args.model_config
         self.num_labels = len(args.label_to_id)
         d_model = 2 * args.model_config["rnn_hidden_dim"]
-
-        if args.pretrained_emb_path is not None:
-            embeddings = load_pretrained_emb(args.pretrained_emb_path)
-            _, emb_dim = embeddings.shape
-            embeddings = np.concatenate([np.zeros([1, emb_dim]), embeddings], axis=0) 
-            self.embed = nn.Embedding.from_pretrained(
-                torch.tensor(embeddings),
-                freeze=(not args.model_config["embedding_trainable"]),
-            )
-        else:
-            emb_dim = args.model_config["emb_dim"]
-            self.embed = nn.Embedding(num_embeddings=args.vocab_size, embedding_dim=emb_dim)
-
-        self.emb_dropout = (
-            nn.Dropout(args.model_config["emb_dropout"])
-            if args.model_config["emb_dropout"] > 0.0
-            else None
+        
+        self.embed = WordEmbeddings(
+            pretrained_emb_path=args.pretrained_emb_path, 
+            embedding_trainable=args.model_config['embedding_trainable'], 
+            emb_dim=args.model_config['emb_dim'], 
+            vocab_size=args.vocab_size, 
+            emb_dropout=args.model_config['emb_dropout'])
         )
-
+        emb_dim = self.embed.emb_dim 
         # Bi-LSTM encoder
         self.bilstm = nn.LSTM(
             emb_dim,
@@ -292,8 +282,6 @@ class TGSAN(nn.Module):
 
     def forward(self, raw_text, attention_mask, target_mask, label=None, soft_label=None, **kwargs):
         x = self.embed(raw_text).to(torch.float32)  # [B, L, E]
-        if self.emb_dropout is not None:
-            x = self.emb_dropout(x)
         len_max = x.size(1)  # embedding dimension
         lens = attention_mask.sum(
             -1
@@ -333,6 +321,7 @@ class TGSAN(nn.Module):
 
         # OUTPUT
         logits = self.fc_active(self.fc(ctx_vec.squeeze(1)))  # [B, Nc]
+        prediction = torch.argmax(logits, dim=1).cpu().tolist()
 
         penal_term = tgt_penal
         if ctx_penal is not None:
@@ -352,4 +341,4 @@ class TGSAN(nn.Module):
                 loss = loss_fct(logits.view(-1, self.num_labels), label.view(-1)) + penal_term
         else:
             loss = None
-        return loss, logits
+        return [prediction, loss, logits]

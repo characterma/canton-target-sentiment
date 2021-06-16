@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-from transformers import AlbertModel, BertModel, BertPreTrainedModel, RobertaModel
+from transformers import BertPreTrainedModel
 from model.utils import load_pretrained_bert, load_pretrained_config
+from model.layer.fc import FCLayer
 
 
 class FCLayer(nn.Module):
@@ -77,15 +78,6 @@ class TDBERT(BertPreTrainedModel):
             if "embeddings" in param_name:
                 param.requires_grad = False
 
-            # if "selfatt" not in param_name and "fc" not in param_name:
-            #     param.requires_grad = False
-
-    # def unfreeze_emb(self):
-    #     # Unfreeze all parameters except self attention parameters
-    #     for param_name, param in self.pretrained_model.named_parameters():
-    #         if "selfatt" not in param_name and "fc" not in param_name:
-    #             param.requires_grad = True
-
     def forward(
         self,
         raw_text,
@@ -93,10 +85,6 @@ class TDBERT(BertPreTrainedModel):
         attention_mask,
         token_type_ids,
         label=None,
-        return_tgt_pool=False,
-        return_tgt_mask=False,
-        return_all_repr=False,
-        return_attn=False,
         **kwargs
     ):
         lm = self.pretrained_model(
@@ -115,33 +103,11 @@ class TDBERT(BertPreTrainedModel):
 
         tgt_h = self.fc_layer(tgt_h)
         logits = self.classifier(tgt_h)
+        prediction = torch.argmax(logits, dim=1).cpu().tolist()
 
         if label is not None:
-            losses = self.loss_func(logits.view(-1, self.num_labels), label.view(-1))
-            losses = losses.mean()
+            loss = self.loss_func(logits.view(-1, self.num_labels), label.view(-1))
+            loss = loss.mean()
         else:
-            losses = None
-
-        outputs = [losses, logits]
-
-        if return_tgt_pool:
-            outputs += [tgt_h]
-        else:
-            outputs += [None]
-
-        if return_tgt_mask:
-            outputs += [target_mask]
-        else:
-            outputs += [None]
-
-        if return_all_repr:
-            outputs += [h]
-        else:
-            outputs += [None]
-
-        if return_attn:
-            outputs += [lm["attentions"]]
-        else:
-            outputs += [None]
-
-        return outputs
+            loss = None
+        return [prediction, loss, logits]

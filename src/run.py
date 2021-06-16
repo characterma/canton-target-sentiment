@@ -53,12 +53,16 @@ def combine_and_save_metrics(metrics, args):
 
 def combine_and_save_statistics(datasets, args):
     datasets = [ds for ds in datasets if ds is not None]
-    diagnosis_df = pd.concat([ds.diagnosis_df for ds in datasets])
-    filename = 'diagnosis_test_only.xlsx' if args.test_only else 'diagnosis.xlsx'
-    diagnosis_df.to_excel(args.result_dir / filename, index=False)
-    statistics_df = pd.DataFrame(data=[ds.get_data_analysis() for ds in datasets])
-    filename = 'statistics_test_only.csv' if args.test_only else 'statistics.csv'
-    statistics_df.to_csv(args.result_dir / filename, index=False)
+    if hasattr(datasets[0], 'diagnosis_df'):
+        diagnosis_df = pd.concat([ds.diagnosis_df for ds in datasets])
+        filename = 'diagnosis_test_only.xlsx' if args.test_only else 'diagnosis.xlsx'
+        diagnosis_df.to_excel(args.result_dir / filename, index=False)
+
+    if hasattr(datasets[0], 'get_data_analysis'):
+        statistics_df = pd.DataFrame(data=[ds.get_data_analysis() for ds in datasets])
+        filename = 'statistics_test_only.csv' if args.test_only else 'statistics.csv'
+        statistics_df.to_csv(args.result_dir / filename, index=False)
+
 
 
 if __name__ == "__main__":
