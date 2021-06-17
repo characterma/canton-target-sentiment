@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from collections import namedtuple
 sys.path.append("../src/")
-from tokenizer import InternalTokenizer, build_vocab_from_dataset
+from tokenizer import MultiLingualTokenizer, build_vocab_from_dataset
 
 
 class TestBuildVocabFromDataset(unittest.TestCase):
@@ -41,7 +41,7 @@ class TestBuildVocabFromDataset(unittest.TestCase):
     if not os.path.exists("../data/datasets/sample/"):
         os.makedirs("../data/datasets/sample/")
     json.dump(data, open("../data/datasets/sample/sample_for_build_vocab.json", "w"))
-    word_to_idx_0 = {'<OOV>': 0,
+    word_to_id_0 = {'<OOV>': 0,
                     'Bay': 1,
                     '標': 2,
                     '後': 3,
@@ -75,33 +75,28 @@ class TestBuildVocabFromDataset(unittest.TestCase):
     def test_without_frequency_filter(self):
         # case I: no infrequent word filter , check exact value
         self.args.model_config['vocab_freq_cutoff'] = 0
-        tokenizer = InternalTokenizer(word_to_idx=None, required_token_types=['CHAR', 'LETTERS'])
-        build_vocab_from_dataset(dataset='train', tokenizer=tokenizer,args=self.args)
-        self.assertEqual(set(tokenizer.word_to_idx.keys()), set(self.word_to_idx_0.keys()))
-        os.system("rm ./word_to_idx.json")
+        tokenizer = MultiLingualTokenizer(word_to_id=None, required_token_types=['CHAR', 'LETTERS'])
+        build_vocab_from_dataset(datasets=['train'], tokenizer=tokenizer,args=self.args)
+        self.assertEqual(set(tokenizer.word_to_id.keys()), set(self.word_to_id_0.keys()))
+        os.system("rm ./word_to_id.json")
 
     def test_single_frequency_filter(self):
         # case II: 90% infrequent word filter , check remaining words
         self.args.model_config['vocab_freq_cutoff'] = 0.9 
-        tokenizer = InternalTokenizer(word_to_idx=None, required_token_types=['CHAR', 'LETTERS'])
-        build_vocab_from_dataset(dataset='train', tokenizer=tokenizer,args=self.args)
-        self.assertEqual(len(tokenizer.word_to_idx), 4)
-        for w in tokenizer.word_to_idx:
+        tokenizer = MultiLingualTokenizer(word_to_id=None, required_token_types=['CHAR', 'LETTERS'])
+        build_vocab_from_dataset(datasets=['train'], tokenizer=tokenizer,args=self.args)
+        self.assertEqual(len(tokenizer.word_to_id), 4)
+        for w in tokenizer.word_to_id:
             self.assertIn(w, ['<OOV>', '地', '亞', '卡', '一'])
-        os.system("rm ./word_to_idx.json")
+        os.system("rm ./word_to_id.json")
         
     def test_increasing_frequency_filter(self):
         # case III: increasing % infrequent word filter , check vocab size
-        tokenizer = InternalTokenizer(word_to_idx=None, required_token_types=['CHAR', 'LETTERS'])
+        tokenizer = MultiLingualTokenizer(word_to_id=None, required_token_types=['CHAR', 'LETTERS'])
         for i in range(1, 10):
             self.args.model_config['vocab_freq_cutoff'] = i / 10
-            build_vocab_from_dataset(dataset='train', tokenizer=tokenizer,args=self.args)
-            acutal_vocab_size = len(tokenizer.word_to_idx)
-            expected_vocab_size = len(self.word_to_idx_0) - int((len(self.word_to_idx_0) - 1) * (i / 10))
+            build_vocab_from_dataset(datasets=['train'], tokenizer=tokenizer,args=self.args)
+            acutal_vocab_size = len(tokenizer.word_to_id)
+            expected_vocab_size = len(self.word_to_id_0) - int((len(self.word_to_id_0) - 1) * (i / 10))
             self.assertEqual(acutal_vocab_size, expected_vocab_size)
-        os.system("rm ./word_to_idx.json")
-
-
-
-
-
+        os.system("rm ./word_to_id.json")

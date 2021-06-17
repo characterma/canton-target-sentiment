@@ -28,7 +28,6 @@ class TDBERT(BertPreTrainedModel):
         "target_mask",
         "label",
     ]
-    MODEL_TYPE = "bert"
     def __init__(self, args):
         pretrained_config = load_pretrained_config(
             args.model_config['pretrained_lm']
@@ -92,7 +91,6 @@ class TDBERT(BertPreTrainedModel):
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             return_dict=True,
-            output_attentions=return_attn,
         )
 
         h = lm["last_hidden_state"]
@@ -110,4 +108,4 @@ class TDBERT(BertPreTrainedModel):
             loss = loss.mean()
         else:
             loss = None
-        return [prediction, loss, logits]
+        return [loss, prediction, logits]

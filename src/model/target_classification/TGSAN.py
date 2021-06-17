@@ -4,7 +4,7 @@ import numpy as np
 import torch.nn as nn
 
 import transformers
-from model.utils import WordEmbeddings
+from model.layer.embedding import WordEmbeddings
 
 
 class StructuredSelfAttention(nn.Module):
@@ -183,7 +183,6 @@ class AddAndNorm(nn.Module):
 
 class TGSAN(nn.Module):
     INPUT = ["raw_text", "attention_mask", "target_mask", "label"]
-    MODEL_TYPE = "non_bert"
     def __init__(self, args):
         super(TGSAN, self).__init__()
         self.model_config = args.model_config
@@ -195,7 +194,7 @@ class TGSAN(nn.Module):
             embedding_trainable=args.model_config['embedding_trainable'], 
             emb_dim=args.model_config['emb_dim'], 
             vocab_size=args.vocab_size, 
-            emb_dropout=args.model_config['emb_dropout'])
+            emb_dropout=args.model_config['emb_dropout']
         )
         emb_dim = self.embed.emb_dim 
         # Bi-LSTM encoder
@@ -341,4 +340,4 @@ class TGSAN(nn.Module):
                 loss = loss_fct(logits.view(-1, self.num_labels), label.view(-1)) + penal_term
         else:
             loss = None
-        return [prediction, loss, logits]
+        return [loss, prediction, logits]

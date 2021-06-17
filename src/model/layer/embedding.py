@@ -1,6 +1,11 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import logging
+from tqdm import tqdm 
+
+
+logger = logging.getLogger(__name__)
 
 
 def _load_pretrained_emb(emb_path):

@@ -168,7 +168,7 @@ class TargetClassificationDataset(Dataset):
 
     def load_from_path(self):
         data_path = (
-            args.data_dir / self.filename
+            self.args.data_dir / self.filename
         )
         logger.info("***** Loading data *****")
         logger.info("  Data path = %s", str(data_path))

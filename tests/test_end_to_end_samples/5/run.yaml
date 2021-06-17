@@ -17,8 +17,9 @@ eval:
   batch_size: 64
   model_file: "model.pt" # under output_dir / "model" 
 train:
+  task: "target_classification"
   model_class: "TDBERT"
-  seed: 62
+  seed: 883
   batch_size: 16
   final_model: "last" # or "last"
 model_params:

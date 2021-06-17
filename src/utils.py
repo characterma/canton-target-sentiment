@@ -43,49 +43,6 @@ def set_log_path(log_dir):
     )
 
 
-def get_label_to_id(args):
-    task = args.run_config['train']['task']
-    label_to_id_path = args.model_dir / "label_to_id.json"
-    if os.path.exists(label_to_id_path):
-        label_to_id = json.load(open(label_to_id_path, 'r'))
-        return label_to_id
-    if task=='target_sentiment':
-        labels = args.run_config['data']['labels']
-        if labels=="2_ways":
-            label_to_id = {"neutral": 0, "non_neutral": 1}
-        elif labels=="3_ways":
-            label_to_id = {"neutral": 0, "negative": 1, "positive": 2}
-        else:
-            raise ValueError("Label type not supported.")
-
-    elif task=='chinese_word_segmentation':
-        # TODO: use get_token_level_tags to extract tags in train data; save label_to_id
-        label_to_id = {'X': 0}
-        tags = []
-        # Scan all data and get tags
-        files = []
-        for dataset in ['train', 'dev', 'test']:
-            files.append(args.data_config[dataset])
-        files = list(set(files))
-        
-        for filename in files:
-            data_path = args.data_dir / filename
-            raw_data = json.load(open(data_path, 'r'))
-            for x in raw_data:
-                tags.extend(list(set(x['postags'])))
-
-        tags = list(set(tags))
-        for t in tags:
-            for suffix in ['B', 'I']:
-                tag = f"{suffix}-{t}"
-                label_to_id[tag] = len(label_to_id)
-
-    label_to_id_inv = dict(zip(label_to_id.values(), label_to_id.keys()))
-    print(label_to_id)
-    return label_to_id, label_to_id_inv
-
-
-
 def load_config(args):
     config_dir = Path(args.config_dir)
     run_config = load_yaml(config_dir / "run.yaml")
@@ -112,7 +69,6 @@ def load_config(args):
     if not os.path.exists(args.result_dir):
         os.makedirs(args.result_dir)
     args.pretrained_emb_path = args.model_config.get("pretrained_emb_path", None)
-    args.label_to_id, args.label_to_id_inv = get_label_to_id(args)
     return args
 
 

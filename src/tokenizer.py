@@ -78,7 +78,7 @@ def build_vocab_from_dataset(datasets, tokenizer, args):
         for idx, data_dict in tqdm(enumerate(raw_data)):
             preprocessor = TextPreprocessor(
                 text=data_dict['content'], 
-                # target_locs=data_dict['target_locs'], 
+                target_locs=data_dict.get('target_locs', []), 
                 steps=args.prepro_config['steps']
             )
             preprocessed_text = preprocessor.preprocessed_text

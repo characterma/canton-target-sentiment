@@ -38,6 +38,7 @@ def get_token_level_tags(tokens_encoded, sent_indexs, postags, scheme='BI'):
             output.append('O')
     return output
 
+
 def get_word_level_tags(tokens, token_tags):
     words = []
     tags = []

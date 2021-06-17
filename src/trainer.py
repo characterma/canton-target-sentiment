@@ -34,7 +34,10 @@ def prediction_step(model, batch, args):
         # [B, L]
         results["prediction"] = []
         for x1 in x[1]:
-            results["prediction"].append(list(map(lambda x: args.label_to_id_inv[x], x1)))
+            if isinstance(x1, list):
+                results["prediction"].append(list(map(lambda x: args.label_to_id_inv[x], x1)))
+            else:
+                results["prediction"].append(args.label_to_id_inv[x1])
 
     results["logits"] = x[2].cpu().tolist()
     if x[0] is not None:
@@ -76,7 +79,11 @@ def evaluate(model, eval_dataset, args):
     # use attention mask to filter PAD
     labels = []
     for l1, p1 in zip(label_ids, predictions):
-        labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[:len(p1)])
+
+        if isinstance(l1, list):
+            labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[:len(p1)])
+        else:
+            labels.append(args.label_to_id_inv[l1])
 
     metrics = compute_metrics(task=args.run_config['train']['task'], labels=labels, predictions=predictions) 
     metrics['loss'] = np.mean(losses)
@@ -206,10 +213,10 @@ class Trainer(object):
         for col in batch:
             inputs[col] = batch[col].to(self.device).long()
         outputs = self.model(**inputs)
-        losses = outputs[0]
+        loss = outputs[0]
         logits = outputs[1]
-        losses.mean().backward()
-        return losses.detach()
+        loss.backward()
+        return loss.detach()
 
     def train(self):
 

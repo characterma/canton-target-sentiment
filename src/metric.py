@@ -6,7 +6,7 @@ from seqeval.metrics import classification_report as seqeval_classification_repo
 
 
 def compute_metrics(task, labels, predictions):
-    if task=="target_sentiment":
+    if task=="target_classification":
         report = compute_metrics_sequence_classification(labels, predictions)
     elif task=="chinese_word_segmentation":
         report = compute_metrics_sequence_tagging(labels, predictions)

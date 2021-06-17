@@ -11,6 +11,7 @@ from utils import set_seed, set_log_path, load_config, save_config, load_yaml, l
 from dataset import get_dataset
 from tokenizer import get_tokenizer
 from model import get_model
+from label import get_label_to_id
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,11 @@ logger = logging.getLogger(__name__)
 
 def run(args):
     tokenizer = get_tokenizer(args=args)
+
+    label_to_id, label_to_id_inv = get_label_to_id(tokenizer, args)
+    args.label_to_id =  label_to_id
+    args.label_to_id_inv = label_to_id_inv
+
     model = get_model(args=args)
     datasets = []
     if not args.test_only:

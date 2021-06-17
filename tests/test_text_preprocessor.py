@@ -33,6 +33,15 @@ class TestTextPreprocessor(unittest.TestCase):
         self.assertTrue(preprocessed_text == lower_cased)
         self.assertTrue(preprocessed_target_locs == target_locs)
 
+    def test_full_to_half(self):
+        full = "！？；，"
+        half = "!?;,"
+        pp = TextPreprocessor(
+            text=full, steps=["full_to_half"]
+        )
+        preprocessed_text = pp.preprocessed_text
+        self.assertEqual(preprocessed_text, half)
+
     def test_convert_java_index(self):
         text = "#好物推薦🔥 #每日穿搭  卡地亞鑰匙系列 單表機械機芯 95❤ 滿鑽 超值💰帶走#好物推薦🔥 #每日穿搭  卡地亞鑰匙系列 單表機械機芯 95❤ 滿鑽 超值💰帶走"
         java_index = [[15, 18], [25, 27], [27, 29], [58, 61], [68, 70], [70, 72]]
