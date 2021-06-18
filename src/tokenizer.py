@@ -143,6 +143,7 @@ class TokensEncoded:
         self.input_ids = input_ids
         self.attention_mask = attention_mask
         self.token_type_ids = token_type_ids
+        self.length = [len(self.tokens)]
 
     def char_to_token(self, char_idx):
         return self._char_to_token_dict.get(char_idx, None)
@@ -190,7 +191,7 @@ class MultiLingualTokenizer:
         for k, v in word_to_id.items():
             self.idx_to_word[v] = k
 
-    def __call__(self, raw_text, max_length=None, truncation=True, add_special_tokens=True, return_offsets_mapping=False):
+    def __call__(self, raw_text, max_length=None, truncation=True, add_special_tokens=True, return_offsets_mapping=False, return_length=False):
         token_regex = '|'.join('(?P<%s>%s)' % pair for pair in self.token_spec)
         WORD_RE = re.compile(token_regex, re.VERBOSE|re.IGNORECASE)
         tokens = []

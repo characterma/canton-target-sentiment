@@ -19,8 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 def get_token_level_tags(tokens_encoded, sent_indexs, postags, scheme='BI'):
-    # TODO: sent_indexs -> ent_indexs, postags -> ent_tags
-    
     token_tags = dict()
     for tag, (start_idx, end_idx) in zip(postags, sent_indexs):
         for char_idx in range(start_idx, end_idx):
@@ -31,7 +29,7 @@ def get_token_level_tags(tokens_encoded, sent_indexs, postags, scheme='BI'):
                 token_tags[token_idx] = 'I-' + tag          
 
     output = []
-    for token_idx in range(len(tokens_encoded)):
+    for token_idx in range(tokens_encoded.length[0]):
         if token_idx in token_tags:
             output.append(token_tags[token_idx])
         else:
@@ -69,7 +67,8 @@ class ChineseWordSegmentationFeature:
         tokenizer, 
         prepro_config, 
         max_length, 
-        label_to_id
+        label_to_id, 
+        diagnosis=False
     ):
         self.succeeded = True
         self.msg = ""
@@ -83,7 +82,7 @@ class ChineseWordSegmentationFeature:
         sent_indexs = data_dict.get('sent_indexs', None)
 
 
-        self.feature_dict = self.get_features(
+        self.feature_dict, self.diagnosis_dict = self.get_features(
             text=content,
             tokenizer=tokenizer,
             max_length=max_length,
@@ -91,34 +90,44 @@ class ChineseWordSegmentationFeature:
             postags=postags,
             sent_indexs=sent_indexs,
             label_to_id=label_to_id,
+            diagnosis=True
         )
 
     @staticmethod
     def get_features(
-        text,
-        words,
-        postags,
-        sent_indexs,
-        tokenizer,
-        max_length,
-        label_to_id
+            text,
+            words,
+            postags,
+            sent_indexs,
+            tokenizer,
+            max_length,
+            label_to_id,
+            diagnosis=False
         ):
         feature_dict = dict()
-        tokens_encoded = tokenizer(text, max_length=max_length, add_special_tokens=False, return_offsets_mapping=False)
-        text = tokens_encoded.input_ids
-        text = pad_array(text, max_length=max_length, value=0)
-        feature_dict['text'] = torch.tensor(text).long()
+        diagnosis_dict = dict()
+        tokens_encoded = tokenizer(text, max_length=max_length, add_special_tokens=False, return_offsets_mapping=False, return_length=True)
+        text_id = tokens_encoded.input_ids
+        text_id = pad_array(text_id, max_length=max_length, value=0)
+        feature_dict['text'] = torch.tensor(text_id).long()
         attention_mask = tokens_encoded.attention_mask
         attention_mask = pad_array(attention_mask, max_length=max_length, value=0)
         feature_dict['attention_mask'] = torch.tensor(attention_mask).long()
         if sent_indexs is not None:
             # tokens_encoded: characters
-
             label = get_token_level_tags(tokens_encoded, sent_indexs, postags)
-            label = [label_to_id[l] for l in label]
-            label = pad_array(label, max_length=max_length, value=0)
-            feature_dict['label'] = torch.tensor(label).long()
-        return feature_dict
+            label_id = [label_to_id[l] for l in label]
+            label_id_padded = pad_array(label_id, max_length=max_length, value=0)
+            feature_dict['label'] = torch.tensor(label_id_padded).long()
+
+        if diagnosis:
+            diagnosis_dict['text'] = text 
+            diagnosis_dict['text_id'] = text_id 
+            diagnosis_dict['tokens'] = tokenizer.convert_ids_to_tokens(text_id)
+            diagnosis_dict['label'] = label 
+            diagnosis_dict['label_id'] = label_id 
+
+        return feature_dict, diagnosis_dict
 
 
 class ChineseWordSegmentationDataset(Dataset):
@@ -129,7 +138,9 @@ class ChineseWordSegmentationDataset(Dataset):
         self.tokenizer = tokenizer
         self.raw_data = [] 
         self.features = []
+        self.diagnosis = []
         self.load_data()
+        self.diagnosis_df = pd.DataFrame(data=self.diagnosis)
 
     def __getitem__(self, index):
         return self.features[index]
@@ -155,10 +166,12 @@ class ChineseWordSegmentationDataset(Dataset):
                 label_to_id=self.args.label_to_id,
             )
 
-            if x.feature_dict is not None:
-                self.features.append(x.feature_dict)
+            self.features.append(x.feature_dict)
+            self.diagnosis.append(x.diagnosis_dict)
 
         logger.info("  Number of loaded samples = %d", len(self.features))
 
+    def insert_predictions(self, predictions):
+        self.diagnosis_df['prediction'] = predictions
 
     

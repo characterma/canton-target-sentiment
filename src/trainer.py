@@ -29,15 +29,16 @@ def prediction_step(model, batch, args):
             **inputs,
         )
 
-    if isinstance(x[1], list):
+    # if isinstance(x[1], list):
         # [B, 1]
         # [B, L]
-        results["prediction"] = []
-        for x1 in x[1]:
-            if isinstance(x1, list):
-                results["prediction"].append(list(map(lambda x: args.label_to_id_inv[x], x1)))
-            else:
-                results["prediction"].append(args.label_to_id_inv[x1])
+    results["prediction"] = []
+    for x1 in x[1]:
+        if isinstance(x1, list):
+            results["prediction"].append(list(map(lambda x: args.label_to_id_inv[x], x1)))
+        else:
+            results["prediction"].append(args.label_to_id_inv[x1])
+    # check
 
     results["logits"] = x[2].cpu().tolist()
     if x[0] is not None:
@@ -90,6 +91,8 @@ def evaluate(model, eval_dataset, args):
     metrics['dataset'] = eval_dataset.dataset
     for m in metrics:
         logger.info("  %s = %s", m, str(metrics[m]))
+
+    eval_dataset.insert_predictions(predictions)
     return metrics
 
 
@@ -113,6 +116,9 @@ class Trainer(object):
 
         self.best_score = None
         self.best_model_state = None
+        self.non_increase_cnt = 0
+        self.early_stop = self.train_config.get('early_stop', None)
+        self.final_model = self.train_config.get('final_model', "last")
         
     def _get_train_sampler(self):
 
@@ -207,28 +213,18 @@ class Trainer(object):
         )
         return optimizer, scheduler
 
-    def training_step(self, batch):
-        self.model.train()
-        inputs = dict()
-        for col in batch:
-            inputs[col] = batch[col].to(self.device).long()
-        outputs = self.model(**inputs)
-        loss = outputs[0]
-        logits = outputs[1]
-        loss.backward()
+    def training_step(self, batch, step):
+
         return loss.detach()
 
     def train(self):
-
         dataloader = DataLoader(
             self.train_dataset,
             sampler=self._get_train_sampler(), 
             batch_size=self.model_config["batch_size"],
             # collate_fn=self.train_dataset.pad_collate,
         )
-
         optimizer, scheduler = self.create_optimizer_and_scheduler(dataloader)
-
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(self.train_dataset))
         logger.info("  Num Epochs = %d", self.model_config["num_train_epochs"])
@@ -238,35 +234,38 @@ class Trainer(object):
             "  Gradient Accumulation steps = %d",
             self.model_config["gradient_accumulation_steps"],
         )
-        tr_loss = 0.0
-        self.model.zero_grad()
-
+        
         train_iterator = trange(
             int(self.model_config["num_train_epochs"]),
             desc=f"Epoch",
         )
-
         for epoch, _ in enumerate(train_iterator):
+            self.model.zero_grad()
+            self.model.train()
             epoch_iterator = tqdm(dataloader, desc="Iteration")
             last_step = len(epoch_iterator)
             for step, batch in enumerate(epoch_iterator):
-
-                losses = self.training_step(batch)
-                losses = losses.cpu().numpy()
-
-                epoch_iterator.set_postfix({"tr_loss": np.mean(losses)})
-
+                inputs = dict()
+                for col in batch:
+                    inputs[col] = batch[col].to(self.device).long()
+                outputs = self.model(**inputs)
+                loss = outputs[0]
+                logits = outputs[1]
+                loss.backward()
+                loss = loss.tolist()
                 if (step + 1) % self.model_config["gradient_accumulation_steps"] == 0:
                     torch.nn.utils.clip_grad_norm_(
                         self.model.parameters(),
                         self.model_config["max_grad_norm"],
                     )
-
                     optimizer.step()
-                    scheduler.step()  # Update learning rate schedule
+                    scheduler.step() 
                     self.model.zero_grad()
+                epoch_iterator.set_postfix({"tr_loss": np.mean(loss)})
 
             self.on_epoch_end(epoch)
+            if self.early_stop is not None and self.non_increase_cnt >= self.early_stop:
+                break
         self.on_training_end()
 
     def on_epoch_end(self, epoch):
@@ -276,21 +275,21 @@ class Trainer(object):
             eval_dataset=self.dev_dataset,
             args=self.args,
         )
-        # all tasks use F1 
-        if self.best_score is None or self.best_score < metrics["macro_f1"]:
-            self.best_score = metrics["macro_f1"]
-            self.best_model_state = copy.deepcopy(self.model.state_dict())
+        if self.final_model=="best":
+            opt_metric = self.train_config.get('optimization_metric', "macro_f1")
+            if self.best_score is None or self.best_score < metrics[opt_metric]:
+                self.best_score = metrics[opt_metric]
+                self.best_model_state = copy.deepcopy(self.model.state_dict())
+            else:
+                self.non_increase_cnt += 1
 
     def on_training_end(self):
         logger.info("***** Training end *****")
         out_path = (
             self.model_dir / f"model.pt"
         )
-        if self.train_config.get("final_model", "best")=="best":
+        if self.final_model=="best" and self.best_model_state is not None:
             self.model.load_state_dict(self.best_model_state)
-
-
-
         logger.info("  Model path = %s", str(out_path))
         torch.save(self.model, out_path)
 

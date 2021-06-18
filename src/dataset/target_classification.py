@@ -163,10 +163,10 @@ class TargetClassificationDataset(Dataset):
         model_class = args.train_config['model_class']
         Model = getattr(importlib.import_module(f"model.{task}"), model_class)
         self.required_features = Model.INPUT
-        self.load_from_path()
+        self.load_data()
         self.diagnosis_df = pd.DataFrame(data=self.diagnosis)
 
-    def load_from_path(self):
+    def load_data(self):
         data_path = (
             self.args.data_dir / self.filename
         )
@@ -201,6 +201,9 @@ class TargetClassificationDataset(Dataset):
             statistics[f"raw_{s}"] = df.shape[0]
             statistics[f"fea_{s}"] = df[df['fea_success']].shape[0]
         return statistics
+
+    def insert_predictions(self, predictions):
+        pass
 
     def __getitem__(self, index):
         return self.features[index]
