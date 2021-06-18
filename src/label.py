@@ -16,6 +16,8 @@ def get_label_to_id(tokenizer, args):
             tokenizer=tokenizer, 
             args=args
         )
+        json.dump(label_to_id, open(label_to_id_path, 'w'))
+
     label_to_id_inv = dict(zip(label_to_id.values(), label_to_id.keys()))
     return label_to_id, label_to_id_inv
 

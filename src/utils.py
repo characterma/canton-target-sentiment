@@ -31,7 +31,11 @@ def set_seed(seed):
 
 
 def load_yaml(file_path):
-    data = yaml.load(open(file_path, "r"), Loader=yaml.FullLoader)
+    with open(file_path, "r") as f:
+        try:
+            data = yaml.load(f, Loader=yaml.FullLoader)
+        except yaml.YAMLError as e:
+            print(e)
     return data
 
 

@@ -54,7 +54,8 @@ def build_vocab_from_pretrained(tokenizer, args):
         for line in tqdm(f):
             words.append(line.split(' ')[0])
     word_to_id = {}
-    word_to_id['<OOV>'] = 0
+    word_to_id['<PAD>'] = 0
+    word_to_id['<OOV>'] = 1
     word_to_id.update(dict(zip(words, range(1, len(words) + 1))))
     logger.info("  Vocab size = %d", len(word_to_id))
     json.dump(word_to_id, open(args.model_dir / 'word_to_id.json', 'w'))
@@ -91,12 +92,12 @@ def build_vocab_from_dataset(datasets, tokenizer, args):
     infreq_words = words[:int(vocab_freq_cutoff * len(words))]
     logger.info("  Number of infrequency words = %d", len(infreq_words))
 
-    word_to_id['<OOV>'] = 0
-    cur_idx = 1
+    word_to_id['<PAD>'] = 0
+    word_to_id['<OOV>'] = 1
+
     for w in words:
         if w not in infreq_words:
-            word_to_id[w] = cur_idx
-            cur_idx += 1
+            word_to_id[w] = len(word_to_id)
 
     logger.info("  Infrequenct words = %d", len(infreq_words))
     logger.info("  Vocab size = %d", len(word_to_id))
@@ -128,7 +129,6 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None):
             if args.model_config.get("pretrained_emb", None) is not None:
                 build_vocab_from_pretrained(tokenizer=tokenizer, args=args)
             else:
-                # TODO: input datasets
                 build_vocab_from_dataset(datasets=["train"], tokenizer=tokenizer, args=args)
         return tokenizer
     else:
@@ -210,7 +210,7 @@ class MultiLingualTokenizer:
                 if token_type in self.required_token_types:
                     tokens.append(token)
                     if self.word_to_id is not None:
-                        input_ids.append(self.word_to_id.get(token, 0))
+                        input_ids.append(self.word_to_id.get(token, 1))
                     attention_mask.append(1)
                     token_type_ids.append(0)
                     for char_idx in range(start, end):
