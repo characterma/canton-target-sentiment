@@ -1,3 +1,4 @@
+task: "target_classification"
 device: 0
 data:
   output_dir: "../config/examples/TDBERT"
@@ -14,7 +15,6 @@ text_prepro:
     # - extract_post_context_1
     # - extract_post_context_2
 train:
-  task: "target_classification"
   model_class: "TDBERT"
   seed: 42
   batch_size: 16

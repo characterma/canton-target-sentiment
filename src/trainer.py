@@ -86,7 +86,7 @@ def evaluate(model, eval_dataset, args):
         else:
             labels.append(args.label_to_id_inv[l1])
 
-    metrics = compute_metrics(task=args.run_config['train']['task'], labels=labels, predictions=predictions) 
+    metrics = compute_metrics(task=args.task, labels=labels, predictions=predictions) 
     metrics['loss'] = np.mean(losses)
     metrics['dataset'] = eval_dataset.dataset
     for m in metrics:

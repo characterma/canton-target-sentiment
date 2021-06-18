@@ -159,9 +159,8 @@ class TargetClassificationDataset(Dataset):
         self.features = []
         self.diagnosis = []
         self.tokenizer = tokenizer
-        task = args.train_config['task']
         model_class = args.train_config['model_class']
-        Model = getattr(importlib.import_module(f"model.{task}"), model_class)
+        Model = getattr(importlib.import_module(f"model.{args.task}"), model_class)
         self.required_features = Model.INPUT
         self.load_data()
         self.diagnosis_df = pd.DataFrame(data=self.diagnosis)

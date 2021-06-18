@@ -5,7 +5,6 @@ from dataset.chinese_word_segmentation import get_token_level_tags
 
 
 def get_label_to_id(tokenizer, args):
-    task = args.run_config['train']['task']
     label_to_id_path = args.model_dir / "label_to_id.json"
 
     if os.path.exists(label_to_id_path):
@@ -23,8 +22,8 @@ def get_label_to_id(tokenizer, args):
 
 
 def load_label_to_id_from_datasets(datasets, tokenizer, args):
-    task = args.run_config['train']['task']
-    if task=='target_classification':
+
+    if args.task=='target_classification':
         labels = args.run_config['data']['labels']
         if labels=="2_ways":
             label_to_id = {"neutral": 0, "non_neutral": 1}
@@ -33,7 +32,7 @@ def load_label_to_id_from_datasets(datasets, tokenizer, args):
         else:
             raise ValueError("Label type not supported.")
 
-    elif task=='chinese_word_segmentation':
+    elif args.task=='chinese_word_segmentation':
         label_to_id = {'X': 0}
         tags = []
 

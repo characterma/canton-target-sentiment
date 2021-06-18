@@ -9,5 +9,4 @@ TASK_TO_DATASET = {
 
 
 def get_dataset(dataset, tokenizer, args):
-    task = args.run_config['train']['task']
-    return TASK_TO_DATASET[task](dataset=dataset, tokenizer=tokenizer, args=args)
+    return TASK_TO_DATASET[args.task](dataset=dataset, tokenizer=tokenizer, args=args)

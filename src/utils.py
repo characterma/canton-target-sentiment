@@ -54,6 +54,7 @@ def load_config(args):
     args.data_config = run_config['data']
     args.eval_config = run_config['eval']
     args.device = run_config['device']
+    args.task = run_config['task']
     args.train_config = run_config['train']
     args.prepro_config = run_config['text_prepro']
     model_config = load_yaml(config_dir / "model.yaml")
