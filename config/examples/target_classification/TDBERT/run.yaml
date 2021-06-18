@@ -1,6 +1,6 @@
 device: 0
 data:
-  output_dir: "../tests/test_end_to_end_samples/7/"
+  output_dir: "../config/examples/TDBERT"
   data_dir: "../data/datasets/sample/target_classification"
   train: sample.json 
   dev: sample.json 
@@ -13,19 +13,21 @@ text_prepro:
     - convert_java_index
     # - extract_post_context_1
     # - extract_post_context_2
-eval:
-  batch_size: 64
-  model_file: "model.pt" # under output_dir / "model" 
 train:
   task: "target_classification"
   model_class: "TDBERT"
-  seed: 72
+  seed: 42
   batch_size: 16
-  final_model: "last" # or "last"
-model_params:
+  final_model: "best" # or "last"
+  optimization_metric: "macro_f1"
+  early_stop: null
+eval:
+  batch_size: 64
+  model_file: "model.pt" # under output_dir / "model" 
   # ================= TDBERT =================
-  num_train_epochs: 1
-  embedding_trainable: True
+model_params:
+  num_train_epochs: 10
+  embedding_trainable: False
   # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
   # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
   # ================= TGSAN =================

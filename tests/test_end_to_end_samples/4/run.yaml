@@ -1,7 +1,7 @@
 device: 0
 data:
   output_dir: "../tests/test_end_to_end_samples/4/"
-  data_dir: "../data/datasets/sample/"
+  data_dir: "../data/datasets/sample/target_classification"
   train: sample.json 
   dev: sample.json 
   test: sample.json 

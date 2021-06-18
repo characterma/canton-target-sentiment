@@ -1,10 +1,10 @@
 device: 0
 data:
   output_dir: "../config/examples/chinese_word_segmentation/CNN_CRF"
-  data_dir: "../data/datasets/canton_ws"
-  train: data_combined.json 
-  dev: data_combined.json 
-  test: data_combined.json 
+  data_dir: "../data/datasets/sample/chinese_word_segmentation"
+  train: sample.json 
+  dev: sample.json 
+  test: sample.json 
 text_prepro:
   steps:
     - full_to_half
@@ -17,9 +17,11 @@ train:
   seed: 42
   batch_size: 16
   final_model: "best" # or "last"
+  optimization_metric: "micro_f1"
+  early_stop: null
 model_params:
   # ================= TDBERT =================
-  num_train_epochs: 50
+  num_train_epochs: 10
   embedding_trainable: True
   # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
   # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
