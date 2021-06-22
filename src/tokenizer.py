@@ -87,6 +87,7 @@ def build_vocab_from_dataset(datasets, tokenizer, args):
     word_counter = Counter(all_words)
     vocab_freq_cutoff = args.model_config['vocab_freq_cutoff']
     words = list(set(all_words))
+    words = sorted(words)
     random.shuffle(words)
     words = sorted(words, key=lambda w: word_counter[w])
     infreq_words = words[:int(vocab_freq_cutoff * len(words))]

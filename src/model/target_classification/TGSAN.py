@@ -182,7 +182,7 @@ class AddAndNorm(nn.Module):
 
 
 class TGSAN(nn.Module):
-    INPUT = ["raw_text", "attention_mask", "target_mask", "label"]
+    INPUT = ["input_ids", "attention_mask", "target_mask", "label"]
     def __init__(self, args):
         super(TGSAN, self).__init__()
         self.model_config = args.model_config
@@ -279,8 +279,8 @@ class TGSAN(nn.Module):
             elif "weight" in name:
                 nn.init.xavier_uniform_(param, gain=1.0)
 
-    def forward(self, raw_text, attention_mask, target_mask, label=None, soft_label=None, **kwargs):
-        x = self.embed(raw_text).to(torch.float32)  # [B, L, E]
+    def forward(self, input_ids, attention_mask, target_mask, label=None, soft_label=None, **kwargs):
+        x = self.embed(input_ids).to(torch.float32)  # [B, L, E]
         len_max = x.size(1)  # embedding dimension
         lens = attention_mask.sum(
             -1

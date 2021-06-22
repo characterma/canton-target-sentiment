@@ -1,5 +1,14 @@
 import torch
 import numpy as np
+import importlib
+from inspect import signature
+
+
+def get_model_inputs(args):
+    model_class = args.train_config['model_class']
+    Model = getattr(importlib.import_module(f"model.{args.task}"), model_class)
+    sig = signature(Model.forward)
+    return list(sig.parameters.keys())
 
 
 def pad_array(array, max_length, value=0):
@@ -11,13 +20,11 @@ def pad_array(array, max_length, value=0):
         raise Exception("Array length should not exceed max_length.")
 
 
-def pad_tensor(vec, pad, dim):
-    # vec: np.array, pad: int
-    pad_size = list(vec.shape)
-    pad_size[dim] = pad - vec.size(dim)
-    return torch.cat([vec, torch.zeros(*pad_size).long()], dim=dim)
-
-
+def pad_tensor(tensor, pad, dim):
+    # tensor: tensor or np.array, pad: int
+    pad_size = list(tensor.shape)
+    pad_size[dim] = pad - tensor.size(dim)
+    return torch.cat([tensor, torch.zeros(*pad_size).long()], dim=dim)
 
 
 class PadCollate:

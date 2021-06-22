@@ -7,17 +7,15 @@ from transformers import BertPreTrainedModel
 
 from model.layer.crf import LinearChainCRF
 from model.layer.cnn import ConvLayer
-from model.layer.fc import FCLayer
 from model.utils import load_pretrained_bert, load_pretrained_config
 
 
 class BERT_CRF(BertPreTrainedModel):
 
     def __init__(self, args):
-        pretrained_config = load_pretrained_config(
+        super(BERT_CRF, self).__init__(load_pretrained_config(
             args.model_config['pretrained_lm']
-        )
-        super(BERT_CRF, self).__init__(pretrained_config)
+        ))
 
         self.model_config = args.model_config
         self.pretrained_model = load_pretrained_bert(
@@ -25,7 +23,9 @@ class BERT_CRF(BertPreTrainedModel):
         )
         if not args.model_config["embedding_trainable"]:
             self.freeze_emb()
-        self.pretrained_config = pretrained_config
+        self.pretrained_config = load_pretrained_config(
+            args.model_config['pretrained_lm']
+        )
         self.num_labels = len(args.label_to_id)
 
         self.bert_dropout = nn.Dropout(self.model_config['bert_dropout'])
@@ -39,9 +39,9 @@ class BERT_CRF(BertPreTrainedModel):
             if "embeddings" in param_name:
                 param.requires_grad = False
 
-    def forward(self, text, attention_mask, label=None):
+    def forward(self, input_ids, attention_mask, label=None):
         lm = self.pretrained_model(
-            input_ids=text,
+            input_ids=input_ids,
             attention_mask=attention_mask,
             return_dict=True,
         )

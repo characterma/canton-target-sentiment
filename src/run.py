@@ -25,7 +25,6 @@ def run(args):
     args.label_to_id_inv = label_to_id_inv
 
     model = get_model(args=args)
-    datasets = []
     if not args.test_only:
         train_dataset = get_dataset(dataset="train", tokenizer=tokenizer,args=args)
         dev_dataset = get_dataset(dataset="dev", tokenizer=tokenizer, args=args)
@@ -38,7 +37,7 @@ def run(args):
     test_dataset = get_dataset(dataset="test", tokenizer=tokenizer, args=args)
 
     if not args.test_only:
-        train_metrics = evaluate(model=model, eval_dataset=train_dataset, args=args,)
+        train_metrics = evaluate(model=model, eval_dataset=train_dataset, args=args)
         dev_metrics = evaluate(model=model, eval_dataset=dev_dataset, args=args)
     else:
         train_metrics = None

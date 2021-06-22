@@ -119,44 +119,6 @@ class Trainer(object):
         self.non_increase_cnt = 0
         self.early_stop = self.train_config.get('early_stop', None)
         self.final_model = self.train_config.get('final_model', "last")
-        
-    def _get_train_sampler(self):
-
-        # create sampler for training
-        if (
-            "sampler" not in self.model_config
-            or self.model_config["sampler"].lower() == "random"
-        ):
-            train_sampler = RandomSampler(self.train_dataset)
-        elif self.model_config["sampler"].lower() == "ros":
-            (
-                class_balanced_weights,
-                majority_size,
-                _,
-                num_cls,
-            ) = self.train_dataset.get_class_balanced_weights()
-            num_samples = int(majority_size * num_cls)
-            train_sampler = WeightedRandomSampler(
-                weights=class_balanced_weights,
-                num_samples=num_samples,
-                replacement=True,
-            )
-        elif self.model_config["sampler"].lower() == "rus":
-            (
-                class_balanced_weights,
-                majority_size,
-                minority_size,
-                num_cls,
-            ) = self.train_dataset.get_class_balanced_weights()
-            num_samples = int(minority_size * num_cls)
-            train_sampler = WeightedRandomSampler(
-                weights=class_balanced_weights,
-                num_samples=num_samples,
-                replacement=False,
-            )
-        else:
-            raise (Exception)
-        return train_sampler
 
     def create_optimizer_and_scheduler(self, dataloader):
         if self.model_config["max_steps"] > 0:
@@ -206,21 +168,20 @@ class Trainer(object):
         else:
             raise (Exception)
 
-        scheduler = get_linear_schedule_with_warmup(
-            optimizer,
-            num_warmup_steps=int(self.model_config["warmup_steps"]),
-            num_training_steps=t_total,
-        )
+        scheduler = self.model_config.get('scheduler', None)
+        if scheduler=='linear':
+            scheduler = get_linear_schedule_with_warmup(
+                optimizer,
+                num_warmup_steps=int(self.model_config["warmup_steps"]),
+                num_training_steps=t_total,
+            )
+
         return optimizer, scheduler
-
-    def training_step(self, batch, step):
-
-        return loss.detach()
 
     def train(self):
         dataloader = DataLoader(
             self.train_dataset,
-            sampler=self._get_train_sampler(), 
+            sampler=RandomSampler(self.train_dataset), 
             batch_size=self.model_config["batch_size"],
             # collate_fn=self.train_dataset.pad_collate,
         )
@@ -259,7 +220,8 @@ class Trainer(object):
                         self.model_config["max_grad_norm"],
                     )
                     optimizer.step()
-                    scheduler.step() 
+                    if scheduler is not None:
+                        scheduler.step() 
                     self.model.zero_grad()
                 epoch_iterator.set_postfix({"tr_loss": np.mean(loss)})
 

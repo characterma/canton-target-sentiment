@@ -22,7 +22,7 @@ class FCLayer(nn.Module):
 
 class TDBERT(BertPreTrainedModel):
     INPUT = [
-        "raw_text",
+        "input_ids",
         "attention_mask",
         "token_type_ids",
         "target_mask",
@@ -79,7 +79,7 @@ class TDBERT(BertPreTrainedModel):
 
     def forward(
         self,
-        raw_text,
+        input_ids,
         target_mask,
         attention_mask,
         token_type_ids,
@@ -87,7 +87,7 @@ class TDBERT(BertPreTrainedModel):
         **kwargs
     ):
         lm = self.pretrained_model(
-            input_ids=raw_text,
+            input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             return_dict=True,

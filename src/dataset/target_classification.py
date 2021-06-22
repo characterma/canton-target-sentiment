@@ -12,6 +12,7 @@ from pathlib import Path
 from preprocess import TextPreprocessor
 from collections import Counter
 from model import *
+from dataset.utils import pad_array, get_model_inputs
 
 
 logger = logging.getLogger(__name__)
@@ -37,19 +38,19 @@ class TargetClassificationFeature(object):
         self.succeeded = True
         self.msg = ""
         self.intermediate = dict()
-        raw_text = data_dict['content']
+        text = data_dict['content']
         target_locs = data_dict["target_locs"]
         sentiment = data_dict.get("sentiment", None)
         
         preprocessor = TextPreprocessor(
-            text=raw_text, 
+            text=text, 
             target_locs=target_locs, 
             steps=prepro_config['steps']
         )
         preprocessed_text = preprocessor.preprocessed_text
         preprocessed_target_locs = preprocessor.preprocessed_target_locs
         self.feature_dict, self.diagnosis_dict = self.get_features(
-            raw_text=preprocessed_text,
+            text=preprocessed_text,
             target_char_loc=preprocessed_target_locs,
             tokenizer=tokenizer,
             required_features=required_features,
@@ -60,35 +61,28 @@ class TargetClassificationFeature(object):
         )
 
     @staticmethod
-    def pad(arrays, max_length, value=0):
-        for i in range(len(arrays)):
-            d = max_length - len(arrays[i])
-            if d >= 0:
-                arrays[i] = np.concatenate((arrays[i], [value] * d), axis=None)
-            else:
-                raise Exception("Array length should not exceed max_length.")
-        return arrays
-
-    @staticmethod
     def get_features(
-        raw_text, target_char_loc, tokenizer, required_features, max_length, label=None, label_to_id=None, diagnosis=False
+        text, target_char_loc, tokenizer, required_features, max_length, label=None, label_to_id=None, diagnosis=False
     ):
         diagnosis_dict = dict()
         feature_dict = dict()
         tokens_encoded = tokenizer(
-            raw_text,
+            text,
             # max_length=max_length,
             # truncation=True,
             add_special_tokens=True,
             return_offsets_mapping=True
         )
 
-        raw_text_ids = np.array(tokens_encoded.input_ids)[:max_length]
+        input_ids = np.array(tokens_encoded.input_ids)[:max_length]
         attention_mask = np.array(tokens_encoded.attention_mask)[:max_length]
         token_type_ids = np.array(tokens_encoded.token_type_ids)[:max_length]
-        target_mask = np.array([0] * len(raw_text_ids))
-        raw_text_ids, attention_mask, token_type_ids, target_mask = TargetClassificationFeature.pad([raw_text_ids, attention_mask, token_type_ids, target_mask], max_length, 0)
-        tokens = tokenizer.convert_ids_to_tokens(raw_text_ids)
+        target_mask = np.array([0] * len(input_ids))
+        input_ids = pad_array(input_ids, max_length, 0)
+        attention_mask = pad_array(attention_mask, max_length, 0)
+        token_type_ids = pad_array(token_type_ids, max_length, 0)
+        target_mask = pad_array(target_mask, max_length, 0)
+        tokens = tokenizer.convert_ids_to_tokens(input_ids)
         target_token_loc = []
 
         for (start_idx, end_idx) in target_char_loc:
@@ -99,16 +93,16 @@ class TargetClassificationFeature(object):
                     target_mask[token_idx] = 1
 
         if diagnosis:
-            diagnosis_dict['fea_text'] = raw_text
-            diagnosis_dict['fea_text_ids'] = raw_text_ids
+            diagnosis_dict['fea_text'] = text
+            diagnosis_dict['fea_input_ids'] = input_ids
             diagnosis_dict['fea_target_char_loc'] = target_char_loc
             diagnosis_dict['fea_tokens'] = tokens
             diagnosis_dict['fea_target_token_loc'] = target_token_loc
-            diagnosis_dict['fea_target_char'] = [raw_text[si:ei] for (si, ei) in target_char_loc]
+            diagnosis_dict['fea_target_char'] = [text[si:ei] for (si, ei) in target_char_loc]
             diagnosis_dict['fea_target_token'] = []
-            diagnosis_dict['fea_success'] = True
+            diagnosis_dict['fea_success'] = True if sum(target_mask)>0 else False
             diagnosis_dict['fea_error_msg'] = []
-            for i, (st_char_idx, ed_char_idx) in zip():
+            for i in target_token_loc:
                 if i is None:
                     diagnosis_dict['fea_target_token'].append("NOT FOUND")
                     diagnosis_dict['fea_error_msg'].append("TARGET NOT FOUND")
@@ -120,15 +114,11 @@ class TargetClassificationFeature(object):
 
             diagnosis_dict['fea_error_msg'] = sorted(list(set(diagnosis_dict['fea_error_msg'])))
 
-            if sum(target_mask)==0:
-                diagnosis_dict['fea_success'] = False
-
-
         if sum(target_mask)==0:
             return None, diagnosis_dict
 
-        if "raw_text" in required_features:
-            feature_dict["raw_text"] = torch.tensor(raw_text_ids).long()
+        if "input_ids" in required_features:
+            feature_dict["input_ids"] = torch.tensor(input_ids).long()
 
         if "target_mask" in required_features:
             feature_dict["target_mask"] = torch.tensor(target_mask).long()
@@ -149,8 +139,6 @@ class TargetClassificationFeature(object):
 class TargetClassificationDataset(Dataset):
     def __init__(self, dataset, tokenizer, args):
         """
-        Args:
-            data_path (Path object): a list of paths to .json (format of internal label tool)
         """
         self.args = args
         self.dataset = dataset
@@ -159,9 +147,7 @@ class TargetClassificationDataset(Dataset):
         self.features = []
         self.diagnosis = []
         self.tokenizer = tokenizer
-        model_class = args.train_config['model_class']
-        Model = getattr(importlib.import_module(f"model.{args.task}"), model_class)
-        self.required_features = Model.INPUT
+        self.required_features = get_model_inputs(args)
         self.load_data()
         self.diagnosis_df = pd.DataFrame(data=self.diagnosis)
 

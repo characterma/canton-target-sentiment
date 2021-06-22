@@ -42,35 +42,36 @@ class TestBuildVocabFromDataset(unittest.TestCase):
         os.makedirs("../data/datasets/sample/")
     json.dump(data, open("../data/datasets/sample/sample_for_build_vocab.json", "w"))
     word_to_id_0 = {'<OOV>': 0,
-                    'Bay': 1,
-                    '標': 2,
-                    '後': 3,
-                    '定': 4,
-                    '會': 5,
-                    '以': 6,
-                    'M79030B': 7,
-                    '心': 8,
-                    '題': 9,
-                    '水': 10,
-                    '很': 11,
-                    '不': 12,
-                    '盡': 13,
-                    '的': 14,
-                    '表': 15,
-                    '亞': 16,
-                    '買': 17,
-                    '一': 18,
-                    'tank': 19,
-                    '有': 20,
-                    '些': 21,
-                    'Black': 22,
-                    'Tudor': 23,
-                    '地': 24,
-                    '言': 25,
-                    '難': 26,
-                    '卡': 27,
-                    '男': 28,
-                    '過': 29}
+                    '<PAD>': 1,
+                    'Bay': 2,
+                    '標': 3,
+                    '後': 4,
+                    '定': 5,
+                    '會': 6,
+                    '以': 7,
+                    'M79030B': 8,
+                    '心': 9,
+                    '題': 10,
+                    '水': 11,
+                    '很': 12,
+                    '不': 13,
+                    '盡': 14,
+                    '的': 15,
+                    '表': 16,
+                    '亞': 17,
+                    '買': 18,
+                    '一': 19,
+                    'tank': 20,
+                    '有': 21,
+                    '些': 22,
+                    'Black': 23,
+                    'Tudor': 24,
+                    '地': 25,
+                    '言': 26,
+                    '難': 27,
+                    '卡': 28,
+                    '男': 29,
+                    '過': 30}
 
     def test_without_frequency_filter(self):
         # case I: no infrequent word filter , check exact value
@@ -85,9 +86,9 @@ class TestBuildVocabFromDataset(unittest.TestCase):
         self.args.model_config['vocab_freq_cutoff'] = 0.9 
         tokenizer = MultiLingualTokenizer(word_to_id=None, required_token_types=['CHAR', 'LETTERS'])
         build_vocab_from_dataset(datasets=['train'], tokenizer=tokenizer,args=self.args)
-        self.assertEqual(len(tokenizer.word_to_id), 4)
+        self.assertEqual(len(tokenizer.word_to_id), 5)
         for w in tokenizer.word_to_id:
-            self.assertIn(w, ['<OOV>', '地', '亞', '卡', '一'])
+            self.assertIn(w, ['<OOV>', '<PAD>', '地', '亞', '卡', '一'])
         os.system("rm ./word_to_id.json")
         
     def test_increasing_frequency_filter(self):
@@ -97,6 +98,6 @@ class TestBuildVocabFromDataset(unittest.TestCase):
             self.args.model_config['vocab_freq_cutoff'] = i / 10
             build_vocab_from_dataset(datasets=['train'], tokenizer=tokenizer,args=self.args)
             acutal_vocab_size = len(tokenizer.word_to_id)
-            expected_vocab_size = len(self.word_to_id_0) - int((len(self.word_to_id_0) - 1) * (i / 10))
+            expected_vocab_size = len(self.word_to_id_0) - int((len(self.word_to_id_0) - 2) * (i / 10))
             self.assertEqual(acutal_vocab_size, expected_vocab_size)
         os.system("rm ./word_to_id.json")

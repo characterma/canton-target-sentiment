@@ -76,14 +76,14 @@ class ChineseWordSegmentationFeature:
             text=data_dict['content'], 
             steps=prepro_config['steps']
         )
-        content = preprocessor.preprocessed_text
+        text = preprocessor.preprocessed_text
         words = data_dict.get('words', None)
         postags = data_dict.get('postags', None)
         sent_indexs = data_dict.get('sent_indexs', None)
 
 
         self.feature_dict, self.diagnosis_dict = self.get_features(
-            text=content,
+            text=text,
             tokenizer=tokenizer,
             max_length=max_length,
             words=words,
@@ -107,9 +107,9 @@ class ChineseWordSegmentationFeature:
         feature_dict = dict()
         diagnosis_dict = dict()
         tokens_encoded = tokenizer(text, max_length=max_length, add_special_tokens=False, return_offsets_mapping=False, return_length=True)
-        text_id = tokens_encoded.input_ids
-        text_id = pad_array(text_id, max_length=max_length, value=0)
-        feature_dict['text'] = torch.tensor(text_id).long()
+        input_ids = tokens_encoded.input_ids
+        input_ids = pad_array(input_ids, max_length=max_length, value=0)
+        feature_dict['input_ids'] = torch.tensor(input_ids).long()
         attention_mask = tokens_encoded.attention_mask
         attention_mask = pad_array(attention_mask, max_length=max_length, value=0)
         feature_dict['attention_mask'] = torch.tensor(attention_mask).long()
@@ -122,8 +122,8 @@ class ChineseWordSegmentationFeature:
 
         if diagnosis:
             diagnosis_dict['text'] = text 
-            diagnosis_dict['text_id'] = text_id 
-            diagnosis_dict['tokens'] = tokenizer.convert_ids_to_tokens(text_id)
+            diagnosis_dict['input_ids'] = input_ids 
+            diagnosis_dict['tokens'] = tokenizer.convert_ids_to_tokens(input_ids)
             diagnosis_dict['label'] = label 
             diagnosis_dict['label_id'] = label_id 
 
