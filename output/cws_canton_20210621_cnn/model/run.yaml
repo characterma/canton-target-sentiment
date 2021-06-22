@@ -1,0 +1,33 @@
+task: "chinese_word_segmentation"
+device: 0
+data:
+  output_dir: "../output/cws_canton_20210621_cnn"
+  # data_dir: "../data/datasets/CTB5/pos/ctb5"
+  data_dir: "../data/datasets/canton_ws"
+  train: train.json 
+  dev: dev.json 
+  test: test.json 
+text_prepro:
+  steps:
+    - full_to_half
+eval:
+  batch_size: 64
+  model_file: "model.pt"
+train:
+  # model_class: "BERT_CRF"
+  model_class: "CNN_CRF"
+  seed: 42
+  batch_size: 16
+  final_model: "best" # or "last"
+  optimization_metric: "micro_f1"
+  early_stop: 5
+model_params:
+  # ================= TDBERT =================
+  num_train_epochs: 50
+  embedding_trainable: True
+  # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+  # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  # ================= TGSAN =================
+  # num_train_epochs: 50
+  # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"
+  # embedding_trainable: False
