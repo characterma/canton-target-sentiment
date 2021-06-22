@@ -13,7 +13,7 @@ class TestGetFeatures(unittest.TestCase):
         target_locs = [[15, 17]]
         tokenizer = AutoTokenizer.from_pretrained("bert-base-chinese", use_fast=True)
         required_features = [
-            "raw_text",
+            "input_ids",
             "attention_mask",
             "token_type_ids",
             "target_mask",
@@ -21,7 +21,7 @@ class TestGetFeatures(unittest.TestCase):
         ]
 
         feature_dict, msg = TargetClassificationFeature.get_features(
-            raw_text=raw_text,
+            text=raw_text,
             target_char_loc=target_locs,
             tokenizer=tokenizer,
             required_features=required_features,
@@ -29,7 +29,7 @@ class TestGetFeatures(unittest.TestCase):
             label="positive",
             label_to_id={"neutral": 0, "negative": 1, "positive": 2},
         )
-        raw_text = torch.tensor(
+        input_ids = torch.tensor(
             [
                 101,
                 108,
@@ -452,7 +452,7 @@ class TestGetFeatures(unittest.TestCase):
             ]
         )
         label = torch.tensor(2)
-        self.assertTrue(torch.equal(feature_dict["raw_text"], raw_text))
+        self.assertTrue(torch.equal(feature_dict["input_ids"], input_ids))
         self.assertTrue(torch.equal(feature_dict["target_mask"], target_mask))
         self.assertTrue(torch.equal(feature_dict["attention_mask"], attention_mask))
         self.assertTrue(torch.equal(feature_dict["token_type_ids"], token_type_ids))

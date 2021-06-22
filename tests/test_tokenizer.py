@@ -10,14 +10,15 @@ class TestTokenizer(unittest.TestCase):
         raw_text = "hello world 新冠?疫情為全球。帶來"
         word_to_id = {
             '<OOV>':0,
-            '新':1,
-            '冠':2, 
-            '疫':3,
-            '情':4,
-            '為':5,
-            '全':6,
-            'hello': 7,
-            'world': 8
+            '<PAD>':1,
+            '新':2,
+            '冠':3, 
+            '疫':4,
+            '情':5,
+            '為':6,
+            '全':7,
+            'hello': 8,
+            'world': 9
         }
         tokenizer = MultiLingualTokenizer(
             word_to_id=word_to_id, 
@@ -25,43 +26,44 @@ class TestTokenizer(unittest.TestCase):
         )
         encoded = tokenizer(raw_text)
         tokens = ['hello', 'world', '新', '冠', '疫', '情', '為', '全', '球', '帶', '來']
-        input_ids = [7,8,1,2,3,4,5,6,0,0,0]
+        input_ids = [8, 9, 2, 3, 4, 5, 6, 7, 1, 1, 1]
         attention_mask = [1,1,1,1,1,1,1,1,1,1,1]
 
         self.assertEqual(encoded.tokens, tokens)
         self.assertEqual(encoded.input_ids, input_ids)
         self.assertEqual(encoded.attention_mask, attention_mask)
         self.assertEqual(encoded.char_to_token(13), 3)
-        self.assertEqual(tokenizer.convert_ids_to_tokens([1,2]), ['新', '冠'])
+        self.assertEqual(tokenizer.convert_ids_to_tokens([2, 3]), ['新', '冠'])
 
     def test_character_split_tokenizer(self):
             raw_text = "hello world 新冠?疫情為全球。帶來"
             word_to_id = {
                 '<OOV>':0,
-                '新':1,
-                '冠':2, 
-                '疫':3,
-                '情':4,
-                '為':5,
-                '全':6,
-                'h': 7,
-                'e': 8,
-                'l': 9,
-                'o': 10, 
-                'w': 11,
-                'r': 12, 
-                'd': 13
+                '<PAD>':1,
+                '新':2,
+                '冠':3, 
+                '疫':4,
+                '情':5,
+                '為':6,
+                '全':7,
+                'h': 8,
+                'e': 9,
+                'l': 10,
+                'o': 11, 
+                'w': 12,
+                'r': 13, 
+                'd': 14
             }
             tokenizer = CharacterSplitTokenizer(
                 word_to_id=word_to_id, 
             )
             encoded = tokenizer(raw_text)
             tokens = ['h', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd', '新', '冠', '?', '疫', '情', '為', '全', '球', '。', '帶', '來']
-            input_ids = [7, 8, 9, 9, 10, 11, 10, 12, 9, 13, 1, 2, 0, 3, 4, 5, 6, 0, 0, 0, 0]
+            input_ids = [8, 9, 10, 10, 11, 12, 11, 13, 10, 14, 2, 3, 1, 4, 5, 6, 7, 1, 1, 1, 1]
             attention_mask = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 
             self.assertEqual(encoded.tokens, tokens)
             self.assertEqual(encoded.input_ids, input_ids)
             self.assertEqual(encoded.attention_mask, attention_mask)
             self.assertEqual(encoded.char_to_token(3), 3)
-            self.assertEqual(tokenizer.convert_ids_to_tokens([1,2]), ['新', '冠'])
+            self.assertEqual(tokenizer.convert_ids_to_tokens([2, 3]), ['新', '冠'])

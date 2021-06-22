@@ -16,6 +16,7 @@ TDBERT:
     gradient_accumulation_steps: 1
     adam_epsilon: 1e-8
     max_grad_norm: 1.0
+    scheduler: "linear"
     max_steps: -1
     warmup_steps: 0
 TGSAN:
