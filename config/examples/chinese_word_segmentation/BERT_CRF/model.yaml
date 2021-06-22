@@ -88,6 +88,7 @@ BERT_CRF:
   sampler: "random"
   batch_size: 16
   learning_rate: 2e-5
+  scheduler: "linear"
   # ================= Training params =================
   num_train_epochs: 10
   weight_decay: 0.0

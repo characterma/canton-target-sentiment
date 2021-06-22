@@ -1,21 +1,21 @@
-task: "target_classification"
+task: "sequence_classification"
 device: 0
 data:
-  output_dir: "../config/examples/target_classification/TDBERT"
-  data_dir: "../data/datasets/sample/target_classification"
-  train: sample.json 
-  dev: sample.json 
-  test: sample.json 
+  output_dir: "../config/examples/sequence_classification/BERT_AVG"
+  data_dir: "../data/datasets/post_sentiment"
+  train: train.json 
+  dev: test.json 
+  test: test.json 
   labels: 3_ways # or 2_ways
 text_prepro:
   steps:
     - simplified_chinese
     - lower_case
-    - convert_java_index
+    # - convert_java_index
     # - extract_post_context_1
     # - extract_post_context_2
 train:
-  model_class: "TDBERT"
+  model_class: "BERT_AVG"
   seed: 42
   batch_size: 16
   final_model: "best" # or "last"

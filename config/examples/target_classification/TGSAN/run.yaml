@@ -1,7 +1,7 @@
 task: "target_classification"
 device: 0
 data:
-  output_dir: "../config/examples/TGSAN"
+  output_dir: "../config/examples/target_classification/TGSAN"
   data_dir: "../data/datasets/sample/target_classification"
   train: sample.json 
   dev: sample.json 
