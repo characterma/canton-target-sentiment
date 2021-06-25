@@ -37,29 +37,6 @@ def get_token_level_tags(tokens_encoded, sent_indexs, postags, scheme='BI'):
     return output
 
 
-def get_word_level_tags(tokens, token_tags):
-    words = []
-    tags = []
-
-    cur_word = ''
-    cur_tag = ''
-    for token, tag in zip(tokens, token_tags):
-        if tag.startswith('B-'):
-            if cur_word:
-                words.append(cur_word)
-                tags.append(cur_tag)
-            cur_word = token 
-            cur_tag = tag
-        elif tag.startswith('B-') or tag=='O':
-            cur_word = cur_word + token 
-        else:
-            continue
-
-    words.append(cur_word)
-    tags.append(cur_tag)
-    return words, tags
-
-
 class ChineseWordSegmentationFeature:
     def __init__(
         self, 
@@ -80,7 +57,6 @@ class ChineseWordSegmentationFeature:
         words = data_dict.get('words', None)
         postags = data_dict.get('postags', None)
         sent_indexs = data_dict.get('sent_indexs', None)
-
 
         self.feature_dict, self.diagnosis_dict = self.get_features(
             text=text,
@@ -140,7 +116,11 @@ class ChineseWordSegmentationDataset(Dataset):
         self.features = []
         self.diagnosis = []
         self.load_data()
+        self.generate_diagnosis()
+
+    def generate_diagnosis(self):
         self.diagnosis_df = pd.DataFrame(data=self.diagnosis)
+        self.diagnosis_df['dataset'] = self.dataset
 
     def __getitem__(self, index):
         return self.features[index]
@@ -172,6 +152,7 @@ class ChineseWordSegmentationDataset(Dataset):
         logger.info("  Number of loaded samples = %d", len(self.features))
 
     def insert_predictions(self, predictions):
+        # predictions: List
         self.diagnosis_df['prediction'] = predictions
 
     

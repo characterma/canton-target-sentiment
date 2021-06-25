@@ -21,13 +21,6 @@ class FCLayer(nn.Module):
 
 
 class TDBERT(BertPreTrainedModel):
-    INPUT = [
-        "input_ids",
-        "attention_mask",
-        "token_type_ids",
-        "target_mask",
-        "label",
-    ]
     def __init__(self, args):
         pretrained_config = load_pretrained_config(
             args.model_config['pretrained_lm']

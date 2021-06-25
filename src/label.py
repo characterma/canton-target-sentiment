@@ -74,7 +74,7 @@ def load_label_to_id_from_datasets(datasets, tokenizer, args):
         for t in set(tags):
             label_to_id[t] = len(label_to_id)
     elif args.task=='sequence_classification':
-        return {-1: 0, 0: 1, 1: 2}
+        return {'-1': 0, '0': 1, '1': 2}
     else:
         raise ValueError("Task not supported.")
     return label_to_id

@@ -25,7 +25,8 @@ class BERT_CLS(BertPreTrainedModel):
             dropout_rate=self.model_config["dropout_rate"],
         )
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
-
+        self.to(args.device)
+        
     def forward(
         self,
         input_ids,

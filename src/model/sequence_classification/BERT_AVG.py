@@ -7,7 +7,6 @@ from model.utils import load_pretrained_bert, load_pretrained_config
 
 
 class BERT_AVG(BertPreTrainedModel):
-    INPUT = ['input_ids', 'attention_mask', 'token_type_ids', 'label']
     def __init__(self, args):
         super(BERT_AVG, self).__init__(
             load_pretrained_config(args.model_config['pretrained_lm'])
@@ -25,13 +24,14 @@ class BERT_AVG(BertPreTrainedModel):
             dropout_rate=self.model_config["dropout_rate"],
         )
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
+        self.to(args.device)
 
     def avg_pool(sel, h):
         return torch.mean(
             h.float(),
             dim=1,
             keepdim=False,
-        ).values
+        )
 
     def forward(
         self,

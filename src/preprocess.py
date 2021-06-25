@@ -18,8 +18,15 @@ class TextPreprocessor:
         for s in steps:
             getattr(self, s)()
 
+    def rm_non_chinese_char(self):
+        filtrate = re.compile(u'[^\u4E00-\u9FA5]')  
+        self.preprocessed_text = filtrate.sub(r'', self.preprocessed_text)
+
     def full_to_half(self):
         self.preprocessed_text = str(self.preprocessed_text).translate(FULL2HALF)
+
+    def utf8_replace(self):
+        self.preprocessed_text = self.preprocessed_text.encode('utf-8', errors='replace').decode('utf-8')
 
     def simplified_chinese(self):
         self.preprocessed_text = self.cc.convert(self.preprocessed_text)

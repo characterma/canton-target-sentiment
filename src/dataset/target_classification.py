@@ -68,8 +68,6 @@ class TargetClassificationFeature(object):
         feature_dict = dict()
         tokens_encoded = tokenizer(
             text,
-            # max_length=max_length,
-            # truncation=True,
             add_special_tokens=True,
             return_offsets_mapping=True
         )
@@ -149,7 +147,11 @@ class TargetClassificationDataset(Dataset):
         self.tokenizer = tokenizer
         self.required_features = get_model_inputs(args)
         self.load_data()
+        self.generate_diagnosis()
+
+    def generate_diagnosis(self):
         self.diagnosis_df = pd.DataFrame(data=self.diagnosis)
+        self.diagnosis_df['dataset'] = self.dataset
 
     def load_data(self):
         data_path = (

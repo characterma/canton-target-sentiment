@@ -24,14 +24,12 @@ def prediction_step(model, batch, args):
     with torch.no_grad():
         inputs = dict()
         for col in batch:
-            inputs[col] = batch[col].to(args.device).long()
+            if torch.is_tensor(batch[col]):
+                inputs[col] = batch[col].to(args.device).long()
         x = model(
             **inputs,
         )
 
-    # if isinstance(x[1], list):
-        # [B, 1]
-        # [B, L]
     results["prediction"] = []
     for x1 in x[1]:
         if isinstance(x1, list):
@@ -63,7 +61,6 @@ def evaluate(model, eval_dataset, args):
 
     label_ids = []
     predictions = []
-    logits = []
     losses = []
 
     for batch in tqdm(dataloader, desc="Evaluating"):
@@ -71,16 +68,9 @@ def evaluate(model, eval_dataset, args):
         label_ids.extend(batch["label"].cpu().tolist())
         losses.append(results["loss"])
         predictions.extend(results["prediction"])
-        if len(logits)==0:
-            logits = results["logits"]
-        else:
-            logits.extend(results["logits"])
 
-    # [[1], [2]]
-    # use attention mask to filter PAD
     labels = []
     for l1, p1 in zip(label_ids, predictions):
-
         if isinstance(l1, list):
             labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[:len(p1)])
         else:
@@ -96,7 +86,7 @@ def evaluate(model, eval_dataset, args):
     return metrics
 
 
-class Trainer(object):
+class Trainer:
     def __init__(
         self,
         model,
@@ -120,17 +110,17 @@ class Trainer(object):
         self.early_stop = self.train_config.get('early_stop', None)
         self.final_model = self.train_config.get('final_model', "last")
 
-    def create_optimizer_and_scheduler(self, dataloader):
+    def create_optimizer_and_scheduler(self, n):
         if self.model_config["max_steps"] > 0:
             t_total = self.model_config["max_steps"]
             self.model_config["num_train_epochs"] = (
                 self.model_config["max_steps"]
-                // (len(dataloader) // self.model_config["gradient_accumulation_steps"])
+                // (n // self.model_config["gradient_accumulation_steps"])
                 + 1
             )
         else:
             t_total = (
-                len(dataloader)
+                n
                 // self.model_config["gradient_accumulation_steps"]
                 * self.model_config["num_train_epochs"]
             )
@@ -182,10 +172,10 @@ class Trainer(object):
         dataloader = DataLoader(
             self.train_dataset,
             sampler=RandomSampler(self.train_dataset), 
-            batch_size=self.model_config["batch_size"],
+            batch_size=self.train_config["batch_size"],
             # collate_fn=self.train_dataset.pad_collate,
         )
-        optimizer, scheduler = self.create_optimizer_and_scheduler(dataloader)
+        optimizer, scheduler = self.create_optimizer_and_scheduler(n=len(dataloader))
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(self.train_dataset))
         logger.info("  Num Epochs = %d", self.model_config["num_train_epochs"])
@@ -237,6 +227,8 @@ class Trainer(object):
             eval_dataset=self.dev_dataset,
             args=self.args,
         )
+        # write train loss & dev metrics on tensorboard
+
         if self.final_model=="best":
             opt_metric = self.train_config.get('optimization_metric', "macro_f1")
             if self.best_score is None or self.best_score < metrics[opt_metric]:

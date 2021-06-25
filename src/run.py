@@ -7,21 +7,76 @@ import pandas as pd
 import shutil
 from pathlib import Path
 from trainer import Trainer, evaluate
-from utils import set_seed, set_log_path, load_config, save_config, load_yaml, log_args
+from utils import set_seed, set_log_path, load_config, save_config, load_yaml, log_args, get_args
+from utils import combine_and_save_metrics, combine_and_save_statistics
 from dataset import get_dataset
 from tokenizer import get_tokenizer
 from model import get_model
 from label import get_label_to_id
+from trainer_kd import get_logits, KDTrainer
 
 
 logger = logging.getLogger(__name__)
+
+
+def run_kd(args):
+    # load teacher
+    teacher_dir = Path(args.kd_config['teacher_dir'])
+    teacher_args = get_args(config_dir=teacher_dir)
+    teacher_args = load_config(args=teacher_args)
+    teacher_args.data_config = args.data_config
+    teacher_tokenizer = get_tokenizer(args=teacher_args)
+    teacher_args.label_to_id, teacher_args.label_to_id_inv = get_label_to_id(tokenizer=teacher_tokenizer, args=teacher_args)
+    teacher_model = get_model(args=teacher_args)
+
+    # load unlabeled data, which will be preprocessed by teacher pipeline TODO: allow label=null
+    unlabeled_dataset = get_dataset(dataset="unlabeled", tokenizer=teacher_tokenizer, args=teacher_args)
+    train_dataset = get_dataset(dataset="train", tokenizer=teacher_tokenizer, args=teacher_args)
+    # TODO: include logits from train data
+
+    # generate soft-labels, TODO: cache to disk
+    teacher_logits_ul = get_logits(model=teacher_model, dataset=unlabeled_dataset, args=teacher_args)
+    teacher_logits_tr = get_logits(model=teacher_model, dataset=train_dataset, args=teacher_args)
+
+    # load student
+    student_tokenizer = get_tokenizer(args=args, datasets=['train', 'unlabeled'])
+    args.label_to_id, args.label_to_id_inv = get_label_to_id(tokenizer=student_tokenizer, args=args)
+    student_model = get_model(args=args) 
+    
+    # Features for student model
+    train_dataset = get_dataset(dataset="train", tokenizer=student_tokenizer, args=args)
+    dev_dataset = get_dataset(dataset="dev", tokenizer=student_tokenizer, args=args)
+    test_dataset = get_dataset(dataset="test", tokenizer=student_tokenizer, args=args)
+    unlabeled_dataset = get_dataset(dataset="unlabeled", tokenizer=student_tokenizer, args=args)
+    
+    # merge teacher_logits into features
+    train_dataset.add_feature(teacher_logits_tr, 'teacher_logit')
+    unlabeled_dataset.add_feature(teacher_logits_ul, 'teacher_logit')
+
+    # run kd_trainer => save model
+    kd_trainer = KDTrainer(
+        model=student_model, 
+        train_dataset=train_dataset, 
+        dev_dataset=dev_dataset, 
+        unlabeled_dataset=unlabeled_dataset,
+        args=args
+    )
+
+    # evaluation
+    train_metrics = evaluate(model=student_model, eval_dataset=train_dataset, args=args)
+    dev_metrics = evaluate(model=student_model, eval_dataset=dev_dataset, args=args)
+    test_metrics = evaluate(model=student_model, eval_dataset=test_dataset, args=args)
+
+    combine_and_save_metrics(metrics=[train_metrics, dev_metrics, test_metrics], args=args)
+    combine_and_save_statistics(datasets=[train_dataset, dev_dataset, test_dataset], args=args)
+    save_config(args)
 
 
 def run(args):
     tokenizer = get_tokenizer(args=args)
 
     label_to_id, label_to_id_inv = get_label_to_id(tokenizer, args)
-    args.label_to_id =  label_to_id
+    args.label_to_id = label_to_id
     args.label_to_id_inv = label_to_id_inv
 
     model = get_model(args=args)
@@ -49,27 +104,6 @@ def run(args):
     save_config(args)
 
 
-def combine_and_save_metrics(metrics, args):
-    metrics = [m for m in metrics if m is not None]
-    metrics_df = pd.DataFrame(data=metrics)
-    filename = 'result_test_only.csv' if args.test_only else 'result.csv'
-    metrics_df.to_csv(args.result_dir / filename, index=False)
-
-
-def combine_and_save_statistics(datasets, args):
-    datasets = [ds for ds in datasets if ds is not None]
-    if hasattr(datasets[0], 'diagnosis_df'):
-        diagnosis_df = pd.concat([ds.diagnosis_df for ds in datasets])
-        filename = 'diagnosis_test_only.xlsx' if args.test_only else 'diagnosis.xlsx'
-        diagnosis_df.to_excel(args.result_dir / filename, index=False)
-
-    if hasattr(datasets[0], 'get_data_analysis'):
-        statistics_df = pd.DataFrame(data=[ds.get_data_analysis() for ds in datasets])
-        filename = 'statistics_test_only.csv' if args.test_only else 'statistics.csv'
-        statistics_df.to_csv(args.result_dir / filename, index=False)
-
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", type=str, default="../config/")
@@ -84,4 +118,8 @@ if __name__ == "__main__":
     set_log_path(args.output_dir)
     log_args(logger, args)
     set_seed(args.train_config["seed"])
-    run(args=args)
+
+    if not args.test_only and args.kd_config['use_kd']:
+        run_kd(args=args)
+    else:
+        run(args=args)

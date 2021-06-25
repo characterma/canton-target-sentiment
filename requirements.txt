@@ -9,3 +9,4 @@ openpyxl
 opencc-python-reimplemented==0.1.6
 seqeval
 PyYAML
+tensorboard==1.14.0

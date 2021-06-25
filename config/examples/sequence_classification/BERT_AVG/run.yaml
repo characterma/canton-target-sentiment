@@ -1,7 +1,9 @@
 task: "sequence_classification"
-device: 0
+device: 2
 data:
-  output_dir: "../config/examples/sequence_classification/BERT_AVG"
+  # output_dir: "../config/examples/sequence_classification/BERT_AVG"
+  output_dir: "../output/post_sentiment_20210623_bert_avg"
+  # data_dir: "../data/datasets/sample/sequence_classification"
   data_dir: "../data/datasets/post_sentiment"
   train: train.json 
   dev: test.json 
@@ -9,15 +11,14 @@ data:
   labels: 3_ways # or 2_ways
 text_prepro:
   steps:
+    - utf8_replace
     - simplified_chinese
     - lower_case
-    # - convert_java_index
-    # - extract_post_context_1
-    # - extract_post_context_2
+    - full_to_half
 train:
   model_class: "BERT_AVG"
   seed: 42
-  batch_size: 16
+  batch_size: 32
   final_model: "best" # or "last"
   optimization_metric: "macro_f1"
   early_stop: null
@@ -26,10 +27,10 @@ eval:
   model_file: "model.pt" # under output_dir / "model" 
   # ================= TDBERT =================
 model_params:
-  num_train_epochs: 10
+  num_train_epochs: 8
   embedding_trainable: False
-  # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
-  # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+  pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
   # ================= TGSAN =================
   # num_train_epochs: 50
   # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"

@@ -79,6 +79,9 @@ class SequenceClassificationFeature(object):
             diagnosis_dict['fea_input_ids'] = input_ids
             diagnosis_dict['fea_tokens'] = tokens
 
+        if attention_mask.sum()==0:
+            return None, diagnosis_dict
+            
         if "input_ids" in required_features:
             feature_dict["input_ids"] = torch.tensor(input_ids).long()
 
@@ -89,7 +92,7 @@ class SequenceClassificationFeature(object):
             feature_dict["token_type_ids"] = torch.tensor(token_type_ids).long()
 
         if label is not None and label_to_id is not None:
-            label = label_to_id[label]
+            label = label_to_id[str(label)]
             feature_dict["label"] = torch.tensor(label).long()
 
         return feature_dict, diagnosis_dict
@@ -105,10 +108,15 @@ class SequenceClassificationDataset(Dataset):
         self.raw_data = None
         self.features = []
         self.diagnosis = []
+        self.failed_indexs = []
         self.tokenizer = tokenizer
         self.required_features = get_model_inputs(args)
         self.load_data()
+        self.generate_diagnosis()
+
+    def generate_diagnosis(self):
         self.diagnosis_df = pd.DataFrame(data=self.diagnosis)
+        self.diagnosis_df['dataset'] = self.dataset
 
     def load_data(self):
         data_path = (
@@ -120,7 +128,10 @@ class SequenceClassificationDataset(Dataset):
         logger.info("  Number of raw samples = %d", len(self.raw_data))
 
         for idx, data_dict in tqdm(enumerate(self.raw_data)):
-            diagnosis_dict = dict(zip(["raw_" + k for k in data_dict.keys()], data_dict.values()))
+            diagnosis_dict = {
+                "raw_content": data_dict['content'].encode('utf-8', errors='replace').decode('utf-8'), 
+                "raw_label": data_dict.get('label', None)
+            }
             x = SequenceClassificationFeature(
                 data_dict=data_dict,
                 tokenizer=self.tokenizer,
@@ -132,6 +143,9 @@ class SequenceClassificationDataset(Dataset):
             )
             if x.feature_dict is not None:
                 self.features.append(x.feature_dict)
+            else:
+                self.failed_indexs.append(idx)
+
             diagnosis_dict.update(x.diagnosis_dict)
             self.diagnosis.append(diagnosis_dict)
         logger.info("  Number of loaded samples = %d", len(self.features))
@@ -141,8 +155,24 @@ class SequenceClassificationDataset(Dataset):
         statistics['total_samples'] = self.diagnosis_df.shape[0]
         return statistics
 
+    def insert_skipped_rows(self, elements):
+        for idx in self.failed_indexs:
+            elements.insert(idx, None)
+
     def insert_predictions(self, predictions):
+        if len(predictions)!=self.diagnosis_df.shape[0]:
+            self.insert_skipped_rows(predictions)
         self.diagnosis_df['prediction'] = predictions
+
+    def add_feature(self, feature, name):
+        self.insert_skipped_rows(self.features)
+        new_features = []
+        assert len(feature)==len(self.features)
+        for x, y in zip(feature, self.features):
+            if x is not None and y is not None:
+                y[name] = feature 
+                new_features.append(y)
+        self.features = new_features
 
     def __getitem__(self, index):
         return self.features[index]

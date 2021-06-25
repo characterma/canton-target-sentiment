@@ -108,7 +108,7 @@ def build_vocab_from_dataset(datasets, tokenizer, args):
     args.vocab_size = len(word_to_id)
 
 
-def get_tokenizer(args, word_to_id=None, required_token_types=None):
+def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=['train']):
     source = args.model_config['tokenizer_source']
     name = args.model_config['tokenizer_name']
     logger.info("***** Loading tokenizer *****")
@@ -130,7 +130,7 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None):
             if args.model_config.get("pretrained_emb", None) is not None:
                 build_vocab_from_pretrained(tokenizer=tokenizer, args=args)
             else:
-                build_vocab_from_dataset(datasets=["train"], tokenizer=tokenizer, args=args)
+                build_vocab_from_dataset(datasets=datasets, tokenizer=tokenizer, args=args)
         return tokenizer
     else:
         raise ValueError("Unsupported tokenizer source.")

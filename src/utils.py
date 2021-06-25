@@ -11,6 +11,7 @@ import transformers
 import yaml
 from argparse import Namespace
 from pathlib import Path
+from collections import namedtuple
 
 
 def log_args(logger, args):
@@ -42,10 +43,17 @@ def load_yaml(file_path):
 def set_log_path(log_dir):
     logging.basicConfig(
         handlers=[logging.FileHandler(log_dir / "log", "w+", "utf-8"), logging.StreamHandler()], 
-        format="%(message)s", 
-        level=logging.INFO
+        format="%(asctime)s %(message)s", 
+        level=logging.INFO, 
+        datefmt="%Y-%m-%d %H:%M:%S"
     )
 
+
+def get_args(config_dir):
+    args = namedtuple('args', ('config_dir',))
+    args.config_dir = Path(config_dir)
+    return args
+    
 
 def load_config(args):
     config_dir = Path(args.config_dir)
@@ -56,6 +64,7 @@ def load_config(args):
     args.device = run_config['device']
     args.task = run_config['task']
     args.train_config = run_config['train']
+    args.kd_config = run_config['train'].get('kd', {'use_kd': False})
     args.prepro_config = run_config['text_prepro']
     model_config = load_yaml(config_dir / "model.yaml")
     model_class = args.train_config['model_class']
@@ -84,5 +93,30 @@ def save_config(args):
         shutil.copy(args.config_dir / "model.yaml", args.model_dir / "model.yaml")
 
 
+def combine_and_save_metrics(metrics, args):
+    metrics = [m for m in metrics if m is not None]
+    metrics_df = pd.DataFrame(data=metrics)
+    filename = 'result_test_only.csv' if args.test_only else 'result.csv'
+    metrics_df.to_csv(args.result_dir / filename, index=False)
 
 
+def combine_and_save_statistics(datasets, args):
+    datasets = [ds for ds in datasets if ds is not None]
+    if hasattr(datasets[0], 'diagnosis_df'):
+        diagnosis_df = pd.concat([ds.diagnosis_df for ds in datasets])
+        filename = 'diagnosis_test_only.xlsx' if args.test_only else 'diagnosis.xlsx'
+        diagnosis_df.to_excel(args.result_dir / filename, index=False)
+
+    if hasattr(datasets[0], 'get_data_analysis'):
+        statistics_df = pd.DataFrame(data=[ds.get_data_analysis() for ds in datasets])
+        filename = 'statistics_test_only.csv' if args.test_only else 'statistics.csv'
+        statistics_df.to_csv(args.result_dir / filename, index=False)
+
+
+def make_batches(elements, batch_size):
+    cur_idx = 0
+    batches = []
+    while cur_idx < len(indexes):
+        batches.append(elements[cur_idx:cur_idx + batch_size])
+        cur_idx += batch_size
+    return batches

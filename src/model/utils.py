@@ -69,10 +69,12 @@ MODEL_CLASS_MAP = {
 def load_pretrained_bert(model_name):
     logger.info("***** Loading pretrained language model *****")
     logger.info("  Pretrained BERT = '%s'", str(model_name))
+    # option2: model_name == "*.pt" => model.pretrained_lm weights
     return MODEL_CLASS_MAP[model_name].from_pretrained(model_name)
 
 
 def load_pretrained_config(model_name):
+    # option2: model_name == "model.yaml" => model_name
     return CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
 
 
