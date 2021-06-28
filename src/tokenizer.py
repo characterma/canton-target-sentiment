@@ -110,14 +110,23 @@ def build_vocab_from_dataset(datasets, tokenizer, args):
 
 def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=['train']):
     source = args.model_config['tokenizer_source']
-    name = args.model_config['tokenizer_name']
     logger.info("***** Loading tokenizer *****")
     logger.info("  Tokenizer source = '%s'", source)
-    logger.info("  Tokenizer name = '%s'", name)
+    # logger.info("  Tokenizer name = '%s'", name)
     if source == "transformers":
-        Tokenizer = TOKENIZER_CLASS_MAP.get(name, AutoTokenizer)
-        tokenizer = Tokenizer.from_pretrained(name, use_fast=True, add_special_tokens=args.model_config.get('add_special_tokens', True))
+        prev_model_dir = args.model_config.get('pretrained_lm_from_prev', None)
+        if prev_model_dir is None:
+            name = args.model_config['tokenizer_name']
+            Tokenizer = TOKENIZER_CLASS_MAP.get(name, AutoTokenizer)
+            tokenizer = Tokenizer.from_pretrained(name, use_fast=True, add_special_tokens=args.model_config.get('add_special_tokens', True))
+        else:
+            prev_args = get_args(prev_model_dir)
+            prev_args = load_config(prev_args)
+            name = prev_args.model_config['tokenizer_name']
+            Tokenizer = TOKENIZER_CLASS_MAP.get(name, AutoTokenizer)
+            tokenizer = Tokenizer.from_pretrained(name, use_fast=True, add_special_tokens=args.model_config.get('add_special_tokens', True))
         return tokenizer
+        
     elif source in ["internal", "char_split"]:
         if source=='internal':
             tokenizer = MultiLingualTokenizer(word_to_id=word_to_id, required_token_types=required_token_types)

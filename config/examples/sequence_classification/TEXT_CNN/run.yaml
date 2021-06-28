@@ -1,13 +1,14 @@
 task: "sequence_classification"
-device: 2
+device: 0
 data:
-  output_dir: "../config/examples/sequence_classification/BERT_AVG"
-  # output_dir: "../output/post_sentiment_20210623_bert_avg"
+  output_dir: "../config/examples/sequence_classification/TEXT_CNN"
+  # output_dir: "../output/post_sentiment_20210624_text_cnn"
   data_dir: "../data/datasets/sample/sequence_classification"
   # data_dir: "../data/datasets/post_sentiment"
   train: train_sample.json 
-  dev: train_sample.json 
-  test: train_sample.json
+  dev: test_sample.json 
+  test: test_sample.json 
+  unlabeled: unlabeled_sample.json 
   labels: 3_ways # or 2_ways
 text_prepro:
   steps:
@@ -16,9 +17,9 @@ text_prepro:
     - lower_case
     - full_to_half
 train:
-  model_class: "BERT_AVG"
+  model_class: "TEXT_CNN"
   seed: 42
-  batch_size: 32
+  batch_size: 6
   final_model: "best" # or "last"
   optimization_metric: "macro_f1"
   early_stop: null
@@ -27,10 +28,8 @@ eval:
   model_file: "model.pt" # under output_dir / "model" 
   # ================= TDBERT =================
 model_params:
-  num_train_epochs: 8
-  embedding_trainable: False
-  tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
-  pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  num_train_epochs: 10
+  embedding_trainable: True
   # ================= TGSAN =================
   # num_train_epochs: 50
   # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"

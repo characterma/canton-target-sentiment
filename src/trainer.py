@@ -13,6 +13,7 @@ from torch.optim import RMSprop
 from tqdm import tqdm, trange
 from transformers import AdamW, get_linear_schedule_with_warmup
 from metric import compute_metrics
+from torch.utils.tensorboard import SummaryWriter
 
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,7 @@ class Trainer:
         self.non_increase_cnt = 0
         self.early_stop = self.train_config.get('early_stop', None)
         self.final_model = self.train_config.get('final_model', "last")
+        self.tensorboard_writer = SummaryWriter(self.args.tensorboard_dir)
 
     def create_optimizer_and_scheduler(self, n):
         if self.model_config["max_steps"] > 0:
@@ -190,6 +192,7 @@ class Trainer:
             int(self.model_config["num_train_epochs"]),
             desc=f"Epoch",
         )
+        global_step = 0
         for epoch, _ in enumerate(train_iterator):
             self.model.zero_grad()
             self.model.train()
@@ -204,6 +207,7 @@ class Trainer:
                 logits = outputs[1]
                 loss.backward()
                 loss = loss.tolist()
+                self.tensorboard_writer.add_scalar('Loss/train', loss, global_step)
                 if (step + 1) % self.model_config["gradient_accumulation_steps"] == 0:
                     torch.nn.utils.clip_grad_norm_(
                         self.model.parameters(),
@@ -214,6 +218,7 @@ class Trainer:
                         scheduler.step() 
                     self.model.zero_grad()
                 epoch_iterator.set_postfix({"tr_loss": np.mean(loss)})
+                global_step += 1
 
             self.on_epoch_end(epoch)
             if self.early_stop is not None and self.non_increase_cnt >= self.early_stop:
@@ -228,7 +233,6 @@ class Trainer:
             args=self.args,
         )
         # write train loss & dev metrics on tensorboard
-
         if self.final_model=="best":
             opt_metric = self.train_config.get('optimization_metric', "macro_f1")
             if self.best_score is None or self.best_score < metrics[opt_metric]:
@@ -236,6 +240,7 @@ class Trainer:
                 self.best_model_state = copy.deepcopy(self.model.state_dict())
             else:
                 self.non_increase_cnt += 1
+        self.tensorboard_writer.add_scalar(f'{opt_metric}/dev', metrics[opt_metric], epoch)
 
     def on_training_end(self):
         logger.info("***** Training end *****")
@@ -246,4 +251,5 @@ class Trainer:
             self.model.load_state_dict(self.best_model_state)
         logger.info("  Model path = %s", str(out_path))
         torch.save(self.model, out_path)
+        self.tensorboard_writer.close()
 

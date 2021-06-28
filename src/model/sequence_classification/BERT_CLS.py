@@ -10,12 +10,10 @@ class BERT_CLS(BertPreTrainedModel):
 
     def __init__(self, args):
         super(BERT_CLS, self).__init__(
-            load_pretrained_config(args.model_config['pretrained_lm'])
+            load_pretrained_config(args.model_config)
         )
         self.model_config = args.model_config
-        self.pretrained_model = load_pretrained_bert(
-            self.model_config['pretrained_lm']
-        )
+        self.pretrained_model = load_pretrained_bert(self.model_config)
 
         hidden_size = self.pretrained_model.config.hidden_size
         self.num_labels = len(args.label_to_id)

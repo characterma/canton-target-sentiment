@@ -170,7 +170,7 @@ class SequenceClassificationDataset(Dataset):
         assert len(feature)==len(self.features)
         for x, y in zip(feature, self.features):
             if x is not None and y is not None:
-                y[name] = feature 
+                y[name] = torch.tensor(x)
                 new_features.append(y)
         self.features = new_features
 

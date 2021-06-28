@@ -34,15 +34,16 @@ def run_kd(args):
     train_dataset = get_dataset(dataset="train", tokenizer=teacher_tokenizer, args=teacher_args)
     # TODO: include logits from train data
 
-    # generate soft-labels, TODO: cache to disk
-    teacher_logits_ul = get_logits(model=teacher_model, dataset=unlabeled_dataset, args=teacher_args)
-    teacher_logits_tr = get_logits(model=teacher_model, dataset=train_dataset, args=teacher_args)
 
     # load student
     student_tokenizer = get_tokenizer(args=args, datasets=['train', 'unlabeled'])
     args.label_to_id, args.label_to_id_inv = get_label_to_id(tokenizer=student_tokenizer, args=args)
     student_model = get_model(args=args) 
     
+    # generate soft-labels, TODO: cache to disk
+    teacher_logits_ul = get_logits(model=teacher_model, dataset=unlabeled_dataset, teacher_args=teacher_args, student_args=args)
+    teacher_logits_tr = get_logits(model=teacher_model, dataset=train_dataset, teacher_args=teacher_args, student_args=args)
+
     # Features for student model
     train_dataset = get_dataset(dataset="train", tokenizer=student_tokenizer, args=args)
     dev_dataset = get_dataset(dataset="dev", tokenizer=student_tokenizer, args=args)
@@ -61,6 +62,8 @@ def run_kd(args):
         unlabeled_dataset=unlabeled_dataset,
         args=args
     )
+
+    kd_trainer.train()
 
     # evaluation
     train_metrics = evaluate(model=student_model, eval_dataset=train_dataset, args=args)

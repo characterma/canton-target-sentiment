@@ -4,6 +4,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from collections import defaultdict
+from utils import load_config
 from transformers import (
     XLNetConfig,
     BertConfig,
@@ -66,15 +67,32 @@ MODEL_CLASS_MAP = {
 }
 
 
-def load_pretrained_bert(model_name):
+def load_pretrained_bert(model_config):
     logger.info("***** Loading pretrained language model *****")
-    logger.info("  Pretrained BERT = '%s'", str(model_name))
-    # option2: model_name == "*.pt" => model.pretrained_lm weights
-    return MODEL_CLASS_MAP[model_name].from_pretrained(model_name)
+    prev_model_dir = model_config.get('pretrained_lm_from_prev', None)
+    if prev_model_dir is None:
+        # 
+        model_name = model_config['pretrained_lm']
+        model_dir = model_config.get('pretrained_lm_dir', model_name)
+        logger.info("  Pretrained BERT = '%s'", str(model_dir))
+        return MODEL_CLASS_MAP[model_name].from_pretrained(model_dir)
+    else:
+        prev_args = get_args(prev_model_dir)
+        prev_args = load_config(prev_args)
+        model_path = prev_model_dir / "model.pt"
+        model = get_model(model_path)
+        return model.pretrained_model
 
 
-def load_pretrained_config(model_name):
-    # option2: model_name == "model.yaml" => model_name
-    return CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
-
+def load_pretrained_config(model_config):
+    prev_model_dir = model_config.get('pretrained_lm_from_prev', None)
+    if prev_model_dir is None:
+        model_name = model_config['pretrained_lm']
+        model_dir = model_config.get('pretrained_lm_dir', model_name)
+        return CONFIG_CLASS_MAP[model_name].from_pretrained(model_dir)
+    else:
+        prev_args = get_args(prev_model_dir)
+        prev_args = load_config(prev_args)
+        model_name = prev_args.model_config['pretrained_lm']
+        return CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
 

@@ -14,17 +14,15 @@ class BERT_CRF(BertPreTrainedModel):
 
     def __init__(self, args):
         super(BERT_CRF, self).__init__(load_pretrained_config(
-            args.model_config['pretrained_lm']
+            args.model_config
         ))
 
         self.model_config = args.model_config
-        self.pretrained_model = load_pretrained_bert(
-            self.model_config['pretrained_lm']
-        )
+        self.pretrained_model = load_pretrained_bert(self.model_config)
         if not args.model_config["embedding_trainable"]:
             self.freeze_emb()
         self.pretrained_config = load_pretrained_config(
-            args.model_config['pretrained_lm']
+            args.model_config
         )
         self.num_labels = len(args.label_to_id)
 

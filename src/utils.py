@@ -82,15 +82,18 @@ def load_config(args):
         os.makedirs(args.model_dir)
     if not os.path.exists(args.result_dir):
         os.makedirs(args.result_dir)
+    # if not os.path.exists(args.result_dir / "tensorboard"):
+    #     os.makedirs(args.result_dir / "tensorboard")
     args.pretrained_emb_path = args.model_config.get("pretrained_emb_path", None)
+    args.tensorboard_dir = Path(output_dir / "logs")
+    if not os.path.exists(args.tensorboard_dir):
+        os.makedirs(args.tensorboard_dir)
     return args
 
 
 def save_config(args):
-    if not os.path.exists(args.model_dir / "run.yaml"):
-        shutil.copy(args.config_dir / "run.yaml", args.model_dir / "run.yaml")
-    if not os.path.exists(args.model_dir / "model.yaml"):
-        shutil.copy(args.config_dir / "model.yaml", args.model_dir / "model.yaml")
+    shutil.copy(args.config_dir / "run.yaml", args.model_dir / "run.yaml")
+    shutil.copy(args.config_dir / "model.yaml", args.model_dir / "model.yaml")
 
 
 def combine_and_save_metrics(metrics, args):
