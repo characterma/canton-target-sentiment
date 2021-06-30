@@ -94,7 +94,6 @@ class KDTrainer(Trainer):
         total_epochs = self.model_config["num_train_epochs"]
         optimizer, scheduler = self.create_optimizer_and_scheduler(n=len(self.unlabeled_dataset))
         
-
         n_step_tr = 0
         n_step_ul = 0
         for epoch in range(total_epochs):
@@ -103,17 +102,17 @@ class KDTrainer(Trainer):
 
             dataloader_ul = DataLoader(
                 self.unlabeled_dataset,
-                sampler=RandomSampler(self.unlabeled_dataset), 
                 batch_size=batch_size,
-                shuffle=False
+                shuffle=True
             )
 
             dataloader_tr = DataLoader(
                 self.train_dataset,
-                sampler=RandomSampler(self.train_dataset), 
                 batch_size=batch_size,
-                shuffle=False
+                shuffle=True
             )
+
+            log_steps = self.train_config.get('log_steps', 1)
 
             for batch in tqdm(dataloader_tr):
 
@@ -137,8 +136,8 @@ class KDTrainer(Trainer):
                 loss.backward()
                 optimizer.step()
                 self.model.zero_grad()
-                # print(loss.tolist(), n_step_tr)
-                self.tensorboard_writer.add_scalar('Loss/train', loss.tolist(), n_step_tr)
+                if n_step_tr % log_steps==0:
+                    self.tensorboard_writer.add_scalar('Loss/train', loss.tolist(), n_step_tr)
                 n_step_tr += 1
 
             for batch in tqdm(dataloader_ul):
@@ -163,10 +162,9 @@ class KDTrainer(Trainer):
                 loss.backward()
                 optimizer.step()
                 self.model.zero_grad()
-                # print('======', loss.tolist(), n_step_tr)
-                self.tensorboard_writer.add_scalar('Loss/unlabeled', loss.tolist(), n_step_ul)
+                if n_step_ul % log_steps==0:
+                    self.tensorboard_writer.add_scalar('Loss/unlabeled', loss.tolist(), n_step_ul)
                 n_step_ul += 1
-
             self.on_epoch_end(epoch)
         self.on_training_end()
         

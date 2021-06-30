@@ -1,0 +1,33 @@
+task: "target_classification"
+device: 0
+data:
+  output_dir: "../config/examples/target_classification/TGSAN2"
+  data_dir: "../data/datasets/sample/target_classification"
+  train: sample.json 
+  dev: sample.json 
+  test: sample.json 
+  labels: 3_ways # or 2_ways
+text_prepro:
+  steps:
+    - simplified_chinese
+    - lower_case
+    - convert_java_index
+train:
+  model_class: "TGSAN2"
+  seed: 42
+  batch_size: 16
+  final_model: "best" # or "last"
+  optimization_metric: "macro_f1"
+  early_stop: null
+eval:
+  batch_size: 64
+  model_file: "model.pt" # under output_dir / "model" 
+  # ================= TDBERT =================
+model_params:
+  num_train_epochs: 20
+  # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+  # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  # ================= TGSAN =================
+  # num_train_epochs: 50
+  # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"
+  # embedding_trainable: False

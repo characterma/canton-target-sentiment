@@ -22,9 +22,7 @@ class FCLayer(nn.Module):
 
 class TDBERT(BertPreTrainedModel):
     def __init__(self, args):
-        pretrained_config = load_pretrained_config(
-            args.model_config['pretrained_lm']
-        )
+        pretrained_config = load_pretrained_config(args.model_config)
         super(TDBERT, self).__init__(pretrained_config)
         
         # assert target_pooling in ["mean", "max"]

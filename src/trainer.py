@@ -192,6 +192,7 @@ class Trainer:
             int(self.model_config["num_train_epochs"]),
             desc=f"Epoch",
         )
+        log_steps = self.train_config.get('log_steps', 1)
         global_step = 0
         for epoch, _ in enumerate(train_iterator):
             self.model.zero_grad()
@@ -207,7 +208,8 @@ class Trainer:
                 logits = outputs[1]
                 loss.backward()
                 loss = loss.tolist()
-                self.tensorboard_writer.add_scalar('Loss/train', loss, global_step)
+                if global_step % log_steps==0:
+                    self.tensorboard_writer.add_scalar('Loss/train', loss, global_step)
                 if (step + 1) % self.model_config["gradient_accumulation_steps"] == 0:
                     torch.nn.utils.clip_grad_norm_(
                         self.model.parameters(),
@@ -240,7 +242,9 @@ class Trainer:
                 self.best_model_state = copy.deepcopy(self.model.state_dict())
             else:
                 self.non_increase_cnt += 1
-        self.tensorboard_writer.add_scalar(f'{opt_metric}/dev', metrics[opt_metric], epoch)
+        for metric, value in metrics.items():
+            if type(value) in [int, float]:
+                self.tensorboard_writer.add_scalar(f'dev/{metric}', value, epoch)
 
     def on_training_end(self):
         logger.info("***** Training end *****")

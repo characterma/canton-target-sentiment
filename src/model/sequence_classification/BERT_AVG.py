@@ -8,9 +8,7 @@ from model.utils import load_pretrained_bert, load_pretrained_config
 
 class BERT_AVG(BertPreTrainedModel):
     def __init__(self, args):
-        super(BERT_AVG, self).__init__(
-            load_pretrained_config(args.model_config)
-        )
+        super(BERT_AVG, self).__init__(load_pretrained_config(args.model_config))
         self.model_config = args.model_config
         self.pretrained_model = load_pretrained_bert(self.model_config)
 
@@ -20,6 +18,7 @@ class BERT_AVG(BertPreTrainedModel):
             input_dim=hidden_size, 
             output_dim=self.num_labels, 
             dropout_rate=self.model_config["dropout_rate"],
+            activation=self.model_config.get("fc_activation", None)
         )
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)

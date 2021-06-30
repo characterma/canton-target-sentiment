@@ -11,6 +11,7 @@ from model import get_model
 from label import get_label_to_id
 from tokenizer import get_tokenizer
 from collections import namedtuple
+from dataset.utils import get_model_inputs
 
 
 class TestEndToEnd(unittest.TestCase):
@@ -57,12 +58,13 @@ class TestEndToEnd(unittest.TestCase):
         args = load_config(args)
 
         tokenizer = get_tokenizer(args=args)
-        model = get_model(args=args)
 
         label_to_id, label_to_id_inv = get_label_to_id(tokenizer, args)
         args.label_to_id =  label_to_id
         args.label_to_id_inv = label_to_id_inv
 
+        model = get_model(args=args)
+        
         data_dict = {
             "content": "標題[心得] Tudor Black Bay 58 M79030B", 
             "target_locs": [[7, 12], [13, 18], [19, 22]]
@@ -73,7 +75,7 @@ class TestEndToEnd(unittest.TestCase):
             tokenizer=tokenizer,
             prepro_config=args.run_config['text_prepro'],
             max_length=args.model_config['max_length'],
-            required_features=model.INPUT,
+            required_features=get_model_inputs(args),
             label_to_id=None,
         )
 

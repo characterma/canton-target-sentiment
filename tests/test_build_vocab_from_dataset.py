@@ -12,35 +12,24 @@ from tokenizer import MultiLingualTokenizer, build_vocab_from_dataset
 class TestBuildVocabFromDataset(unittest.TestCase):
 
     args = namedtuple('args', 'data_config prepro_config model_config')
-    args.data_config = {'data_dir': '../data/datasets/sample/', "train": "sample_for_build_vocab.json"}
+    args.data_config = {
+        'data_dir': '../data/datasets/sample/', 
+        "train": "sample_for_build_vocab1.json", 
+        "dev": "sample_for_build_vocab2.json", 
+    }
     args.prepro_config = {'steps': []}
     args.model_config = {'vocab_freq_cutoff': 0}
     args.model_dir = Path("./")
 
-    data = [{'content': '標題[心得] Tudor Black Bay 58 M79030B',
-            'target_locs': [[7, 12], [13, 18], [19, 22]],
-            'sentiment': 'neutral',
-            'UNIT_CONTENT': '標題[心得] Tudor Black Bay 58 M79030B',
-            'SUBJECT_KEYWORD': 'Tudor,Black,Bay',
-            'ASPECT_KEYWORD': '',
-            'source_file': 'data1_tw_spam_batch1_rolex_tudor.xlsx',
-            'sheent_name': '',
-            'annotator': '',
-            'sample_id': 21877},
-            {'content': '卡地亞，tank很心水，以後一定會買的，不過男表卡地亞有些一言難盡，',
-            'target_locs': [[0, 3], [4, 8], [24, 27]],
-            'sentiment': 'negative',
-            'UNIT_CONTENT': '卡地亞，tank很心水，以後一定會買的，不過男表卡地亞有些一言難盡，',
-            'SUBJECT_KEYWORD': '卡地亞,tank,卡地亞',
-            'ASPECT_KEYWORD': '',
-            'source_file': 'data3_3.xlsx',
-            'sheent_name': '',
-            'annotator': '',
-            'sample_id': 1782}]
+    data1 = [{'content': '標題[心得] Tudor Black Bay 58 M79030B'},
+            {'content': '卡地亞，tank很心水，以後一定會買的，不過男表卡地亞有些一言難盡，'}]
+
+    data2 = [{'content': '竞赛'}]
 
     if not os.path.exists("../data/datasets/sample/"):
         os.makedirs("../data/datasets/sample/")
-    json.dump(data, open("../data/datasets/sample/sample_for_build_vocab.json", "w"))
+    json.dump(data1, open("../data/datasets/sample/sample_for_build_vocab1.json", "w"))
+    json.dump(data2, open("../data/datasets/sample/sample_for_build_vocab2.json", "w"))
     word_to_id_0 = {'<OOV>': 0,
                     '<PAD>': 1,
                     'Bay': 2,
@@ -71,13 +60,15 @@ class TestBuildVocabFromDataset(unittest.TestCase):
                     '難': 27,
                     '卡': 28,
                     '男': 29,
-                    '過': 30}
+                    '過': 30, 
+                    '竞': 31, 
+                    '赛': 32}
 
     def test_without_frequency_filter(self):
         # case I: no infrequent word filter , check exact value
         self.args.model_config['vocab_freq_cutoff'] = 0
         tokenizer = MultiLingualTokenizer(word_to_id=None, required_token_types=['CHAR', 'LETTERS'])
-        build_vocab_from_dataset(datasets=['train'], tokenizer=tokenizer,args=self.args)
+        build_vocab_from_dataset(datasets=['train', 'dev'], tokenizer=tokenizer,args=self.args)
         self.assertEqual(set(tokenizer.word_to_id.keys()), set(self.word_to_id_0.keys()))
         os.system("rm ./word_to_id.json")
 
@@ -85,8 +76,8 @@ class TestBuildVocabFromDataset(unittest.TestCase):
         # case II: 90% infrequent word filter , check remaining words
         self.args.model_config['vocab_freq_cutoff'] = 0.9 
         tokenizer = MultiLingualTokenizer(word_to_id=None, required_token_types=['CHAR', 'LETTERS'])
-        build_vocab_from_dataset(datasets=['train'], tokenizer=tokenizer,args=self.args)
-        self.assertEqual(len(tokenizer.word_to_id), 5)
+        build_vocab_from_dataset(datasets=['train', 'dev'], tokenizer=tokenizer,args=self.args)
+        self.assertEqual(len(tokenizer.word_to_id), 6)
         for w in tokenizer.word_to_id:
             self.assertIn(w, ['<OOV>', '<PAD>', '地', '亞', '卡', '一'])
         os.system("rm ./word_to_id.json")
@@ -96,7 +87,7 @@ class TestBuildVocabFromDataset(unittest.TestCase):
         tokenizer = MultiLingualTokenizer(word_to_id=None, required_token_types=['CHAR', 'LETTERS'])
         for i in range(1, 10):
             self.args.model_config['vocab_freq_cutoff'] = i / 10
-            build_vocab_from_dataset(datasets=['train'], tokenizer=tokenizer,args=self.args)
+            build_vocab_from_dataset(datasets=['train', 'dev'], tokenizer=tokenizer,args=self.args)
             acutal_vocab_size = len(tokenizer.word_to_id)
             expected_vocab_size = len(self.word_to_id_0) - int((len(self.word_to_id_0) - 2) * (i / 10))
             self.assertEqual(acutal_vocab_size, expected_vocab_size)
