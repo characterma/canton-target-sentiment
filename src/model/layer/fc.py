@@ -7,15 +7,15 @@ class FCLayer(nn.Module):
         super(FCLayer, self).__init__()
         self.dropout = nn.Dropout(dropout_rate)
         self.linear = nn.Linear(input_dim, output_dim)
-        self.act_func = None
+        self.activation = None
         if activation:
-            self.act_func = eval(f"nn.{activation}")()
+            self.activation = eval(f"nn.{activation}")()
 
     def forward(self, x):
         x = self.dropout(x)
         x = self.linear(x)
-        if self.act_func:
-            x = self.act_func(x)
+        if self.activation:
+            x = self.activation(x)
         return x
 
 

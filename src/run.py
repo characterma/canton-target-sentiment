@@ -51,8 +51,8 @@ def run_kd(args):
     unlabeled_dataset = get_dataset(dataset="unlabeled", tokenizer=student_tokenizer, args=args)
     
     # merge teacher_logits into features
-    train_dataset.add_feature(teacher_logits_tr, 'teacher_logit')
-    unlabeled_dataset.add_feature(teacher_logits_ul, 'teacher_logit')
+    train_dataset.add_feature('teacher_logit', teacher_logits_tr)
+    unlabeled_dataset.add_feature('teacher_logit', teacher_logits_ul)
 
     # run kd_trainer => save model
     kd_trainer = KDTrainer(

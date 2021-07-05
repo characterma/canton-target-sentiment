@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 from preprocess import Preprocessor
 from dataset.utils import get_model_inputs
+import torch
 import json
 import abc
 import logging
@@ -78,7 +79,8 @@ class NLPDataset:
         self.diagnosis_df['prediction'] = predictions
 
     def add_feature(self, name, values):
-        assert len(values)==len(self.features)
+        print(len(values), len(self.features))
+        assert(len(values)==len(self.features))
         self.insert_skipped_samples(self.features, value=None)
         features = []
         for x, y in zip(values, self.features):

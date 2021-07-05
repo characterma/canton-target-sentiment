@@ -37,7 +37,7 @@ def get_logits(model, dataset, teacher_args, student_args):
                 logits = results["logits"]
             else:
                 logits.extend(results["logits"])
-        dataset.insert_skipped_rows(logits)
+        dataset.insert_skipped_samples(logits)
         # save
         pickle.dump(logits, open(logits_path, 'wb'))
     return logits
