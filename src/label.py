@@ -1,6 +1,6 @@
 import json
 import os
-from preprocess import TextPreprocessor
+from preprocess import Preprocessor
 from dataset.chinese_word_segmentation import get_token_level_tags
 
 
@@ -48,17 +48,18 @@ def load_label_to_id_from_datasets(datasets, tokenizer, args):
 
             # text preprocessing
             for data_dict in raw_data:
-                preprocessor = TextPreprocessor(
-                    text=data_dict['content'], 
+                preprocessor = Preprocessor(
+                    data_dict=data_dict, 
                     steps=args.prepro_config['steps']
                 )
-                content = preprocessor.preprocessed_text
+                content = preprocessor.data_dict['content']
 
                 # tokenization
                 tokens_encoded = tokenizer(
                     content, 
                     max_length=args.model_config['max_length'], 
                     add_special_tokens=False, 
+                    padding='max_length', 
                     return_offsets_mapping=False,
                     return_length=True,
                 )

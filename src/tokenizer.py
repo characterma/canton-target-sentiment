@@ -8,7 +8,7 @@ from collections import Counter
 from tqdm import tqdm
 from pathlib import Path
 from transformers import AutoTokenizer, BertTokenizer, BertTokenizerFast
-from preprocess import TextPreprocessor
+from preprocess import Preprocessor
 
 
 logger = logging.getLogger(__name__)
@@ -77,13 +77,19 @@ def build_vocab_from_dataset(datasets, tokenizer, args):
         )
         raw_data = json.load(open(data_path, "r"))
         for idx, data_dict in tqdm(enumerate(raw_data)):
-            preprocessor = TextPreprocessor(
-                text=data_dict['content'], 
-                target_locs=data_dict.get('target_locs', []), 
+            preprocessor = Preprocessor(
+                data_dict=data_dict, 
                 steps=args.prepro_config['steps']
             )
-            preprocessed_text = preprocessor.preprocessed_text
-            all_words.extend(tokenizer(raw_text=preprocessed_text, max_length=None).tokens)
+            all_words.extend(
+                tokenizer(
+                    raw_text=preprocessor.data_dict['content'], 
+                    max_length=None, 
+                    padding='max_length', 
+                    add_special_tokens=True,
+                    return_offsets_mapping=True
+                ).tokens
+            )
     word_counter = Counter(all_words)
     vocab_freq_cutoff = args.model_config['vocab_freq_cutoff']
     words = list(set(all_words))
@@ -201,7 +207,12 @@ class MultiLingualTokenizer:
         for k, v in word_to_id.items():
             self.idx_to_word[v] = k
 
-    def __call__(self, raw_text, max_length=None, truncation=True, add_special_tokens=True, return_offsets_mapping=False, return_length=False):
+    def pad_max_length(self, values, max_length, pad_value=0):
+        d = max(max_length - len(values), 0)
+        values = values + [pad_value] * d
+        return values
+
+    def __call__(self, raw_text, max_length=None, truncation=True, padding='max_lenght', add_special_tokens=True, return_offsets_mapping=False, return_length=False):
         token_regex = '|'.join('(?P<%s>%s)' % pair for pair in self.token_spec)
         WORD_RE = re.compile(token_regex, re.VERBOSE|re.IGNORECASE)
         tokens = []
@@ -226,6 +237,13 @@ class MultiLingualTokenizer:
                     for char_idx in range(start, end):
                         char_to_token_dict[char_idx] = cur_token_idx
                     cur_token_idx += 1
+
+        if max_length is not None and padding=='max_length':
+            tokens = self.pad_max_length(tokens, max_length, pad_value=0)
+            input_ids = self.pad_max_length(input_ids, max_length, pad_value=0)
+            attention_mask = self.pad_max_length(attention_mask, max_length, pad_value=0)
+            token_type_ids = self.pad_max_length(token_type_ids, max_length, pad_value=0)
+
         return TokensEncoded(
             tokens=tokens, 
             char_to_token_dict=char_to_token_dict,

@@ -1,5 +1,6 @@
 # coding=utf-8
 import re
+import copy
 from opencc import OpenCC
 
 
@@ -7,52 +8,56 @@ FULL2HALF = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
 FULL2HALF[0x3000] = 0x20
 
 
-class TextPreprocessor:
-    def __init__(self, text, steps , target_locs=None):
+class Preprocessor:
+    def __init__(self, data_dict, steps):
         self.cc = OpenCC('t2s')
-        self.preprocessed_text = str(text)
-        if target_locs is not None:
-            self.preprocessed_target_locs = target_locs.copy()
-        else:
-            self.preprocessed_target_locs = None
+        self.data_dict = copy.deepcopy(data_dict)
+
         for s in steps:
             getattr(self, s)()
 
     def rm_non_chinese_char(self):
         filtrate = re.compile(u'[^\u4E00-\u9FA5]')  
-        self.preprocessed_text = filtrate.sub(r'', self.preprocessed_text)
+        self.data_dict['content'] = filtrate.sub(r'', self.data_dict['content'])
 
     def full_to_half(self):
-        self.preprocessed_text = str(self.preprocessed_text).translate(FULL2HALF)
+        self.data_dict['content'] = self.data_dict['content'].translate(FULL2HALF)
 
     def utf8_replace(self):
-        self.preprocessed_text = self.preprocessed_text.encode('utf-8', errors='replace').decode('utf-8')
+        self.data_dict['content'] = self.data_dict['content'].encode('utf-8', errors='replace').decode('utf-8')
 
     def simplified_chinese(self):
-        self.preprocessed_text = self.cc.convert(self.preprocessed_text)
+        self.data_dict['content'] = self.cc.convert(self.data_dict['content'])
 
     def lower_case(self):
-        self.preprocessed_text = self.preprocessed_text.lower()
+        self.data_dict['content'] = self.data_dict['content'].lower()
 
     def convert_java_index(self):
+        assert("content" in self.data_dict)
+        assert("target_locs" in self.data_dict)
+
         index_map = dict()
         indent = 0
-        for i in range(len(self.preprocessed_text) + 1):
+        for i in range(len(self.data_dict['content']) + 1):
             for j in range(i, i + indent + 1):
                 if j not in index_map:
                     index_map[j] = i
-            if i < len(self.preprocessed_text):
-                if len(self.preprocessed_text[i].encode('utf-8')) == 4:
+            if i < len(self.data_dict['content']):
+                if len(self.data_dict['content'][i].encode('utf-8')) == 4:
                     indent += 1
 
-        for t in self.preprocessed_target_locs:
+        for t in self.data_dict['target_locs']:
             t[0] = index_map.get(t[0], t[0])
             t[1] = index_map.get(t[1], t[1])
 
     def extract_post_context_1(self):
+        assert("content" in self.data_dict)
+        assert("target_locs" in self.data_dict)
         return self._extract_post_context(n_prev=0, n_next=0)
 
     def extract_post_context_2(self):
+        assert("content" in self.data_dict)
+        assert("target_locs" in self.data_dict)
         return self._extract_post_context(n_prev=1, n_next=1)
 
     def _extract_post_context(self, n_prev=0, n_next=0):
@@ -88,14 +93,14 @@ class TextPreprocessor:
             next = next[:n_next]
             return prev, next
 
-        sents = re.split("\?|!|。|？|！|\n|\r", self.preprocessed_text)
+        sents = re.split("\?|!|。|？|！|\n|\r", self.data_dict['content'])
         reconst_sent_ids = []
         reconst_target_indices = []
 
         tgt_sent_id_to_neighbor = {}
         tgt_sent_id_to_indices = {}
 
-        for start_idx, end_idx in self.preprocessed_target_locs:
+        for start_idx, end_idx in self.data_dict['target_locs']:
             
             sentence_id, start_idx, end_idx = find_idices_after_split(
                 start_idx,
@@ -134,6 +139,6 @@ class TextPreprocessor:
         
         reconst_content = "。".join([sents[i] for i in reconst_sent_ids])
 
-        self.preprocessed_text = reconst_content
-        self.preprocessed_target_locs = reconst_target_indices
+        self.data_dict['content'] = reconst_content
+        self.data_dict['target_locs'] = reconst_target_indices
             

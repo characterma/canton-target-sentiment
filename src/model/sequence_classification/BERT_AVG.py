@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from transformers import BertPreTrainedModel
 
-from model.layer.fc import FCLayer
+from model.layer.fc import FCLayer, LinearLayer
 from model.utils import load_pretrained_bert, load_pretrained_config
 
 
@@ -13,13 +13,18 @@ class BERT_AVG(BertPreTrainedModel):
         self.pretrained_model = load_pretrained_bert(self.model_config)
 
         hidden_size = self.pretrained_model.config.hidden_size
+        output_hidden_dim = args.model_config['output_hidden_dim']
+        output_hidden_act_func = args.model_config['output_hidden_act_func']
+
         self.num_labels = len(args.label_to_id)
-        self.classifier = FCLayer(
-            input_dim=hidden_size, 
-            output_dim=self.num_labels, 
-            dropout_rate=self.model_config["dropout_rate"],
-            activation=self.model_config.get("fc_activation", None)
+
+        self.linear = LinearLayer(
+            in_dim=hidden_size, 
+            h_dim=[output_hidden_dim, self.num_labels], 
+            activation=output_hidden_act_func,
+            use_bn=False
         )
+
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)
 
@@ -46,7 +51,7 @@ class BERT_AVG(BertPreTrainedModel):
         )
         h = lm["last_hidden_state"]
         h = self.avg_pool(h)
-        logits = self.classifier(h)
+        logits = self.linear(h)
         prediction = torch.argmax(logits, dim=1).cpu().tolist()
 
         if label is not None:

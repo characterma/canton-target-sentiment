@@ -243,8 +243,12 @@ class Trainer:
             else:
                 self.non_increase_cnt += 1
         for metric, value in metrics.items():
-            if type(value) in [int, float]:
-                self.tensorboard_writer.add_scalar(f'dev/{metric}', value, epoch)
+            if type(value) in [int, float, str]:
+                try:
+                    value = float(value)
+                    self.tensorboard_writer.add_scalar(f'dev/{metric}', float(value), epoch)
+                except Exception as e:
+                    continue 
 
     def on_training_end(self):
         logger.info("***** Training end *****")

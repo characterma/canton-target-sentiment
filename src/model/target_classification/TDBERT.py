@@ -5,21 +5,6 @@ from model.utils import load_pretrained_bert, load_pretrained_config
 from model.layer.fc import FCLayer
 
 
-class FCLayer(nn.Module):
-    def __init__(self, input_dim, output_dim, dropout_rate=0.0, use_activation=True):
-        super(FCLayer, self).__init__()
-        self.use_activation = use_activation
-        self.dropout = nn.Dropout(dropout_rate)
-        self.linear = nn.Linear(input_dim, output_dim)
-        self.tanh = nn.Tanh()
-
-    def forward(self, x):
-        x = self.dropout(x)
-        if self.use_activation:
-            x = self.tanh(x)
-        return self.linear(x)
-
-
 class TDBERT(BertPreTrainedModel):
     def __init__(self, args):
         pretrained_config = load_pretrained_config(args.model_config)
@@ -33,22 +18,20 @@ class TDBERT(BertPreTrainedModel):
 
         self.pretrained_config = pretrained_config
         self.num_labels = len(args.label_to_id)
-        self.init_classifier()
-        self.loss_func = nn.CrossEntropyLoss(reduction="none")
-        self.to(args.device)
-
-    def init_classifier(self):
         self.fc_layer = FCLayer(
             input_dim=self.pretrained_config.hidden_size,
             output_dim=self.pretrained_config.hidden_size,
             dropout_rate=self.model_config["dropout_rate"],
+            activation="Tanh"
         )
         self.classifier = FCLayer(
             input_dim=self.pretrained_config.hidden_size,
             output_dim=self.num_labels,
             dropout_rate=self.model_config["dropout_rate"],
-            use_activation=False,
+            activation=None,
         )
+        self.loss_func = nn.CrossEntropyLoss(reduction="none")
+        self.to(args.device)
 
     def pool_target(self, hidden_output, t_mask):
         """Pool the entity hidden state vectors (H_i ~ H_j)
@@ -88,6 +71,7 @@ class TDBERT(BertPreTrainedModel):
             h, target_mask
         )  # outputs: [B, S, Dim], target_mask: [B, S]
 
+        print(dir(self.fc_layer))
         tgt_h = self.fc_layer(tgt_h)
         logits = self.classifier(tgt_h)
         prediction = torch.argmax(logits, dim=1).cpu().tolist()

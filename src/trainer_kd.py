@@ -96,6 +96,9 @@ class KDTrainer(Trainer):
         
         n_step_tr = 0
         n_step_ul = 0
+        n_step_tr_log = 0
+        n_step_ul_log = 0
+
         for epoch in range(total_epochs):
             self.model.zero_grad()
             self.model.train()
@@ -136,8 +139,9 @@ class KDTrainer(Trainer):
                 loss.backward()
                 optimizer.step()
                 self.model.zero_grad()
-                if n_step_tr % log_steps==0:
-                    self.tensorboard_writer.add_scalar('Loss/train', loss.tolist(), n_step_tr)
+                # if n_step_tr % log_steps==0:
+                self.tensorboard_writer.add_scalar('Loss/train', loss.tolist(), n_step_tr_log)
+                    # n_step_tr_log += 1
                 n_step_tr += 1
 
             for batch in tqdm(dataloader_ul):
@@ -162,8 +166,9 @@ class KDTrainer(Trainer):
                 loss.backward()
                 optimizer.step()
                 self.model.zero_grad()
-                if n_step_ul % log_steps==0:
-                    self.tensorboard_writer.add_scalar('Loss/unlabeled', loss.tolist(), n_step_ul)
+                # if n_step_ul % log_steps==0:
+                self.tensorboard_writer.add_scalar('Loss/unlabeled', loss.tolist(), n_step_ul_log)
+                    # n_step_ul_log += 1
                 n_step_ul += 1
             self.on_epoch_end(epoch)
         self.on_training_end()

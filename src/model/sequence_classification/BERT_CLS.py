@@ -16,12 +16,16 @@ class BERT_CLS(BertPreTrainedModel):
         self.pretrained_model = load_pretrained_bert(self.model_config)
 
         hidden_size = self.pretrained_model.config.hidden_size
+        dropout_rate = self.pretrained_model.config.hidden_dropout_prob
+
         self.num_labels = len(args.label_to_id)
         self.classifier = FCLayer(
             input_dim=hidden_size, 
             output_dim=self.num_labels, 
-            dropout_rate=self.model_config["dropout_rate"],
+            dropout_rate=dropout_rate,
+            activation=None 
         )
+        
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)
         

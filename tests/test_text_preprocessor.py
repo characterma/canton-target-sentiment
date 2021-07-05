@@ -1,15 +1,15 @@
 import unittest
 import sys
 sys.path.append("../src/")
-from preprocess import TextPreprocessor
+from preprocess import Preprocessor
 
 
-class TestTextPreprocessor(unittest.TestCase):
+class TestPreprocessor(unittest.TestCase):
     def test_simplified_chinese(self):
         traditional = "#儀式感不能少沒有卡地亞，沒有浪琴，但是我有阿瑪尼，“我願意把星辰銀河都送給你”別說人間不值得 你最值得！"
         simplified = "#仪式感不能少没有卡地亚，没有浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！"
         target_locs = [[15, 17]]
-        pp = TextPreprocessor(
+        pp = Preprocessor(
             text=traditional, target_locs=target_locs, steps=["simplified_chinese"]
         )
         preprocessed_text = pp.preprocessed_text
@@ -25,7 +25,7 @@ class TestTextPreprocessor(unittest.TestCase):
             "filled with jealousy, omega made their thoughts known on social media."
         )
         target_locs = [[23, 28]]
-        pp = TextPreprocessor(
+        pp = Preprocessor(
             text=original, target_locs=target_locs, steps=["lower_case"]
         )
         preprocessed_text = pp.preprocessed_text
@@ -36,7 +36,7 @@ class TestTextPreprocessor(unittest.TestCase):
     def test_full_to_half(self):
         full = "！？；，"
         half = "!?;,"
-        pp = TextPreprocessor(
+        pp = Preprocessor(
             text=full, steps=["full_to_half"]
         )
         preprocessed_text = pp.preprocessed_text
@@ -45,7 +45,7 @@ class TestTextPreprocessor(unittest.TestCase):
     def test_rm_non_chinese_char(self):
         raw_text = "#好rrr_物_推薦🔥 ABC"
         chinese_chars = "好物推薦"
-        pp = TextPreprocessor(
+        pp = Preprocessor(
             text=raw_text, steps=["rm_non_chinese_char"]
         )
         preprocessed_text = pp.preprocessed_text
@@ -55,7 +55,7 @@ class TestTextPreprocessor(unittest.TestCase):
         text = "#好物推薦🔥 #每日穿搭  卡地亞鑰匙系列 單表機械機芯 95❤ 滿鑽 超值💰帶走#好物推薦🔥 #每日穿搭  卡地亞鑰匙系列 單表機械機芯 95❤ 滿鑽 超值💰帶走"
         java_index = [[15, 18], [25, 27], [27, 29], [58, 61], [68, 70], [70, 72]]
         python_index = [[14, 17], [24, 26], [26, 28], [55, 58], [65, 67], [67, 69]]
-        pp = TextPreprocessor(
+        pp = Preprocessor(
             text=text, target_locs=java_index, steps=["convert_java_index"]
         )
         preprocessed_text = pp.preprocessed_text
@@ -68,7 +68,7 @@ class TestTextPreprocessor(unittest.TestCase):
         target_locs = [[82, 85], [171, 174]]
         expected_text = "其中一名被告區諾軒早前表明會認罪，法庭明天會正式聽取他的認罪答辯，而其餘8名被告均已否認控罪，當中包括黎智英。 9名被告，包括黎智英、李柱銘、何俊仁、李卓人、梁國雄、吳靄儀、梁耀忠、何秀蘭及區諾軒"
         expected_target_locs = [[6, 9], [95, 98]]
-        pp = TextPreprocessor(
+        pp = Preprocessor(
             text=text, target_locs=target_locs, steps=["extract_post_context_1"]
         )
 
@@ -83,7 +83,7 @@ class TestTextPreprocessor(unittest.TestCase):
         target_locs = [[82, 85], [171, 174]]
         expected_text = "黎智英與另外8名泛民人士被檢控，案件將於明天（16日）開審，預計審期10天。其中一名被告區諾軒早前表明會認罪，法庭明天會正式聽取他的認罪答辯，而其餘8名被告均已否認控罪，當中包括黎智英。 9名被告，包括黎智英、李柱銘、何俊仁、李卓人、梁國雄、吳靄儀、梁耀忠、何秀蘭及區諾軒。他們被控一項組織未經批准集結及一項參與未經批准集結罪"
         expected_target_locs = [[44, 47], [133, 136]]
-        pp = TextPreprocessor(
+        pp = Preprocessor(
             text=text, target_locs=target_locs, steps=["extract_post_context_2"]
         )
         preprocessed_text = pp.preprocessed_text

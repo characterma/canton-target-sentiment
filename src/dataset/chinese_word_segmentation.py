@@ -1,21 +1,8 @@
 # -*- coding: utf-8 -*-
-import json
-import logging
-import random
 import torch
-import importlib
 import numpy as np
-import pandas as pd
-from tqdm import tqdm
-from torch.utils.data import Dataset
-from pathlib import Path
-from preprocess import TextPreprocessor
-from collections import Counter
-from model import *
+from dataset.base import NLPFeature
 from dataset.utils import pad_array
-
-
-logger = logging.getLogger(__name__)
 
 
 def get_token_level_tags(tokens_encoded, sent_indexs, postags, scheme='BI'):
@@ -37,67 +24,59 @@ def get_token_level_tags(tokens_encoded, sent_indexs, postags, scheme='BI'):
     return output
 
 
-class ChineseWordSegmentationFeature:
+class ChineseWordSegmentationFeature(NLPFeature):
     def __init__(
-        self, 
-        data_dict, 
-        tokenizer, 
-        prepro_config, 
-        max_length, 
-        label_to_id, 
+        self,
+        data_dict,
+        tokenizer,
+        args, 
         diagnosis=False
     ):
-        self.succeeded = True
-        self.msg = ""
-        preprocessor = TextPreprocessor(
-            text=data_dict['content'], 
-            steps=prepro_config['steps']
-        )
-        text = preprocessor.preprocessed_text
-        words = data_dict.get('words', None)
-        postags = data_dict.get('postags', None)
-        sent_indexs = data_dict.get('sent_indexs', None)
+        super(ChineseWordSegmentationFeature, self).__init__(data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=diagnosis)
 
-        self.feature_dict, self.diagnosis_dict = self.get_features(
-            text=text,
-            tokenizer=tokenizer,
-            max_length=max_length,
-            words=words,
-            postags=postags,
-            sent_indexs=sent_indexs,
-            label_to_id=label_to_id,
-            diagnosis=True
-        )
 
-    @staticmethod
-    def get_features(
-            text,
-            words,
-            postags,
-            sent_indexs,
-            tokenizer,
-            max_length,
-            label_to_id,
-            diagnosis=False
-        ):
+    def get_feature(
+        self, data_dict, tokenizer, required_features, args, diagnosis=False
+    ):
         feature_dict = dict()
         diagnosis_dict = dict()
-        tokens_encoded = tokenizer(text, max_length=max_length, add_special_tokens=False, return_offsets_mapping=False, return_length=True)
+
+        # data fields
+        content = data_dict['content']
+        sent_indexs = data_dict['sent_indexs']
+        postags = data_dict['postags']
+
+        # params
+        max_length = args.model_config["max_length"]
+        label_to_id = args.label_to_id
+
+        tokens_encoded = tokenizer(
+            content,
+            max_length=max_length, 
+            truncation=True, 
+            padding='max_length', 
+            add_special_tokens=True,
+            return_offsets_mapping=True, 
+            return_length=True
+        )
+
         input_ids = tokens_encoded.input_ids
-        input_ids = pad_array(input_ids, max_length=max_length, value=0)
-        feature_dict['input_ids'] = torch.tensor(input_ids).long()
         attention_mask = tokens_encoded.attention_mask
-        attention_mask = pad_array(attention_mask, max_length=max_length, value=0)
+        token_type_ids = tokens_encoded.token_type_ids
+
+        feature_dict['input_ids'] = torch.tensor(input_ids).long()
         feature_dict['attention_mask'] = torch.tensor(attention_mask).long()
+
         if sent_indexs is not None:
             # tokens_encoded: characters
-            label = get_token_level_tags(tokens_encoded, sent_indexs, postags)
+            label = get_token_level_tags(tokens_encoded, sent_indexs, postags)[:max_length]
+            # print(label_to_id)
             label_id = [label_to_id[l] for l in label]
             label_id_padded = pad_array(label_id, max_length=max_length, value=0)
             feature_dict['label'] = torch.tensor(label_id_padded).long()
 
         if diagnosis:
-            diagnosis_dict['text'] = text 
+            diagnosis_dict['content'] = content 
             diagnosis_dict['input_ids'] = input_ids 
             diagnosis_dict['tokens'] = tokenizer.convert_ids_to_tokens(input_ids)
             diagnosis_dict['label'] = label 
@@ -105,54 +84,3 @@ class ChineseWordSegmentationFeature:
 
         return feature_dict, diagnosis_dict
 
-
-class ChineseWordSegmentationDataset(Dataset):
-    def __init__(self, dataset, tokenizer, args):
-        self.dataset = dataset
-        self.filename = args.data_config[dataset]
-        self.args = args
-        self.tokenizer = tokenizer
-        self.raw_data = [] 
-        self.features = []
-        self.diagnosis = []
-        self.load_data()
-        self.generate_diagnosis()
-
-    def generate_diagnosis(self):
-        self.diagnosis_df = pd.DataFrame(data=self.diagnosis)
-        self.diagnosis_df['dataset'] = self.dataset
-
-    def __getitem__(self, index):
-        return self.features[index]
-
-    def __len__(self):
-        return len(self.features)
-
-    def load_data(self):
-        data_path = (
-            Path(self.args.data_config["data_dir"]) / self.filename
-        )
-        logger.info("***** Loading data *****")
-        logger.info("  Data path = %s", str(data_path))
-        self.raw_data = json.load(open(data_path, "r"))
-        logger.info("  Number of raw samples = %d", len(self.raw_data))
-        for idx, data_dict in tqdm(enumerate(self.raw_data)):
-
-            x = ChineseWordSegmentationFeature(
-                data_dict=data_dict,
-                tokenizer=self.tokenizer,
-                prepro_config=self.args.prepro_config,
-                max_length=self.args.model_config["max_length"],
-                label_to_id=self.args.label_to_id,
-            )
-
-            self.features.append(x.feature_dict)
-            self.diagnosis.append(x.diagnosis_dict)
-
-        logger.info("  Number of loaded samples = %d", len(self.features))
-
-    def insert_predictions(self, predictions):
-        # predictions: List
-        self.diagnosis_df['prediction'] = predictions
-
-    
