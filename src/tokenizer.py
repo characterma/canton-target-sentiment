@@ -32,6 +32,7 @@ TOKENIZER_CLASS_MAP = {
     "voidful/albert_chinese_small": BertTokenizerFast,  #
     "clue/albert_chinese_small": BertTokenizerFast,
     "voidful/albert_chinese_base": BertTokenizerFast,  #
+    "hfl/chinese-roberta-wwm-ext-large": BertTokenizerFast,
 }
 
 

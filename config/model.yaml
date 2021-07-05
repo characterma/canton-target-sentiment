@@ -166,4 +166,25 @@ TEXT_CNN:
   max_steps: -1
   scheduler: null
   warmup_steps: 0
-
+BERT_CLS:
+  # ================= Preprocessing params =================
+  max_length: 128
+  tokenizer_source: "transformers"
+  tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+  add_special_tokens: False
+  # ================= Model params =================
+  pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  bert_dropout: 0.2
+  dropout_rate: 0.2
+  optimizer: "AdamW"
+  batch_size: 32
+  learning_rate: 2e-5
+  # ================= Training params =================
+  num_train_epochs: 5
+  weight_decay: 0.0
+  gradient_accumulation_steps: 1
+  adam_epsilon: 1e-8
+  max_grad_norm: 1.0
+  max_steps: -1
+  warmup_steps: 0
+  scheduler: linear

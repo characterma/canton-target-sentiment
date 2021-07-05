@@ -44,6 +44,7 @@ CONFIG_CLASS_MAP = {
     "voidful/albert_chinese_small": AlbertConfig,  #
     "clue/albert_chinese_small": AlbertConfig,
     "voidful/albert_chinese_base": AlbertConfig,  #
+    "hfl/chinese-roberta-wwm-ext-large": BertConfig,
 }
 
 MODEL_CLASS_MAP = {
@@ -64,6 +65,7 @@ MODEL_CLASS_MAP = {
     "voidful/albert_chinese_small": AlbertModel,  #
     "clue/albert_chinese_small": AlbertModel,
     "voidful/albert_chinese_base": AlbertModel,  #
+    "hfl/chinese-roberta-wwm-ext-large": BertModel,
 }
 
 
