@@ -90,6 +90,8 @@ TEXT_CNN:
     cnn_use_bn: False
     cnn_dropout: 0
     pool_method: "max"
+    output_hidden_dim: 80
+    output_use_bn: False
     output_hidden_act_func: "PReLU"
     # ================= Training params =================
     num_train_epochs: 40
