@@ -79,9 +79,9 @@ class NLPDataset:
         self.diagnosis_df['prediction'] = predictions
 
     def add_feature(self, name, values):
-        print(len(values), len(self.features))
-        assert(len(values)==len(self.features))
+        # print(len(values), len(self.features))
         self.insert_skipped_samples(self.features, value=None)
+        assert(len(values)==len(self.features))
         features = []
         for x, y in zip(values, self.features):
             if x is not None and y is not None:
