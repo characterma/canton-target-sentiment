@@ -1,3 +1,4 @@
+task: "chinese_word_segmentation"
 device: 0
 data:
   output_dir: "../config/examples/chinese_word_segmentation/BERT_CRF"
@@ -12,7 +13,6 @@ eval:
   batch_size: 64
   model_file: "model.pt" # under output_dir / "model"
 train:
-  task: "chinese_word_segmentation"
   model_class: "BERT_CRF"
   seed: 42
   batch_size: 16
