@@ -73,10 +73,7 @@ class TestEndToEnd(unittest.TestCase):
         data = TargetClassificationFeature(
             data_dict=data_dict,
             tokenizer=tokenizer,
-            prepro_config=args.run_config['text_prepro'],
-            max_length=args.model_config['max_length'],
-            required_features=get_model_inputs(args),
-            label_to_id=None,
+            args=args,
         )
 
         batch = dict()
