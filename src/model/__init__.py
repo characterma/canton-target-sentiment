@@ -20,4 +20,5 @@ def get_model(args):
         model = Model(args=args)
     else:
         model = torch.load(model_path)
+        model = model.to(args.device)
     return model

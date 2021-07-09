@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from transformers import BertPreTrainedModel
 
-from model.layer.fc import FCLayer
+from model.layer.fc import FCLayer, LinearLayer
 from model.utils import load_pretrained_bert, load_pretrained_config
 
 
@@ -19,11 +19,19 @@ class BERT_CLS(BertPreTrainedModel):
         dropout_rate = self.pretrained_model.config.hidden_dropout_prob
 
         self.num_labels = len(args.label_to_id)
-        self.classifier = FCLayer(
-            input_dim=hidden_size, 
-            output_dim=self.num_labels, 
-            dropout_rate=dropout_rate,
-            activation=None 
+        output_hidden_dim = args.model_config['output_hidden_dim']
+        output_hidden_act_func = args.model_config['output_hidden_act_func']
+
+        if output_hidden_dim is not None:
+            h_dim=[output_hidden_dim, self.num_labels]
+        else:
+            h_dim=[self.num_labels]
+            
+        self.linear = LinearLayer(
+            in_dim=hidden_size, 
+            h_dim=h_dim, 
+            activation=output_hidden_act_func,
+            use_bn=False
         )
         
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")

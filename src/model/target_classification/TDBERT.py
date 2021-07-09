@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from transformers import BertPreTrainedModel
 from model.utils import load_pretrained_bert, load_pretrained_config
-from model.layer.fc import FCLayer
+from model.layer.fc import LinearLayer
 
 
 class TDBERT(BertPreTrainedModel):
@@ -18,18 +18,22 @@ class TDBERT(BertPreTrainedModel):
 
         self.pretrained_config = pretrained_config
         self.num_labels = len(args.label_to_id)
-        self.fc_layer = FCLayer(
-            input_dim=self.pretrained_config.hidden_size,
-            output_dim=self.pretrained_config.hidden_size,
-            dropout_rate=self.model_config["dropout_rate"],
-            activation="Tanh"
+
+        output_hidden_dim = args.model_config['output_hidden_dim']
+        output_hidden_act_func = args.model_config['output_hidden_act_func']
+        
+        if output_hidden_dim is not None:
+            h_dim=[output_hidden_dim, self.num_labels]
+        else:
+            h_dim=[self.num_labels]
+
+        self.linear = LinearLayer(
+            in_dim=pretrained_config.hidden_size, 
+            h_dim=h_dim, 
+            activation=output_hidden_act_func,
+            use_bn=False
         )
-        self.classifier = FCLayer(
-            input_dim=self.pretrained_config.hidden_size,
-            output_dim=self.num_labels,
-            dropout_rate=self.model_config["dropout_rate"],
-            activation=None,
-        )
+
         self.loss_func = nn.CrossEntropyLoss(reduction="none")
         self.to(args.device)
 
@@ -71,9 +75,8 @@ class TDBERT(BertPreTrainedModel):
             h, target_mask
         )  # outputs: [B, S, Dim], target_mask: [B, S]
 
-        print(dir(self.fc_layer))
-        tgt_h = self.fc_layer(tgt_h)
-        logits = self.classifier(tgt_h)
+
+        logits = self.linear(tgt_h)
         prediction = torch.argmax(logits, dim=1).cpu().tolist()
 
         if label is not None:

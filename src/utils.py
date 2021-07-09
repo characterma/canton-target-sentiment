@@ -66,10 +66,13 @@ def load_config(args):
     args.train_config = run_config['train']
     args.kd_config = run_config['train'].get('kd', {'use_kd': False})
     args.prepro_config = run_config['text_prepro']
+    args.explain_config = run_config.get('explanation', {})
     model_config = load_yaml(config_dir / "model.yaml")
     model_class = args.train_config['model_class']
     args.model_config = model_config[model_class]
     args.model_config.update(run_config['model_params'])
+
+    
     args.config_dir = config_dir
     output_dir = Path(args.data_config['output_dir'])
     if not os.path.exists(output_dir):

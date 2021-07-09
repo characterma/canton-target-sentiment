@@ -38,6 +38,7 @@ class BERT_CRF(BertPreTrainedModel):
                 param.requires_grad = False
 
     def forward(self, input_ids, attention_mask, label=None):
+
         lm = self.pretrained_model(
             input_ids=input_ids,
             attention_mask=attention_mask,

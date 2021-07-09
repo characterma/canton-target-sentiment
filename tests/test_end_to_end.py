@@ -28,8 +28,8 @@ class TestEndToEnd(unittest.TestCase):
         for param_name in state_dict1.keys():
             if param_name.startswith("pretrained_model.embeddings"):
                 self.assertTrue(torch.equal(state_dict1[param_name], state_dict2[param_name]))
-
-        self.assertTrue(not torch.equal(state_dict1['classifier.linear.weight'], state_dict2['classifier.linear.weight']))
+        # print(state_dict1.keys())
+        self.assertTrue(not torch.equal(state_dict1['linear.linear.fc_0.weight'], state_dict2['linear.linear.fc_0.weight']))
 
 
     def test_freeze_non_bert_embeddings(self):
@@ -81,7 +81,7 @@ class TestEndToEnd(unittest.TestCase):
             batch[col] = torch.stack([data.feature_dict[col]], dim=0)
 
         results = prediction_step(model, batch, args)
-        self.assertTrue(results['prediction'][0]=='neutral')
+        self.assertEqual(results['prediction'][0], 'negative')
         self.assertTrue(results['loss'] is None)
 
     def test_set_seed(self):
@@ -111,22 +111,12 @@ class TestEndToEnd(unittest.TestCase):
         self.assertTrue(has_diff)
 
     def tearDown(self):
-        os.system("rm -rf ../tests/test_end_to_end_samples/1/model")
-        os.system("rm -rf ../tests/test_end_to_end_samples/1/result")
-        os.system("rm -rf ../tests/test_end_to_end_samples/2/model")
-        os.system("rm -rf ../tests/test_end_to_end_samples/2/result")
-        os.system("rm -rf ../tests/test_end_to_end_samples/3/model")
-        os.system("rm -rf ../tests/test_end_to_end_samples/3/result")
-        os.system("rm -rf ../tests/test_end_to_end_samples/4/model")
-        os.system("rm -rf ../tests/test_end_to_end_samples/4/result")
-        os.system("rm -rf ../tests/test_end_to_end_samples/5/model")
-        os.system("rm -rf ../tests/test_end_to_end_samples/5/result")
-        os.system("rm -rf ../tests/test_end_to_end_samples/6/model")
-        os.system("rm -rf ../tests/test_end_to_end_samples/6/result")
-        os.system("rm -rf ../tests/test_end_to_end_samples/7/model")
-        os.system("rm -rf ../tests/test_end_to_end_samples/7/result")
-        os.system("rm -rf ../tests/test_end_to_end_samples/8/model")
-        os.system("rm -rf ../tests/test_end_to_end_samples/8/result")
+        for i in range(1, 9):
+
+            os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/model")
+            os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/result")
+            os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/logs")
+            os.system(f"rm ../tests/test_end_to_end_samples/{i}/log")
 
 
 

@@ -18,9 +18,14 @@ class BERT_AVG(BertPreTrainedModel):
 
         self.num_labels = len(args.label_to_id)
 
+        if output_hidden_dim is not None:
+            h_dim=[output_hidden_dim, self.num_labels]
+        else:
+            h_dim=[self.num_labels]
+            
         self.linear = LinearLayer(
             in_dim=hidden_size, 
-            h_dim=[output_hidden_dim, self.num_labels], 
+            h_dim=h_dim, 
             activation=output_hidden_act_func,
             use_bn=False
         )

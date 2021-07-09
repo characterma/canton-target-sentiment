@@ -40,12 +40,13 @@ class SequenceClassificationFeature(NLPFeature):
         input_ids = tokens_encoded.input_ids
         attention_mask = tokens_encoded.attention_mask
         token_type_ids = tokens_encoded.token_type_ids
-        tokens = tokenizer.convert_ids_to_tokens(input_ids)
 
         if diagnosis:
-            diagnosis_dict['fea_content'] = content
-            diagnosis_dict['fea_input_ids'] = input_ids
-            diagnosis_dict['fea_tokens'] = tokens
+            tokens = tokenizer.convert_ids_to_tokens(input_ids)
+            diagnosis_dict['content'] = content
+            diagnosis_dict['input_ids'] = input_ids
+            diagnosis_dict['tokens'] = tokens
+            diagnosis_dict['label'] = label
 
         if np.sum(attention_mask)==0:
             return None, diagnosis_dict

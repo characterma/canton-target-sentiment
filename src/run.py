@@ -14,6 +14,7 @@ from tokenizer import get_tokenizer
 from model import get_model
 from label import get_label_to_id
 from trainer_kd import get_logits, KDTrainer
+from explainer import Explainer
 
 
 logger = logging.getLogger(__name__)
@@ -104,18 +105,30 @@ def run(args):
     test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
     combine_and_save_metrics(metrics=[train_metrics, dev_metrics, test_metrics], args=args)
     combine_and_save_statistics(datasets=[train_dataset, dev_dataset, test_dataset], args=args)
-    save_config(args)
+    
+    if not args.test_only:
+        save_config(args)
+
+    if args.explain:
+        explainer = Explainer(
+            model=model, 
+            dataset=test_dataset, 
+            args=args
+        )
+
+        explainer.explain()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", type=str, default="../config/")
     parser.add_argument("--test_only", action="store_true")
+    parser.add_argument("--explain", action="store_true")
     args = parser.parse_args()
 
     if args.test_only:
         run_config = load_yaml(Path(args.config_dir) / "run.yaml")
-        args.config_dir = Path(run_config['data']['output_dir'])
+        args.config_dir = Path(run_config['data']['output_dir']) / "model"
 
     args = load_config(args)
     set_log_path(args.output_dir)
