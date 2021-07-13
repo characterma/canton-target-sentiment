@@ -69,8 +69,9 @@ MODEL_CLASS_MAP = {
 }
 
 
-def load_pretrained_bert(model_config):
+def load_pretrained_bert(args):
     logger.info("***** Loading pretrained language model *****")
+    model_config = args.model_config
     prev_model_dir = model_config.get('pretrained_lm_from_prev', None)
     if prev_model_dir is None:
         # 
@@ -82,7 +83,7 @@ def load_pretrained_bert(model_config):
         prev_args = get_args(prev_model_dir)
         prev_args = load_config(prev_args)
         model_path = prev_model_dir / "model.pt"
-        model = get_model(model_path)
+        model = get_model(args=args)
         return model.pretrained_model
 
 

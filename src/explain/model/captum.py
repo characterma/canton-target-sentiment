@@ -1,57 +1,60 @@
-from captum.attr import (
-    DeepLift,
-    DeepLiftShap,
-    IntegratedGradients,
-    LayerConductance,
-    NeuronConductance,
-    NoiseTunnel,
-    LayerIntegratedGradients
-)
+import captum.attr as captum_attr # https://github.com/pytorch/captum/blob/master/captum/attr/__init__.py
 import torch
+from explain.model.base import NLPExplanation
 
 
-class CaptumExplanation:
+class LayerIntegratedGradients(NLPExplanation):
     def __init__(self, model, args):
-        self.args = args
-        self.explain_config = args.explain_config
-        self.model = model 
-        explain_model_class = eval(args.explain_config['model_class'])
-        self.explain_model = explain_model_class(
+        super().__init__(model=model, args=args)
+        model_class = getattr(captum_attr, "LayerIntegratedGradients")
+        self.explain_model = model_class(
             self.get_logit, 
             self.model.pretrained_model.embeddings
         )
 
-    def get_prediction(self, **inputs):
-        outputs = self.model(**inputs)
-        return outputs[1]
-
-    def get_logit(self, *args):
-        outputs = self.model(*args)
-        return outputs[2]
-
-    def __call__(self, batch, target=None):
+    def __call__(self, batch, **kwargs):
         """
-        batch: dict of tensor
-        target: int or list or tensor [1,2,0,..]
         """
         # make inputs
-        inputs = dict()
-        # print(batch)
-        for col in batch:
-            if torch.is_tensor(batch[col]):
-                inputs[col] = batch[col].to(self.args.device).long()
+        inputs = self.make_inputs(batch)
 
+        target = kwargs.get('target', None)
         if target is None:
             target = self.get_prediction(**inputs)
 
         additional_forward_args = tuple([inputs[col] for col in inputs if col!="input_ids"])
-        attributions, delta = self.explain_model.attribute(
+        attributions = self.explain_model.attribute(
             inputs=inputs['input_ids'], 
             target=target, 
             additional_forward_args=additional_forward_args, 
-            return_convergence_delta=True, 
             internal_batch_size=self.explain_config['batch_size']
         )
         scores = attributions.sum(dim=-1) 
-        # remove [PAD] and special tokens # tha (0.1) #nk (0.5)
-        return scores # [B, L]
+        return scores
+
+
+
+class Lime(NLPExplanation):
+    def __init__(self, model, args):
+        super().__init__(model=model, args=args)
+        model_class = getattr(captum_attr, "Lime")
+        self.explain_model = model_class(self.get_logit)
+
+    def __call__(self, batch, **kwargs):
+        """
+        """
+        # make inputs
+        inputs = self.make_inputs(batch)
+
+        target = kwargs.get('target', None)
+        if target is None:
+            target = self.get_prediction(**inputs)
+
+        additional_forward_args = tuple([inputs[col] for col in inputs if col!="input_ids"])
+        attributions = self.explain_model.attribute(
+            inputs=inputs['input_ids'], 
+            target=target, 
+            additional_forward_args=additional_forward_args, 
+            n_samples=100
+        )
+        return attributions

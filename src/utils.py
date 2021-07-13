@@ -26,7 +26,6 @@ def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    # transformers.set_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
@@ -72,7 +71,6 @@ def load_config(args):
     args.model_config = model_config[model_class]
     args.model_config.update(run_config['model_params'])
 
-    
     args.config_dir = config_dir
     output_dir = Path(args.data_config['output_dir'])
     if not os.path.exists(output_dir):
@@ -85,8 +83,7 @@ def load_config(args):
         os.makedirs(args.model_dir)
     if not os.path.exists(args.result_dir):
         os.makedirs(args.result_dir)
-    # if not os.path.exists(args.result_dir / "tensorboard"):
-    #     os.makedirs(args.result_dir / "tensorboard")
+
     args.pretrained_emb_path = args.model_config.get("pretrained_emb_path", None)
     args.tensorboard_dir = Path(output_dir / "logs")
     if not os.path.exists(args.tensorboard_dir):
@@ -110,13 +107,24 @@ def combine_and_save_statistics(datasets, args):
     datasets = [ds for ds in datasets if ds is not None]
     if hasattr(datasets[0], 'diagnosis_df'):
         diagnosis_df = pd.concat([ds.diagnosis_df for ds in datasets])
-        filename = 'diagnosis_test_only.xlsx' if args.test_only else 'diagnosis.xlsx'
-        diagnosis_df.to_excel(args.result_dir / filename, index=False)
+        try:
+            filename = 'diagnosis_test_only.xlsx' if args.test_only else 'diagnosis.xlsx'
+            diagnosis_df.to_excel(args.result_dir / filename, index=False)
+        except Exception as e:
+            filename = 'diagnosis_test_only.pkl' if args.test_only else 'diagnosis.pkl'
+            with open(filename, "wb") as f:
+                pickle.dump(diagnosis_df, f)
 
     if hasattr(datasets[0], 'get_data_analysis'):
         statistics_df = pd.DataFrame(data=[ds.get_data_analysis() for ds in datasets])
-        filename = 'statistics_test_only.csv' if args.test_only else 'statistics.csv'
-        statistics_df.to_csv(args.result_dir / filename, index=False)
+        try:
+            filename = 'statistics_test_only.csv' if args.test_only else 'statistics.csv'
+            statistics_df.to_csv(args.result_dir / filename, index=False)
+        except Exception as e:
+            filename = 'statistics_test_only.pkl' if args.test_only else 'statistics.pkl'
+            with open(filename, "wb") as f:
+                pickle.dump(statistics_df, f)
+
 
 
 def make_batches(elements, batch_size):

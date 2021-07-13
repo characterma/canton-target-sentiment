@@ -77,6 +77,9 @@ def run_kd(args):
 
 
 def run(args):
+    if not args.test_only:
+        save_config(args)
+        
     tokenizer = get_tokenizer(args=args)
 
     label_to_id, label_to_id_inv = get_label_to_id(tokenizer, args)
@@ -102,12 +105,6 @@ def run(args):
         train_metrics = None
         dev_metrics = None
 
-    test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
-    combine_and_save_metrics(metrics=[train_metrics, dev_metrics, test_metrics], args=args)
-    combine_and_save_statistics(datasets=[train_dataset, dev_dataset, test_dataset], args=args)
-    
-    if not args.test_only:
-        save_config(args)
 
     if args.explain:
         explainer = Explainer(
@@ -115,9 +112,12 @@ def run(args):
             dataset=test_dataset, 
             args=args
         )
-
         explainer.explain()
 
+    test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
+    combine_and_save_metrics(metrics=[train_metrics, dev_metrics, test_metrics], args=args)
+    combine_and_save_statistics(datasets=[train_dataset, dev_dataset, test_dataset], args=args)
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -125,10 +125,6 @@ if __name__ == "__main__":
     parser.add_argument("--test_only", action="store_true")
     parser.add_argument("--explain", action="store_true")
     args = parser.parse_args()
-
-    if args.test_only:
-        run_config = load_yaml(Path(args.config_dir) / "run.yaml")
-        args.config_dir = Path(run_config['data']['output_dir']) / "model"
 
     args = load_config(args)
     set_log_path(args.output_dir)

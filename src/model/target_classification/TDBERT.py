@@ -12,7 +12,7 @@ class TDBERT(BertPreTrainedModel):
         
         # assert target_pooling in ["mean", "max"]
         self.model_config = args.model_config
-        self.pretrained_model = load_pretrained_bert(self.model_config)
+        self.pretrained_model = load_pretrained_bert(args)
         if not args.model_config["embedding_trainable"]:
             self.freeze_emb()
 

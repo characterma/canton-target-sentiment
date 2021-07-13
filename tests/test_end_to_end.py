@@ -116,7 +116,7 @@ class TestEndToEnd(unittest.TestCase):
             os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/model")
             os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/result")
             os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/logs")
-            os.system(f"rm ../tests/test_end_to_end_samples/{i}/log")
+            # os.system(f"rm ../tests/test_end_to_end_samples/{i}/log")
 
 
 

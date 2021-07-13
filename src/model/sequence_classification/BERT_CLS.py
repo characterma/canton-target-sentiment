@@ -13,7 +13,7 @@ class BERT_CLS(BertPreTrainedModel):
             load_pretrained_config(args.model_config)
         )
         self.model_config = args.model_config
-        self.pretrained_model = load_pretrained_bert(self.model_config)
+        self.pretrained_model = load_pretrained_bert(args)
 
         hidden_size = self.pretrained_model.config.hidden_size
         dropout_rate = self.pretrained_model.config.hidden_dropout_prob

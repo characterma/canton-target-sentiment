@@ -83,7 +83,7 @@ def evaluate(model, eval_dataset, args):
     for m in metrics:
         logger.info("  %s = %s", m, str(metrics[m]))
 
-    eval_dataset.insert_predictions(predictions)
+    eval_dataset.insert_diagnosis_column(predictions, "prediction")
     return metrics
 
 

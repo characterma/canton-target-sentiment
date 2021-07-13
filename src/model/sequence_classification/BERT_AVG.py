@@ -10,7 +10,7 @@ class BERT_AVG(BertPreTrainedModel):
     def __init__(self, args):
         super(BERT_AVG, self).__init__(load_pretrained_config(args.model_config))
         self.model_config = args.model_config
-        self.pretrained_model = load_pretrained_bert(self.model_config)
+        self.pretrained_model = load_pretrained_bert(args)
 
         hidden_size = self.pretrained_model.config.hidden_size
         output_hidden_dim = args.model_config['output_hidden_dim']

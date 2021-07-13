@@ -78,6 +78,11 @@ class NLPDataset:
             self.insert_skipped_samples(predictions)
         self.diagnosis_df['prediction'] = predictions
 
+    def insert_diagnosis_column(self, values, name):
+        if len(values)!= len(self.diagnosis):
+            self.insert_skipped_samples(values)
+        self.diagnosis_df[name] = values
+
     def add_feature(self, name, values):
         # print(len(values), len(self.features))
         self.insert_skipped_samples(self.features, value=None)
