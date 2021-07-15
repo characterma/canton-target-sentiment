@@ -125,5 +125,6 @@ class Faithfulness:
             for col in batch:
                 if torch.is_tensor(batch[col]):
                     inputs[col] = batch[col].to(self.args.device).long()
-            _, _, logits = self.model(**inputs)
+            outputs = self.model(**inputs)
+            logits = outputs[2]
         return logits

@@ -46,8 +46,8 @@ class TEXT_CNN(nn.Module):
         self.to(args.device)
 
     def forward(self, input_ids, attention_mask, label=None, **kwargs):
-        x = self.emb(input_ids) # [B, L, E]
-        x = self.conv(x, attention_mask) # [B, Kn*#ks]
+        x = self.emb(input_ids.long()) # [B, L, E]
+        x = self.conv(x, attention_mask.long()) # [B, Kn*#ks]
 
         if self.cnn_dp is not None:
             x = self.cnn_dp(x)

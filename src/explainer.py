@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class Explainer:
-    def __init__(self, model, dataset, args):
+    def __init__(self, model, dataset, args, run_faithfulness=True):
         self.args = args
         self.explain_config = self.args.explain_config
         
@@ -22,6 +22,7 @@ class Explainer:
             model=model, 
             args=args
         )
+        self.run_faithfulness = run_faithfulness
 
     def explain(self):
         logger.info("***** Running explanation *****")
@@ -42,25 +43,25 @@ class Explainer:
                 batch=batch, 
                 target=None
             )
-
-            faithfulness = Faithfulness(
-                model=self.model, 
-                batch=batch, 
-                scores=scores, 
-                mask_id=100,
-                args=self.args
-            )
             explanations.extend(scores.tolist())
-            sufficiency.extend(faithfulness.sufficiency)
-            comprehensiveness.extend(faithfulness.comprehensiveness)
+            if self.run_faithfulness:
+                faithfulness = Faithfulness(
+                    model=self.model, 
+                    batch=batch, 
+                    scores=scores, 
+                    mask_id=100,
+                    args=self.args
+                )
+                sufficiency.extend(faithfulness.sufficiency)
+                comprehensiveness.extend(faithfulness.comprehensiveness)
 
         # explanations # [N, L]
         # sufficiency # list: [N, 5]
         # comprehensiveness # list: [N, 5]
-
         self.dataset.insert_diagnosis_column(explanations, "explanations")
-        self.dataset.insert_diagnosis_column(sufficiency, "sufficiency")
-        self.dataset.insert_diagnosis_column(comprehensiveness, "comprehensiveness")
+        if self.run_faithfulness:
+            self.dataset.insert_diagnosis_column(sufficiency, "sufficiency")
+            self.dataset.insert_diagnosis_column(comprehensiveness, "comprehensiveness")
 
         tokens = self.dataset.diagnosis_df['tokens'].tolist()
         tokens_sorted = []
@@ -73,20 +74,21 @@ class Explainer:
             )
 
         self.dataset.insert_diagnosis_column(tokens_sorted, "tokens_sorted")
-
-        sufficiency_avg = np.mean(sufficiency, axis=0)
-        comprehensiveness_avg = np.mean(comprehensiveness, axis=0)
-        faithfulness_rep = pd.DataFrame(
-            data={
-                "p": np.arange(0,6)/10, 
-                "sufficiency_avg": sufficiency_avg, 
-                "comprehensiveness_avg": comprehensiveness_avg}
-    
-        )
-        faithfulness_rep.to_csv(
-            self.args.result_dir / f"faithfulness_rep_{self.args.explain_config['model_class'].lower()}.csv", 
-            index=False
-        )
+        
+        if self.run_faithfulness:
+            sufficiency_avg = np.mean(sufficiency, axis=0)
+            comprehensiveness_avg = np.mean(comprehensiveness, axis=0)
+            faithfulness_rep = pd.DataFrame(
+                data={
+                    "p": np.arange(0,6)/10, 
+                    "sufficiency_avg": sufficiency_avg, 
+                    "comprehensiveness_avg": comprehensiveness_avg}
+        
+            )
+            faithfulness_rep.to_csv(
+                self.args.result_dir / f"faithfulness_rep_{self.args.explain_config['model_class'].lower()}.csv", 
+                index=False
+            )
 
 
 
