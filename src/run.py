@@ -109,10 +109,9 @@ def run(args):
     if args.explain:
         explainer = Explainer(
             model=model, 
-            dataset=test_dataset, 
             args=args
         )
-        explainer.explain()
+        explainer.explain(dataset=test_dataset)
 
     test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
     combine_and_save_metrics(metrics=[train_metrics, dev_metrics, test_metrics], args=args)

@@ -3,7 +3,7 @@ import logging
 
 
 class Faithfulness:
-    def __init__(self, model, batch, scores, mask_id, args):
+    def __init__(self, model, inputs, scores, mask_id, args):
         """
         model: outputs logits
         batch: model inputs, [B, L]
@@ -11,9 +11,9 @@ class Faithfulness:
         """
         self.args = args 
         self.model = model 
-        self.batch = batch 
+        self.inputs = inputs 
         self.scores = scores
-        self.predicted_cls = self.predict(batch=self.batch).argmax(-1)
+        self.predicted_cls = self.predict(inputs=self.inputs).argmax(-1)
         self.mask_id = mask_id
 
         # run faithfulness
@@ -25,8 +25,8 @@ class Faithfulness:
         portion: value in (0, 1), [0.1, 0.2, ...]
         mode: "sufficiency" or "comprehensiveness"
         """
-        input_ids = torch.clone(self.batch['input_ids'])
-        lengths = self.batch['attention_mask'].sum(1)
+        input_ids = torch.clone(self.inputs['input_ids'])
+        lengths = self.inputs['attention_mask'].sum(1)
 
         # print(input_ids)
         for idx, l in enumerate(lengths.tolist()):
@@ -60,8 +60,8 @@ class Faithfulness:
 
     def get_sufficiency(self):
         sufficiency = []
-        batch_size = self.batch['input_ids'].size()[0]
-        batches = [self.batch]
+        batch_size = self.inputs['input_ids'].size()[0]
+        batches = [self.inputs]
         for p in range(1, 6):
             p = p / 10 
             input_ids = self.mask_tokens(portion=p, mode='sufficiency')
@@ -70,7 +70,7 @@ class Faithfulness:
 
         batch = self.concat_batches(batches) # [B0,B1,B2,..B5]
 
-        logits = self.predict(batch=batch)
+        logits = self.predict(inputs=batch)
         logits = torch.nn.functional.softmax(logits, dim=-1)
 
         for idx, cls_id in enumerate(self.predicted_cls.tolist()):
@@ -86,8 +86,8 @@ class Faithfulness:
         # https://arxiv.org/pdf/1911.03429.pdf
         
         comprehensiveness = []
-        batch_size = self.batch['input_ids'].size()[0]
-        batches = [self.batch]
+        batch_size = self.inputs['input_ids'].size()[0]
+        batches = [self.inputs]
         for p in range(1, 6):
             p = p / 10 
             input_ids = self.mask_tokens(portion=p, mode='comprehensiveness')
@@ -96,7 +96,7 @@ class Faithfulness:
 
         batch = self.concat_batches(batches)
 
-        logits = self.predict(batch=batch)
+        logits = self.predict(inputs=batch)
         logits = torch.nn.functional.softmax(logits, dim=-1)
 
         for idx, cls_id in enumerate(self.predicted_cls.tolist()):
@@ -111,20 +111,15 @@ class Faithfulness:
 
     def replace_input_ids(self, input_ids):
         batch = dict()
-        for col in self.batch:
+        for col in self.inputs:
             if col=='input_ids' and input_ids is not None:
                 batch[col] = input_ids
             else:
-                batch[col] = self.batch[col]
+                batch[col] = self.inputs[col]
         return batch
 
-    def predict(self, batch):
+    def predict(self, inputs):
         self.model.eval()
-        inputs = dict()
-        with torch.no_grad():
-            for col in batch:
-                if torch.is_tensor(batch[col]):
-                    inputs[col] = batch[col].to(self.args.device).long()
-            outputs = self.model(**inputs)
-            logits = outputs[2]
+        outputs = self.model(**inputs)
+        logits = outputs[2]
         return logits

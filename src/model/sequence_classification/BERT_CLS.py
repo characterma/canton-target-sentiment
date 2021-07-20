@@ -19,8 +19,8 @@ class BERT_CLS(BertPreTrainedModel):
         dropout_rate = self.pretrained_model.config.hidden_dropout_prob
 
         self.num_labels = len(args.label_to_id)
-        output_hidden_dim = args.model_config['output_hidden_dim']
-        output_hidden_act_func = args.model_config['output_hidden_act_func']
+        output_hidden_dim = args.model_config.get('output_hidden_dim', None)
+        output_hidden_act_func = args.model_config.get('output_hidden_act_func', None)
 
         if output_hidden_dim is not None:
             h_dim=[output_hidden_dim, self.num_labels]
@@ -33,7 +33,6 @@ class BERT_CLS(BertPreTrainedModel):
             activation=output_hidden_act_func,
             use_bn=False
         )
-        
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)
         

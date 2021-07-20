@@ -1,53 +1,75 @@
 import abc
 import torch
+import captum.attr as captum_attr
 
 
 class WrappedModel(torch.nn.Module):
-    def __init__(self, model, args):
+    def __init__(self, model, args, logits_index=None):
         super().__init__()
         self.model = model 
-        self.to(args.device)
+        self.logits_index = logits_index
 
-    def forward(self, *inputs):
-        # print(type(inputs[0]))
-        # print(type(inputs[1]))
-        outputs = self.model(*inputs)
-        return outputs[1]
-
-
-class NLPExplanation(abc.ABC):
-    def __init__(self, model, args):
-        self.args = args
-        self.explain_config = args.explain_config
-        self.model = model 
-        self.wrapped_model = WrappedModel(model=model, args=args)
-        self.explain_model = None
-
-    def get_outputs(self, **inputs):
+    def forward(self, **inputs):
         outputs = self.model(**inputs)
-        return outputs
+        if self.logits_index is None:
+            return outputs
+        else:
+            return outputs[self.logits_index]
 
-    def get_prediction(self, **inputs):
-        outputs = self.model(**inputs)
-        return outputs[1]
 
-    def get_logit(self, *args):
-        outputs = self.model(*args)
-        return outputs[2]
+class ExplainModel:
+    def __init__(self, method, model, layer, logits_index=None):
+        # self.args = args
+        self.method = method
+        self.model = model
+        self.layer = layer 
+        self.logits_index = logits_index
 
-    def make_inputs(self, batch):
-        inputs = dict()
-        for col in batch:
-            if torch.is_tensor(batch[col]):
-                inputs[col] = batch[col].to(self.args.device).long()
-        return inputs
+        self.wrapped_model = WrappedModel(model=model, logits_index=logits_index)
 
-    @abc.abstractmethod
-    def __call__(self, batch, **kwargs):
-        """
-        Args:
-            batch: dict of tensor
-        Return:
-            scores: [B,L]
-        """
-        return NotImplemented
+    def init_expl_model(self):
+        if self.method=="Random":
+            self.explain_model = None 
+        elif self.method=="LayerIntegratedGradients":
+            layer = eval("self.model." + self.layer)
+            self.explain_model = captum_attr.LayerIntegratedGradients(
+                forward_func=self.wrapped_model,
+                layer=layer
+            )
+        elif self.method=="LayerGradientXActivation":
+            layer = eval("self.model." + self.layer)
+            self.explain_model = captum_attr.LayerIntegratedGradients(
+                forward_func=self.wrapped_model,
+                layer=layer
+            )
+        else:
+            raise(ValueError)
+
+    def __call__(self, inputs):
+        if self.method=="Random":
+            attention_mask = inputs['attention_mask']
+            scores = torch.rand(*attention_mask.size())
+            scores = scores * attention_mask
+            return scores
+
+        elif self.method=="LayerIntegratedGradients":
+            additional_forward_args = tuple([inputs[col] for col in inputs if col!="input_ids"])
+            attributions = self.explain_model.attribute(
+                inputs=inputs['input_ids'], 
+                target=inputs['target'], 
+                additional_forward_args=additional_forward_args, 
+            )
+            scores = attributions.sum(dim=-1) 
+            return scores 
+
+        elif self.method=="LayerGradientXActivation":
+            additional_forward_args = tuple([inputs[col] for col in inputs if col!="input_ids"])
+            attributions = self.explain_model.attribute(
+                inputs=inputs['input_ids'], 
+                target=inputs['target'], 
+                additional_forward_args=additional_forward_args, 
+            )
+            scores = attributions.sum(dim=-1) 
+            return scores 
+        else:
+            return None 

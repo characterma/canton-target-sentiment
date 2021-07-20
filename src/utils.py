@@ -56,6 +56,7 @@ def get_args(config_dir):
 
 def load_config(args):
     config_dir = Path(args.config_dir)
+    print(config_dir)
     run_config = load_yaml(config_dir / "run.yaml")
     args.run_config = run_config
     args.data_config = run_config['data']

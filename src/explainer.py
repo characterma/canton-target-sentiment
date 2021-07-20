@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from explain import get_explanation_model
+from explain import ExplainModel
 from explain.faithfulness import Faithfulness
 from tqdm import tqdm 
 import logging 
@@ -11,27 +11,35 @@ logger = logging.getLogger(__name__)
 
 
 class Explainer:
-    def __init__(self, model, dataset, args, run_faithfulness=True):
+    def __init__(self, model, args, run_faithfulness=True):
         self.args = args
-        self.explain_config = self.args.explain_config
-        
         self.model = model
-        self.dataset = dataset 
+        self.config = self.args.explain_config
+        self.device = args.device
 
-        self.explanation_model = get_explanation_model(
-            model=model, 
-            args=args
+        self.explanation_model = ExplainModel(
+            method=self.config['method'], 
+            model=self.model, 
+            layer=self.config['layer'],
+            logits_index=2
         )
+
         self.run_faithfulness = run_faithfulness
 
-    def explain(self):
+    def make_inputs(self, batch):
+        inputs = dict()
+        for col in batch:
+            inputs[col] = batch[col].to(self.device)
+        return inputs
+
+    def explain(self, dataset):
         logger.info("***** Running explanation *****")
-        logger.info("  Num examples = %d", len(self.dataset))
+        logger.info("  Num examples = %d", len(dataset))
 
         dataloader = DataLoader(
-            self.dataset,
+            dataset,
             shuffle=False, 
-            batch_size=self.explain_config["batch_size"],
+            batch_size=self.config["batch_size"],
         )
         
         explanations = []
@@ -39,15 +47,14 @@ class Explainer:
         comprehensiveness = []
 
         for idx, batch in tqdm(enumerate(dataloader)):
-            scores = self.explanation_model(
-                batch=batch, 
-                target=None
-            )
+            inputs = self.make_inputs(batch)
+            scores = self.explanation_model(inputs=inputs)
             explanations.extend(scores.tolist())
+
             if self.run_faithfulness:
                 faithfulness = Faithfulness(
                     model=self.model, 
-                    batch=batch, 
+                    inputs=inputs, 
                     scores=scores, 
                     mask_id=100,
                     args=self.args
@@ -55,15 +62,12 @@ class Explainer:
                 sufficiency.extend(faithfulness.sufficiency)
                 comprehensiveness.extend(faithfulness.comprehensiveness)
 
-        # explanations # [N, L]
-        # sufficiency # list: [N, 5]
-        # comprehensiveness # list: [N, 5]
-        self.dataset.insert_diagnosis_column(explanations, "explanations")
+        dataset.insert_diagnosis_column(explanations, "explanations")
         if self.run_faithfulness:
-            self.dataset.insert_diagnosis_column(sufficiency, "sufficiency")
-            self.dataset.insert_diagnosis_column(comprehensiveness, "comprehensiveness")
+            dataset.insert_diagnosis_column(sufficiency, "sufficiency")
+            dataset.insert_diagnosis_column(comprehensiveness, "comprehensiveness")
 
-        tokens = self.dataset.diagnosis_df['tokens'].tolist()
+        tokens = dataset.diagnosis_df['tokens'].tolist()
         tokens_sorted = []
 
         for t, s in zip(tokens, explanations):
@@ -73,7 +77,7 @@ class Explainer:
                 [t[0] for t in tkns_sorted]
             )
 
-        self.dataset.insert_diagnosis_column(tokens_sorted, "tokens_sorted")
+        dataset.insert_diagnosis_column(tokens_sorted, "tokens_sorted")
         
         if self.run_faithfulness:
             sufficiency_avg = np.mean(sufficiency, axis=0)
@@ -86,7 +90,7 @@ class Explainer:
         
             )
             faithfulness_rep.to_csv(
-                self.args.result_dir / f"faithfulness_rep_{self.args.explain_config['model_class'].lower()}.csv", 
+                self.args.result_dir / f"faithfulness_rep_{self.config['method'].lower()}.csv", 
                 index=False
             )
 
