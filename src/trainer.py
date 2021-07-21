@@ -4,11 +4,7 @@ import numpy as np
 import copy
 import sklearn
 import torch
-from torch.utils.data import (
-    DataLoader,
-    RandomSampler,
-    WeightedRandomSampler,
-)
+from torch.utils.data import DataLoader, RandomSampler, WeightedRandomSampler
 from torch.optim import RMSprop
 from tqdm import tqdm, trange
 from transformers import AdamW, get_linear_schedule_with_warmup
@@ -27,14 +23,14 @@ def prediction_step(model, batch, args):
         for col in batch:
             if torch.is_tensor(batch[col]):
                 inputs[col] = batch[col].to(args.device).long()
-        x = model(
-            **inputs,
-        )
+        x = model(**inputs)
 
     results["prediction"] = []
     for x1 in x[1]:
         if isinstance(x1, list):
-            results["prediction"].append(list(map(lambda x: args.label_to_id_inv[x], x1)))
+            results["prediction"].append(
+                list(map(lambda x: args.label_to_id_inv[x], x1))
+            )
         else:
             results["prediction"].append(args.label_to_id_inv[x1])
     # check
@@ -55,7 +51,7 @@ def evaluate(model, eval_dataset, args):
 
     dataloader = DataLoader(
         eval_dataset,
-        shuffle=False, 
+        shuffle=False,
         batch_size=args.eval_config["batch_size"],
         # collate_fn=eval_dataset.pad_collate,
     )
@@ -73,13 +69,13 @@ def evaluate(model, eval_dataset, args):
     labels = []
     for l1, p1 in zip(label_ids, predictions):
         if isinstance(l1, list):
-            labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[:len(p1)])
+            labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[: len(p1)])
         else:
             labels.append(args.label_to_id_inv[l1])
 
-    metrics = compute_metrics(task=args.task, labels=labels, predictions=predictions) 
-    metrics['loss'] = np.mean(losses)
-    metrics['dataset'] = eval_dataset.dataset
+    metrics = compute_metrics(task=args.task, labels=labels, predictions=predictions)
+    metrics["loss"] = np.mean(losses)
+    metrics["dataset"] = eval_dataset.dataset
     for m in metrics:
         logger.info("  %s = %s", m, str(metrics[m]))
 
@@ -88,13 +84,7 @@ def evaluate(model, eval_dataset, args):
 
 
 class Trainer:
-    def __init__(
-        self,
-        model,
-        train_dataset,
-        dev_dataset,
-        args
-    ):
+    def __init__(self, model, train_dataset, dev_dataset, args):
         self.args = args
         self.train_dataset = train_dataset
         self.dev_dataset = dev_dataset
@@ -108,8 +98,8 @@ class Trainer:
         self.best_score = None
         self.best_model_state = None
         self.non_increase_cnt = 0
-        self.early_stop = self.train_config.get('early_stop', None)
-        self.final_model = self.train_config.get('final_model', "last")
+        self.early_stop = self.train_config.get("early_stop", None)
+        self.final_model = self.train_config.get("final_model", "last")
         self.tensorboard_writer = SummaryWriter(self.args.tensorboard_dir)
 
     def create_optimizer_and_scheduler(self, n):
@@ -160,8 +150,8 @@ class Trainer:
         else:
             raise (Exception)
 
-        scheduler = self.model_config.get('scheduler', None)
-        if scheduler=='linear':
+        scheduler = self.model_config.get("scheduler", None)
+        if scheduler == "linear":
             scheduler = get_linear_schedule_with_warmup(
                 optimizer,
                 num_warmup_steps=int(self.model_config["warmup_steps"]),
@@ -173,7 +163,7 @@ class Trainer:
     def train(self):
         dataloader = DataLoader(
             self.train_dataset,
-            sampler=RandomSampler(self.train_dataset), 
+            sampler=RandomSampler(self.train_dataset),
             batch_size=self.train_config["batch_size"],
             # collate_fn=self.train_dataset.pad_collate,
         )
@@ -187,12 +177,11 @@ class Trainer:
             "  Gradient Accumulation steps = %d",
             self.model_config["gradient_accumulation_steps"],
         )
-        
+
         train_iterator = trange(
-            int(self.model_config["num_train_epochs"]),
-            desc=f"Epoch",
+            int(self.model_config["num_train_epochs"]), desc=f"Epoch"
         )
-        log_steps = self.train_config.get('log_steps', 1)
+        log_steps = self.train_config.get("log_steps", 1)
         global_step = 0
         for epoch, _ in enumerate(train_iterator):
             self.model.zero_grad()
@@ -208,16 +197,15 @@ class Trainer:
                 logits = outputs[1]
                 loss.backward()
                 loss = loss.tolist()
-                if global_step % log_steps==0:
-                    self.tensorboard_writer.add_scalar('Loss/train', loss, global_step)
+                if global_step % log_steps == 0:
+                    self.tensorboard_writer.add_scalar("Loss/train", loss, global_step)
                 if (step + 1) % self.model_config["gradient_accumulation_steps"] == 0:
                     torch.nn.utils.clip_grad_norm_(
-                        self.model.parameters(),
-                        self.model_config["max_grad_norm"],
+                        self.model.parameters(), self.model_config["max_grad_norm"]
                     )
                     optimizer.step()
                     if scheduler is not None:
-                        scheduler.step() 
+                        scheduler.step()
                     self.model.zero_grad()
                 epoch_iterator.set_postfix({"tr_loss": np.mean(loss)})
                 global_step += 1
@@ -230,13 +218,11 @@ class Trainer:
     def on_epoch_end(self, epoch):
         logger.info(f"***** Epoch end: {epoch} *****")
         metrics = evaluate(
-            model=self.model,
-            eval_dataset=self.dev_dataset,
-            args=self.args,
+            model=self.model, eval_dataset=self.dev_dataset, args=self.args
         )
         # write train loss & dev metrics on tensorboard
-        if self.final_model=="best":
-            opt_metric = self.train_config.get('optimization_metric', "macro_f1")
+        if self.final_model == "best":
+            opt_metric = self.train_config.get("optimization_metric", "macro_f1")
             if self.best_score is None or self.best_score < metrics[opt_metric]:
                 self.best_score = metrics[opt_metric]
                 self.best_model_state = copy.deepcopy(self.model.state_dict())
@@ -246,18 +232,17 @@ class Trainer:
             if type(value) in [int, float, str]:
                 try:
                     value = float(value)
-                    self.tensorboard_writer.add_scalar(f'dev/{metric}', float(value), epoch)
+                    self.tensorboard_writer.add_scalar(
+                        f"dev/{metric}", float(value), epoch
+                    )
                 except Exception as e:
-                    continue 
+                    continue
 
     def on_training_end(self):
         logger.info("***** Training end *****")
-        out_path = (
-            self.model_dir / f"model.pt"
-        )
-        if self.final_model=="best" and self.best_model_state is not None:
+        out_path = self.model_dir / f"model.pt"
+        if self.final_model == "best" and self.best_model_state is not None:
             self.model.load_state_dict(self.best_model_state)
         logger.info("  Model path = %s", str(out_path))
         torch.save(self.model, out_path)
         self.tensorboard_writer.close()
-
