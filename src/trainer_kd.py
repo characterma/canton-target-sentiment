@@ -1,15 +1,13 @@
 import logging
 import os
-import random
 import torch
 import pickle
 from tqdm import tqdm
 
 from torch.nn.functional import mse_loss, kl_div, log_softmax, softmax
-from torch.utils.data import DataLoader, RandomSampler
+from torch.utils.data import DataLoader
 
 from trainer import Trainer, prediction_step
-from utils import make_batches
 
 
 logger = logging.getLogger(__name__)
@@ -72,7 +70,7 @@ class KDTrainer(Trainer):
             )
         else:
             raise ValueError(
-                f"Expected knowledge distillation loss type 'mse' or 'kl', but got {kd_type}"
+                f"Expected knowledge distillation loss type 'mse' or 'kl'"
             )
         loss = (1 - soft_lambda) * hard_loss + soft_lambda * soft_loss
         return loss
@@ -106,8 +104,6 @@ class KDTrainer(Trainer):
             dataloader_tr = DataLoader(
                 self.train_dataset, batch_size=batch_size, shuffle=True
             )
-
-            log_steps = self.train_config.get("log_steps", 1)
 
             for batch in tqdm(dataloader_tr):
 
