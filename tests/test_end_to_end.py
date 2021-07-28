@@ -24,3 +24,4 @@ class TestEndToEnd(unittest.TestCase):
             os.system(f"rm -rf ../config/examples/{task_model}/result")
             os.system(f"rm -rf ../config/examples/{task_model}/model")
             os.system(f"rm -rf ../config/examples/{task_model}/logs")
+            os.system(f"rm ../config/examples/{task_model}/log")
