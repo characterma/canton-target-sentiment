@@ -37,7 +37,7 @@ mkdir -p $CONFIG_PATH
 # Verify variable values
 env | grep -E 'K8S_DEPLOY_NAMESPACE|APP_NAME|IMAGE_REPOS|IMAGE_TAG|RELEASE_NAME|CHART_NAME|CHART_VERSION|CI_REF'
 
-# Replace chart name, version and description in Chart.yaml 
+# Replace chart name, version and description in Chart.yaml
 sed -i 's/^name:.*$/name: '"$CHART_NAME"'/' $CHART_NAME/Chart.yaml
 sed -i 's/^version:.*$/version: '"$CHART_VERSION"'/' $CHART_NAME/Chart.yaml
 sed -i 's/^description:.*$/description: '"$CHART_DESCRIPTION"'/' $CHART_NAME/Chart.yaml
@@ -57,7 +57,5 @@ if [ "$1" == "upgrade" ]; then
    helm upgrade -i --debug --dry-run $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE ./$CHART_NAME
 else
    echo "helm install $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE --dry-run --debug ./$CHART_NAME"
-   helm install $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE ./$CHART_NAME --dry-run --debug 
+   helm install $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE ./$CHART_NAME --dry-run --debug
 fi
-
-

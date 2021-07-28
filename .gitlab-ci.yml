@@ -1,9 +1,9 @@
 # Define environment variables in executor container
 variables:
   # RELEASE_NAME_CI will be formated as <groupnames>-<projectname>-<branch>, i.e. sample-cicd-python-project-master
-  RELEASE_NAME_CI: "$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG" 
-  
-  
+  RELEASE_NAME_CI: "$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG"
+
+
 before_script:
   - id
   - pwd
@@ -21,7 +21,7 @@ stages:
 
 
 # ================ Stage: Package =================
-# Purpose: Packaging all necessary program files into docker image 
+# Purpose: Packaging all necessary program files into docker image
 
 
 # --- Triggered By: Commit / Tag ---
@@ -71,7 +71,7 @@ package:harbor_docker:
 
 
 # ================= Stage: Deploy ==================
-# Purpose: Deploy container to docker servers / K8S environment (mostly playground), OR deploying the helm chart to internal museum    
+# Purpose: Deploy container to docker servers / K8S environment (mostly playground), OR deploying the helm chart to internal museum
 
 
 # --- Triggered By: Commit ---
@@ -91,7 +91,7 @@ deploy:dev-docker:
   - sh run_docker.sh
   when: manual
   dependencies:
-  - package:docker 
+  - package:docker
   except:
   - tags
 
@@ -168,11 +168,11 @@ deploy:helm-museum:
   dependencies:
   - package:docker
   only:
-  - tags  
+  - tags
   environment:
     name: chart_museum
     url: http://ess-deploy.wisers.com:8585/api/charts
-    
+
 # --- Triggered By: Tag ---
 # Remark: Save the helm chart to Research Internal Chart Museum for further deployment
 deploy:harbor-helm:
@@ -184,7 +184,7 @@ deploy:harbor-helm:
   - package:harbor_docker
   when: manual
   only:
-  - tags  
+  - tags
   environment:
     name: chart_museum
 
@@ -210,7 +210,7 @@ test:dev-docker:
   - deploy:dev-docker
   when: manual
   except:
-  - tags  
+  - tags
   artifacts:
     name: test-dev-docker-result
     expire_in: 30 min
@@ -250,10 +250,10 @@ test:playground-k8s:
 
 
 # --- Triggered By: Tag ---
-# Remark: Upload deploy-k8s.yaml, README.md, postman_collection.json and version.txt to OwnCloud 
+# Remark: Upload deploy-k8s.yaml, README.md, postman_collection.json and version.txt to OwnCloud
 upload:owncloud:
   stage: upload
-  script: 
+  script:
   - cd deploy/upload
   - sh upload_files.sh
   dependencies:
@@ -265,7 +265,7 @@ upload:owncloud:
 
 
 # ================= Stage: Undeploy ==================
-# Purpose: Undeploy the short-lived deploymennt (i.e. on dev server or k8s playground) 
+# Purpose: Undeploy the short-lived deploymennt (i.e. on dev server or k8s playground)
 
 
 # --- Triggered By: Commit ---

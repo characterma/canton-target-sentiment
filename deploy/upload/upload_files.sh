@@ -14,7 +14,7 @@ mkdir -p $UPLOAD_FOLDER/$CHART_VERSION
     echo "PROJECT_URL: $CI_PROJECT_URL"
     echo "COMMIT_BRANCH: $CI_COMMIT_REF_SLUG"
     echo "COMMIT_HASH_REF: $CI_REF"
-    
+
 } > ./$UPLOAD_FOLDER/$CHART_VERSION/RELEASE_NOTES.txt
 
 
@@ -26,7 +26,7 @@ cd ../upload
 
 #===== **Modify Accordingly**: Prepare All Files To Upload =====
 
-# get README 
+# get README
 rsync -av ../../README.md ./$UPLOAD_FOLDER/$CHART_VERSION/
 
 # get postman collection files
@@ -39,7 +39,7 @@ rsync -av ../k8s/deploy-k8s.yaml ./$UPLOAD_FOLDER/$CHART_VERSION/k8s/
 rsync -av ../k8s/$CHART_NAME/values.yaml ./$UPLOAD_FOLDER/$CHART_VERSION/k8s/chart/ || true
 rsync -av ../k8s/$CHART_NAME/requirements.yaml ./$UPLOAD_FOLDER/$CHART_VERSION/k8s/chart/ || true
 
-# get all properties 
+# get all properties
 rsync -av ../k8s/$CHART_NAME/configs ./$UPLOAD_FOLDER/$CHART_VERSION/k8s/
 
 #========================================
@@ -54,7 +54,7 @@ create_remote_folder()
 {
 	BASE_URL=$1
 	FOLDER=$2
-	
+
 	# check if folder exists, otherwise create one
 	#if [[ $(curl -X PROPFIND -H "Depth: $DEPTH" -u $SPEC_LOGIN "$BASE_URL" | grep "/$FOLDER") ]]; then
 	if curl -u $SPEC_LOGIN --output /dev/null --silent --head --fail "$BASE_URL/$FOLDER"; then
@@ -66,33 +66,33 @@ create_remote_folder()
 }
 
 
-# loop through upload folder to upload files/directories 
+# loop through upload folder to upload files/directories
 upload_files()
 {
 	BASE_URL=$1
 	FOLDER=$2
 	DEPTH=1
 	for file in $FOLDER/*; do
-		
+
 		if ! [ "$(ls -A $file)" ]; then continue; fi
-			
+
 		if [[ -d "$file" && ! -L "$file" ]]; then
 			echo "$file is a directory, create remote directory";
-	    
+
 			foldername=$(basename "$file")
-	    
-			create_remote_folder $BASE_URL $file 
-			
+
+			create_remote_folder $BASE_URL $file
+
 			upload_files $BASE_URL $file
-	    
+
 		else
 			echo "found file with name: $file"
-	
+
 			filename=$(basename "$file")
 			curl -u $SPEC_LOGIN -X DELETE "$BASE_URL/$file"
 			curl -u $SPEC_LOGIN -T $file "$BASE_URL/$file"
 		fi
-	  
+
 	done
 }
 

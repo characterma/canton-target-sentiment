@@ -112,6 +112,9 @@ process.py
 data/cached*
 proposed_answers.txt
 result.txt
+notebooks/*
+output/*
+data/*
 
 .DS_Store
 sample_pred_out.txt
@@ -122,3 +125,9 @@ sample_pred_out.txt
 *.pt
 *.csv
 *.npy
+*.json
+*.pkl
+log
+*.xlsx
+patch_202101/*
+etl/*

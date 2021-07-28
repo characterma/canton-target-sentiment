@@ -15,4 +15,3 @@ helm package --destination $PACKAGE_DIR ./$CHART_NAME
 
 echo "curl --data-binary "@$PACKAGE_DIR/$CHART_NAME-$CHART_VERSION.tgz" $HELM_CHART_REPO/api/charts"
 curl --data-binary "@$PACKAGE_DIR/$CHART_NAME-$CHART_VERSION.tgz" $HELM_CHART_REPO/api/charts
-
