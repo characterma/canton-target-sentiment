@@ -134,7 +134,6 @@ def run(args):
         dev_metrics = None
 
     if args.explain:
-        print("***************", dir(model.pretrained_model))
         explainer = Explainer(model=model, args=args)
         explainer.explain(dataset=test_dataset)
 

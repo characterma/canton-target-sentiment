@@ -45,5 +45,4 @@ repos:
   #     - id: unittest
   #       name: unittest
   #       entry: bash -c 'cd tests && python -m unittest'
-  #       language: python
-  #       types: [python]
+  #       language: system
