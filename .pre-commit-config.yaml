@@ -40,9 +40,10 @@ repos:
     hooks:
       - id: mypy
         language_version: python3.6
-  # - repo: local
-  #   hooks:
-  #     - id: unittest
-  #       name: unittest
-  #       entry: bash -c 'cd tests && python -m unittest'
-  #       language: system
+  - repo: local
+    hooks:
+      - id: unittest
+        name: unittest
+        entry: bash -c 'cd tests'
+        language: system
+        stages: [commit]
