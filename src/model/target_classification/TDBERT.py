@@ -9,7 +9,7 @@ class TDBERT(BertPreTrainedModel):
     def __init__(self, args):
         pretrained_config = load_pretrained_config(args.model_config)
         super(TDBERT, self).__init__(pretrained_config)
-        
+
         # assert target_pooling in ["mean", "max"]
         self.model_config = args.model_config
         self.pretrained_model = load_pretrained_bert(args)
@@ -19,27 +19,26 @@ class TDBERT(BertPreTrainedModel):
         self.pretrained_config = pretrained_config
         self.num_labels = len(args.label_to_id)
 
-        output_hidden_dim = args.model_config['output_hidden_dim']
-        output_hidden_act_func = args.model_config['output_hidden_act_func']
-        
+        output_hidden_dim = args.model_config["output_hidden_dim"]
+        output_hidden_act_func = args.model_config["output_hidden_act_func"]
+
         if output_hidden_dim is not None:
-            h_dim=[output_hidden_dim, self.num_labels]
+            h_dim = [output_hidden_dim, self.num_labels]
         else:
-            h_dim=[self.num_labels]
+            h_dim = [self.num_labels]
 
         self.linear = LinearLayer(
-            in_dim=pretrained_config.hidden_size, 
-            h_dim=h_dim, 
+            in_dim=pretrained_config.hidden_size,
+            h_dim=h_dim,
             activation=output_hidden_act_func,
-            use_bn=False
+            use_bn=False,
         )
 
         self.loss_func = nn.CrossEntropyLoss(reduction="none")
         self.to(args.device)
 
     def pool_target(self, hidden_output, t_mask):
-        """Pool the entity hidden state vectors (H_i ~ H_j)
-        """
+        """Pool the entity hidden state vectors (H_i ~ H_j)"""
         t_h = torch.max(
             hidden_output.float() * torch.unsqueeze(t_mask.float(), -1),
             dim=1,
@@ -74,7 +73,6 @@ class TDBERT(BertPreTrainedModel):
         tgt_h = self.pool_target(
             h, target_mask
         )  # outputs: [B, S, Dim], target_mask: [B, S]
-
 
         logits = self.linear(tgt_h)
         prediction = torch.argmax(logits, dim=1).cpu().tolist()

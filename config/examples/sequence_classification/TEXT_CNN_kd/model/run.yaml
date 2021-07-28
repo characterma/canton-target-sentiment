@@ -3,10 +3,10 @@ device: 0
 data:
   output_dir: "../config/examples/sequence_classification/TEXT_CNN_kd"
   data_dir: "../data/datasets/sample/sequence_classification"
-  train: train_sample.json
-  dev: train_sample.json
+  train: train_sample.json 
+  dev: train_sample.json 
   test: train_sample.json
-  unlabeled: unlabeled_sample.json
+  unlabeled: unlabeled_sample.json 
 text_prepro:
   steps:
     - utf8_replace
@@ -18,7 +18,7 @@ eval:
   model_file: "model.pt"
 train:
   model_class: "TEXT_CNN"
-  kd:
+  kd: 
     use_kd: True
     teacher_dir: "../config/examples/sequence_classification/BERT_AVG/model/"
     loss_type: 'mse'
@@ -33,8 +33,8 @@ model_params:
   # ================= TDBERT =================
   num_train_epochs: 20
   embedding_trainable: True
-  # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
-  # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
+  # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+  # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
   # ================= TGSAN =================
   # num_train_epochs: 50
   # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"

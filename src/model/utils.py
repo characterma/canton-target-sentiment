@@ -1,10 +1,6 @@
 import logging
-import torch.nn as nn
-import torch
-import numpy as np
-from tqdm import tqdm
-from collections import defaultdict
-from utils import load_config
+from model import get_model
+from utils import get_args, load_config
 from transformers import (
     XLNetConfig,
     BertConfig,
@@ -13,13 +9,13 @@ from transformers import (
     AlbertConfig,
 )
 from transformers import (
-    ElectraForPreTraining,
+    # ElectraForPreTraining,
     ElectraModel,
-    XLNetLMHeadModel,
+    # XLNetLMHeadModel,
     XLNetModel,
-    XLMRobertaForMaskedLM,
+    # XLMRobertaForMaskedLM,
     XLMRobertaModel,
-    BertForMaskedLM,
+    # BertForMaskedLM,
     BertModel,
     AlbertModel,
 )
@@ -72,30 +68,28 @@ MODEL_CLASS_MAP = {
 def load_pretrained_bert(args):
     logger.info("***** Loading pretrained language model *****")
     model_config = args.model_config
-    prev_model_dir = model_config.get('pretrained_lm_from_prev', None)
+    prev_model_dir = model_config.get("pretrained_lm_from_prev", None)
     if prev_model_dir is None:
-        # 
-        model_name = model_config['pretrained_lm']
-        model_dir = model_config.get('pretrained_lm_dir', model_name)
+        #
+        model_name = model_config["pretrained_lm"]
+        model_dir = model_config.get("pretrained_lm_dir", model_name)
         logger.info("  Pretrained BERT = '%s'", str(model_dir))
         return MODEL_CLASS_MAP[model_name].from_pretrained(model_dir)
     else:
         prev_args = get_args(prev_model_dir)
         prev_args = load_config(prev_args)
-        model_path = prev_model_dir / "model.pt"
         model = get_model(args=args)
         return model.pretrained_model
 
 
 def load_pretrained_config(model_config):
-    prev_model_dir = model_config.get('pretrained_lm_from_prev', None)
+    prev_model_dir = model_config.get("pretrained_lm_from_prev", None)
     if prev_model_dir is None:
-        model_name = model_config['pretrained_lm']
-        model_dir = model_config.get('pretrained_lm_dir', model_name)
+        model_name = model_config["pretrained_lm"]
+        model_dir = model_config.get("pretrained_lm_dir", model_name)
         return CONFIG_CLASS_MAP[model_name].from_pretrained(model_dir)
     else:
         prev_args = get_args(prev_model_dir)
         prev_args = load_config(prev_args)
-        model_name = prev_args.model_config['pretrained_lm']
+        model_name = prev_args.model_config["pretrained_lm"]
         return CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
-

@@ -7,7 +7,6 @@ TDBERT:
   pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
   dropout_rate: 0.1
   optimizer: "AdamW"
-  sampler: "random"
   batch_size: 16
   learning_rate: 2e-5
   # ================= Training params =================
@@ -69,11 +68,12 @@ CNN_CRF:
   batch_size: 64
   optimizer: "AdamW"
   learning_rate: 0.0015
-  weight_decay: 0.9
+  weight_decay: 0
   gradient_accumulation_steps: 1
   adam_epsilon: 1e-8
   max_grad_norm: 1.0
   max_steps: -1
+  scheduler: null
   warmup_steps: 0
 BERT_CRF:
   # ================= Preprocessing params =================
@@ -85,10 +85,8 @@ BERT_CRF:
   pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
   bert_dropout: 0.1
   optimizer: "AdamW"
-  sampler: "random"
   batch_size: 16
   learning_rate: 2e-5
-  scheduler: "linear"
   # ================= Training params =================
   num_train_epochs: 10
   weight_decay: 0.0
@@ -96,5 +94,33 @@ BERT_CRF:
   adam_epsilon: 1e-8
   max_grad_norm: 1.0
   max_steps: -1
+  warmup_steps: 0
+TEXT_CNN:
+  # ================= Preprocessing params =================
+  max_length: 256
+  tokenizer_source: "internal"
+  tokenizer_name: "" 
+  vocab_freq_cutoff: 0.015 
+  # ================= Model params =================
+  pretrained_emb_path: null
+  embedding_trainable: True
+  emb_dim: 80
+  emb_dropout: 0.1
+  kernel_num: 80
+  kernel_size: 3
+  cnn_use_bn: False
+  cnn_dropout: 0
+  pool_method: "max"
+  output_hidden_act_func: "PReLU"
+  # ================= Training params =================
+  num_train_epochs: 40
+  optimizer: "AdamW"
+  learning_rate: 0.0015
+  weight_decay: 0
+  gradient_accumulation_steps: 1
+  adam_epsilon: 1e-8
+  max_grad_norm: 1.0
+  max_steps: -1
+  scheduler: null
   warmup_steps: 0
 

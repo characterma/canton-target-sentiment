@@ -5,7 +5,7 @@ from inspect import signature
 
 
 def get_model_inputs(args):
-    model_class = args.train_config['model_class']
+    model_class = args.train_config["model_class"]
     Model = getattr(importlib.import_module(f"model.{args.task}"), model_class)
     sig = signature(Model.forward)
     return list(sig.parameters.keys())

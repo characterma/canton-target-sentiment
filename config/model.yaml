@@ -2,9 +2,9 @@ TDBERT:
   # ================= Preprocessing params =================
   max_length: 210
   tokenizer_source: "transformers"
-  tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+  tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
   # ================= Model params =================
-  pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
   dropout_rate: 0.1
   optimizer: "AdamW"
   batch_size: 16
@@ -23,7 +23,7 @@ TGSAN:
   # ================= Preprocessing params =================
   max_length: 150
   tokenizer_source: "internal"
-  tokenizer_name: "" 
+  tokenizer_name: ""
   vocab_freq_cutoff: 0.1
   # ================= Model params =================
   pretrained_emb_path: null
@@ -53,7 +53,7 @@ CNN_CRF:
   # ================= Preprocessing params =================
   max_length: 256
   tokenizer_source: "char_split"
-  tokenizer_name: "" 
+  tokenizer_name: ""
   vocab_freq_cutoff: 0.01
   # ================= Model params =================
   pretrained_emb_path: null
@@ -81,10 +81,10 @@ BERT_CRF:
   # ================= Preprocessing params =================
   max_length: 256
   tokenizer_source: "transformers"
-  tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+  tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
   add_special_tokens: False
   # ================= Model params =================
-  pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
   bert_dropout: 0.1
   optimizer: "AdamW"
   batch_size: 16
@@ -101,9 +101,9 @@ BERT_AVG:
     # ================= Preprocessing params =================
     max_length: 256
     tokenizer_source: "transformers"
-    tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+    tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
     # ================= Model params =================
-    pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+    pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
     dropout_rate: 0.1
     output_hidden_act_func: "ReLU"
     output_hidden_dim: 128
@@ -123,8 +123,8 @@ TEXT_CNN:
   # ================= Preprocessing params =================
   max_length: 256
   tokenizer_source: "internal"
-  tokenizer_name: "" 
-  vocab_freq_cutoff: 0.015 
+  tokenizer_name: ""
+  vocab_freq_cutoff: 0.015
   # ================= Model params =================
   pretrained_emb_path: null
   embedding_trainable: True
@@ -153,10 +153,10 @@ BERT_CLS:
   # ================= Preprocessing params =================
   max_length: 128
   tokenizer_source: "transformers"
-  tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+  tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
   add_special_tokens: False
   # ================= Model params =================
-  pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
   bert_dropout: 0.2
   dropout_rate: 0.2
   optimizer: "AdamW"
@@ -171,3 +171,25 @@ BERT_CLS:
   max_steps: -1
   warmup_steps: 0
   scheduler: linear
+BERT_ATTN:
+    # ================= Preprocessing params =================
+    max_length: 256
+    tokenizer_source: "transformers"
+    tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
+    # ================= Model params =================
+    pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
+    dropout_rate: 0.1
+    output_hidden_act_func: "ReLU"
+    output_hidden_dim: 128
+    sampler: "random"
+    learning_rate: 2e-5
+    # ================= Training params =================
+    num_train_epochs: 10
+    weight_decay: 0.0
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8
+    max_grad_norm: 1.0
+    optimizer: "AdamW"
+    scheduler: "linear"
+    max_steps: -1
+    warmup_steps: 0

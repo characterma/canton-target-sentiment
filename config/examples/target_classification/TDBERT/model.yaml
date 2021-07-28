@@ -2,28 +2,28 @@ TDBERT:
     # ================= Preprocessing params =================
     max_length: 210
     tokenizer_source: "transformers"
-    tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
+    tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
     # ================= Model params =================
-    pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+    pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
     dropout_rate: 0.1
     optimizer: "AdamW"
-    sampler: "random"
     batch_size: 16
     learning_rate: 2e-5
+    output_hidden_dim: 128
+    output_hidden_act_func: Tanh
     # ================= Training params =================
     num_train_epochs: 10
     weight_decay: 0.0
     gradient_accumulation_steps: 1
     adam_epsilon: 1e-8
     max_grad_norm: 1.0
-    scheduler: "linear"
     max_steps: -1
     warmup_steps: 0
 TGSAN:
     # ================= Preprocessing params =================
     max_length: 150
     tokenizer_source: "internal"
-    tokenizer_name: "" 
+    tokenizer_name: ""
     vocab_freq_cutoff: 0.1
     # ================= Model params =================
     pretrained_emb_path: null

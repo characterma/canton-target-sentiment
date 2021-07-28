@@ -1,14 +1,14 @@
 task: "sequence_classification"
-device: 0
+device: 'cpu'
 data:
   output_dir: "../config/examples/sequence_classification/TEXT_CNN"
   # output_dir: "../output/post_sentiment_20210624_text_cnn"
   data_dir: "../data/datasets/sample/sequence_classification"
   # data_dir: "../data/datasets/post_sentiment"
-  train: train_sample.json 
-  dev: test_sample.json 
-  test: test_sample.json 
-  unlabeled: unlabeled_sample.json 
+  train: train_sample.json
+  dev: test_sample.json
+  test: test_sample.json
+  unlabeled: unlabeled_sample.json
   labels: 3_ways # or 2_ways
 text_prepro:
   steps:
@@ -25,10 +25,10 @@ train:
   early_stop: null
 eval:
   batch_size: 64
-  model_file: "model.pt" # under output_dir / "model" 
+  model_file: "model.pt" # under output_dir / "model"
   # ================= TDBERT =================
 model_params:
-  num_train_epochs: 10
+  num_train_epochs: 2
   embedding_trainable: True
   # ================= TGSAN =================
   # num_train_epochs: 50

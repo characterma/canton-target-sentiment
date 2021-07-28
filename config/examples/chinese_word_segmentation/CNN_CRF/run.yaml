@@ -1,11 +1,11 @@
 task: "chinese_word_segmentation"
-device: 0
+device: 'cpu'
 data:
   output_dir: "../config/examples/chinese_word_segmentation/CNN_CRF"
   data_dir: "../data/datasets/sample/chinese_word_segmentation"
-  train: sample.json 
-  dev: sample.json 
-  test: sample.json 
+  train: sample.json
+  dev: sample.json
+  test: sample.json
 text_prepro:
   steps:
     - full_to_half
@@ -21,10 +21,10 @@ train:
   early_stop: null
 model_params:
   # ================= TDBERT =================
-  num_train_epochs: 10
+  num_train_epochs: 2
   embedding_trainable: True
-  # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
-  # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
+  # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
   # ================= TGSAN =================
   # num_train_epochs: 50
   # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"

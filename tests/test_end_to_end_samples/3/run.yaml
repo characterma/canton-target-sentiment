@@ -1,11 +1,11 @@
 task: "target_classification"
-device: 0
+device: 'cpu'
 data:
   output_dir: "../tests/test_end_to_end_samples/3/"
   data_dir: "../data/datasets/sample/target_classification"
-  train: sample.json 
-  dev: sample.json 
-  test: sample.json 
+  train: sample.json
+  dev: sample.json
+  test: sample.json
   labels: 3_ways # 2_ways
 text_prepro:
   steps:
@@ -15,20 +15,20 @@ text_prepro:
     # - extract_post_context_1
     # - extract_post_context_2
 eval:
-  batch_size: 64
+  batch_size: 4
   model_file: "model.pt" # under output_dir / "model"
 train:
   model_class: "TGSAN"
   seed: 42
-  batch_size: 16
+  batch_size: 4
   final_model: "last" # or "last"
 model_params:
   # ================= TDBERT =================
   # num_train_epochs: 10
   # embedding_trainable: False
-  # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"   
-  # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator" 
+  # tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
+  # pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
   # ================= TGSAN =================
   num_train_epochs: 1
-  pretrained_emb_path: "../data/word_embeddings/sample_word_emb.txt" 
+  pretrained_emb_path: "../data/word_embeddings/sample_word_emb.txt"
   embedding_trainable: False

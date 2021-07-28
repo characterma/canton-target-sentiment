@@ -1,34 +1,27 @@
-from torch.utils.data import Dataset
 from preprocess import Preprocessor
 from dataset.utils import get_model_inputs
 import torch
 import json
 import abc
 import logging
-from tqdm import tqdm 
-import pandas as pd 
+from tqdm import tqdm
+import pandas as pd
 
 
 logger = logging.getLogger(__name__)
 
 
 class NLPDataset:
-    def __init__(
-        self, 
-        feature_class,
-        dataset, 
-        tokenizer, 
-        args
-    ):
+    def __init__(self, feature_class, dataset, tokenizer, args):
         self.args = args
-        self.dataset = dataset 
+        self.dataset = dataset
         self.tokenizer = tokenizer
 
         self.required_features = get_model_inputs(args=args)
         self.feature_class = feature_class
 
         self.features = []
-        self.diagnosis = [] 
+        self.diagnosis = []
         self.diagnosis_df = None
         self.skipped_indexs = []
 
@@ -42,12 +35,12 @@ class NLPDataset:
         raw_data = json.load(open(data_path, "r"))
 
         for idx, data_dict in tqdm(enumerate(raw_data)):
-            diagnosis_dict = {'idx': idx}
+            diagnosis_dict = {"idx": idx}
             fea = self.feature_class(
                 data_dict=data_dict,
                 tokenizer=self.tokenizer,
-                args=self.args, 
-                diagnosis=True
+                args=self.args,
+                diagnosis=True,
             )
 
             if fea.feature_dict is not None:
@@ -58,15 +51,15 @@ class NLPDataset:
             diagnosis_dict.update(fea.diagnosis_dict)
             self.diagnosis.append(diagnosis_dict)
         logger.info("  Loaded samples = %d", len(self.features))
-    
+
     def create_diagnosis(self):
         self.diagnosis_df = pd.DataFrame(data=self.diagnosis)
-        self.diagnosis_df['dataset'] = self.dataset
+        self.diagnosis_df["dataset"] = self.dataset
 
     def get_data_analysis(self):
-        statistics = {'dataset': self.dataset}
-        statistics['total_samples'] = len(self.diagnosis)
-        statistics['loaded_samples'] = len(self.features)
+        statistics = {"dataset": self.dataset}
+        statistics["total_samples"] = len(self.diagnosis)
+        statistics["loaded_samples"] = len(self.features)
         return statistics
 
     def insert_skipped_samples(self, elements, value=None):
@@ -74,19 +67,19 @@ class NLPDataset:
             elements.insert(idx, value)
 
     def insert_predictions(self, predictions):
-        if len(predictions)!= len(self.diagnosis):
+        if len(predictions) != len(self.diagnosis):
             self.insert_skipped_samples(predictions)
-        self.diagnosis_df['prediction'] = predictions
+        self.diagnosis_df["prediction"] = predictions
 
     def insert_diagnosis_column(self, values, name):
-        if len(values)!= len(self.diagnosis):
+        if len(values) != len(self.diagnosis):
             self.insert_skipped_samples(values)
         self.diagnosis_df[name] = values
 
     def add_feature(self, name, values):
         # print(len(values), len(self.features))
         self.insert_skipped_samples(self.features, value=None)
-        assert(len(values)==len(self.features))
+        assert len(values) == len(self.features)
         features = []
         for x, y in zip(values, self.features):
             if x is not None and y is not None:
@@ -102,32 +95,21 @@ class NLPDataset:
 
 
 class NLPFeature(abc.ABC):
-    def __init__(
-        self, 
-        data_dict, 
-        tokenizer,  
-        args,
-        diagnosis=False, 
-    ):
+    def __init__(self, data_dict, tokenizer, args, diagnosis=False):
         self.succeeded = True
         self.msg = ""
 
         required_features = get_model_inputs(args)
-        max_length = args.model_config["max_length"] 
-        prepro_config = args.prepro_config 
-        label_to_id = args.label_to_id  
+        prepro_config = args.prepro_config
 
-        preprocessor = Preprocessor(
-            data_dict=data_dict, 
-            steps=prepro_config['steps']
-        )
+        preprocessor = Preprocessor(data_dict=data_dict, steps=prepro_config["steps"])
 
         self.feature_dict, self.diagnosis_dict = self.get_feature(
-            data_dict=preprocessor.data_dict, 
-            tokenizer=tokenizer, 
+            data_dict=preprocessor.data_dict,
+            tokenizer=tokenizer,
             required_features=required_features,
-            args=args, 
-            diagnosis=diagnosis
+            args=args,
+            diagnosis=diagnosis,
         )
 
     @abc.abstractmethod

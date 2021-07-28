@@ -1,11 +1,11 @@
 task: "target_classification"
-device: 0
+device: 'cpu'
 data:
   output_dir: "../config/examples/target_classification/TGSAN"
   data_dir: "../data/datasets/sample/target_classification"
-  train: sample.json 
-  dev: sample.json 
-  test: sample.json 
+  train: sample.json
+  dev: sample.json
+  test: sample.json
   labels: 3_ways # 2_ways
 text_prepro:
   steps:
@@ -26,8 +26,8 @@ train:
   early_stop: null
 eval:
   batch_size: 64
-  model_file: "model.pt" # under output_dir / "model" 
+  model_file: "model.pt" # under output_dir / "model"
   # ================= TDBERT =================
 model_params:
-  num_train_epochs: 10
+  num_train_epochs: 2
   embedding_trainable: False

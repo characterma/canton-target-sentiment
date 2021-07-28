@@ -1,9 +1,6 @@
 import torch
 import math
-import numpy as np
 import torch.nn as nn
-
-import transformers
 from model.layer.embedding import WordEmbeddings
 
 
@@ -12,6 +9,7 @@ class StructuredSelfAttention(nn.Module):
     align(X) = W2*tanh(W1*X^T)
     Penalty-Term P = Frobenius(A*A^T - I)
     """
+
     def __init__(
         self, in_dim, h_dim, r=1, dropout=0.0, scaled_att=True, penal_coeff=0.0
     ):
@@ -156,16 +154,7 @@ class PositionWiseFeedForwardLayer(nn.Module):
 
     class GeLU(nn.Module):
         def forward(self, x):
-            return (
-                0.5
-                * x
-                * (
-                    1
-                    + torch.tanh(
-                        math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))
-                    )
-                )
-            )
+            return (0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3)))))
 
 
 class AddAndNorm(nn.Module):
@@ -183,20 +172,21 @@ class AddAndNorm(nn.Module):
 
 class TGSAN(nn.Module):
     INPUT = ["input_ids", "attention_mask", "target_mask", "label"]
+
     def __init__(self, args):
         super(TGSAN, self).__init__()
         self.model_config = args.model_config
         self.num_labels = len(args.label_to_id)
         d_model = 2 * args.model_config["rnn_hidden_dim"]
-        
+
         self.embed = WordEmbeddings(
-            pretrained_emb_path=args.pretrained_emb_path, 
-            embedding_trainable=args.model_config['embedding_trainable'], 
-            emb_dim=args.model_config['emb_dim'], 
-            vocab_size=args.vocab_size, 
-            emb_dropout=args.model_config['emb_dropout']
+            pretrained_emb_path=args.pretrained_emb_path,
+            embedding_trainable=args.model_config["embedding_trainable"],
+            emb_dim=args.model_config["emb_dim"],
+            vocab_size=args.vocab_size,
+            emb_dropout=args.model_config["emb_dropout"],
         )
-        emb_dim = self.embed.emb_dim 
+        emb_dim = self.embed.emb_dim
         # Bi-LSTM encoder
         self.bilstm = nn.LSTM(
             emb_dim,
@@ -228,7 +218,9 @@ class TGSAN(nn.Module):
         )
         # FFN + ADD & LN
         self.ffn = PositionWiseFeedForwardLayer(
-            d_model, h_dim=args.model_config["ffn_dim"], dropout=args.model_config["ffn_dropout"]
+            d_model,
+            h_dim=args.model_config["ffn_dim"],
+            dropout=args.model_config["ffn_dropout"],
         )
         self.ffn_add_norm = AddAndNorm(d_model, dropout=0.1)
         # Target Structured-Self-Attention(1)
@@ -279,7 +271,15 @@ class TGSAN(nn.Module):
             elif "weight" in name:
                 nn.init.xavier_uniform_(param, gain=1.0)
 
-    def forward(self, input_ids, attention_mask, target_mask, label=None, soft_label=None, **kwargs):
+    def forward(
+        self,
+        input_ids,
+        attention_mask,
+        target_mask,
+        label=None,
+        soft_label=None,
+        **kwargs
+    ):
         x = self.embed(input_ids).to(torch.float32)  # [B, L, E]
         len_max = x.size(1)  # embedding dimension
         lens = attention_mask.sum(
@@ -317,7 +317,6 @@ class TGSAN(nn.Module):
         ctx_r_fused = torch.cat([ctx_r, tgt_vec.expand_as(ctx_r)], dim=-1)
         ctx_r = ctx_r + self.ctx_tgt_fuse_active(self.ctx_tgt_fuse(ctx_r_fused))
         ctx_vec, _ = self.ctx_tgt_an(tgt_vec, ctx_r, ctx_r, self.r_mask)  # [B, 1, H]
-
         # OUTPUT
         logits = self.fc_active(self.fc(ctx_vec.squeeze(1)))  # [B, Nc]
         prediction = torch.argmax(logits, dim=1).cpu().tolist()
@@ -330,14 +329,16 @@ class TGSAN(nn.Module):
 
         if soft_label is not None:
             loss_fct = nn.MSELoss()
-            loss = loss_fct(logits.view(-1), soft_label.view(-1)) + penal_term       
+            loss = loss_fct(logits.view(-1), soft_label.view(-1)) + penal_term
         elif label is not None:
             if self.num_labels == 1:
                 loss_fct = nn.MSELoss()
                 loss = loss_fct(logits.view(-1), label.view(-1)) + penal_term
             else:
                 loss_fct = nn.CrossEntropyLoss()
-                loss = loss_fct(logits.view(-1, self.num_labels), label.view(-1)) + penal_term
+                loss = (
+                    loss_fct(logits.view(-1, self.num_labels), label.view(-1)) + penal_term
+                )
         else:
             loss = None
         return [loss, prediction, logits]

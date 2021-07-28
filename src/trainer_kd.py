@@ -69,9 +69,7 @@ class KDTrainer(Trainer):
                 soft_student, soft_teacher, reduction="batchmean"
             )
         else:
-            raise ValueError(
-                f"Expected knowledge distillation loss type 'mse' or 'kl'"
-            )
+            raise ValueError(f"Expected knowledge distillation loss type 'mse' or 'kl'")
         loss = (1 - soft_lambda) * hard_loss + soft_lambda * soft_loss
         return loss
 

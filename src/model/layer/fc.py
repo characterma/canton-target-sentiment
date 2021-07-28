@@ -20,8 +20,7 @@ class FCLayer(nn.Module):
 
 
 class LinearLayer(nn.Module):
-    
-    def __init__(self, in_dim, h_dim, activation='PReLU', use_bn=True):
+    def __init__(self, in_dim, h_dim, activation="PReLU", use_bn=True):
         super(LinearLayer, self).__init__()
         # hyper-params
         if isinstance(h_dim, int):
@@ -31,19 +30,19 @@ class LinearLayer(nn.Module):
         # layers
         for i in range(len(h_dim)):
             out_dim = h_dim[i]
-            layers[f'fc_{i}'] = nn.Linear(in_dim, out_dim)
+            layers[f"fc_{i}"] = nn.Linear(in_dim, out_dim)
             if activation is not None and i != layer_num:
                 if use_bn:
-                    layers[f'bn_{i}'] = nn.BatchNorm1d(out_dim)
+                    layers[f"bn_{i}"] = nn.BatchNorm1d(out_dim)
                 try:
-                    layers[f'activate_{i}'] = eval(f"nn.{activation}")()
+                    layers[f"activate_{i}"] = eval(f"nn.{activation}")()
                 except ValueError as e:
-                    raise Exception(f"{str(e)}; pytorch not support activation function: {activation}")
+                    raise Exception(
+                        f"{str(e)}; pytorch not support activation function: {activation}"
+                    )
             in_dim = out_dim
         self.linear = nn.Sequential(layers)
-        
+
     def forward(self, x):
         o = self.linear(x)
         return o
-
-

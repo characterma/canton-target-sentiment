@@ -60,7 +60,6 @@ def load_label_to_id_from_datasets(datasets, tokenizer, args):
                     return_offsets_mapping=False,
                     return_length=True,
                 )
-
                 # token level tags
                 tags.extend(
                     get_token_level_tags(
@@ -70,11 +69,23 @@ def load_label_to_id_from_datasets(datasets, tokenizer, args):
                         scheme="BI",
                     )
                 )
-
         for t in set(tags):
             label_to_id[t] = len(label_to_id)
     elif args.task == "sequence_classification":
-        return {"-1": 0, "0": 1, "1": 2}
+        label_to_id = {}
+        files = []
+        for dataset in datasets:
+            files.append(args.data_config[dataset])
+        files = list(set(files))
+        for filename in files:
+            data_path = args.data_dir / filename
+            raw_data = json.load(open(data_path, "r"))
+            # text preprocessing
+            for data_dict in raw_data:
+                label = str(data_dict["label"])
+                if label not in label_to_id:
+                    label_to_id[label] = len(label_to_id)
+        return label_to_id
     else:
         raise ValueError("Task not supported.")
     return label_to_id

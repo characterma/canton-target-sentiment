@@ -4,9 +4,9 @@ import numpy as np
 from dataset.base import NLPFeature
 
 
-class SequenceClassificationFeature(NLPFeature):
+class CslKeywordRecognition(NLPFeature):
     def __init__(self, data_dict, tokenizer, args, diagnosis=False):
-        super(SequenceClassificationFeature, self).__init__(
+        super().__init__(
             data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=diagnosis
         )
 
@@ -18,6 +18,8 @@ class SequenceClassificationFeature(NLPFeature):
 
         # data fields
         content = data_dict["content"]
+        # keyword = data_dict["keyword"] # list of spans
+
         label = data_dict.get("label", None)
 
         # params

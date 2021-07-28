@@ -1,5 +1,4 @@
-import torch 
-import logging 
+import torch
 
 
 class Faithfulness:
@@ -9,9 +8,9 @@ class Faithfulness:
         batch: model inputs, [B, L]
         scores: [B, L]
         """
-        self.args = args 
-        self.model = model 
-        self.inputs = inputs 
+        self.args = args
+        self.model = model
+        self.inputs = inputs
         self.scores = scores
         self.predicted_cls = self.predict(inputs=self.inputs).argmax(-1)
         self.mask_id = mask_id
@@ -25,25 +24,24 @@ class Faithfulness:
         portion: value in (0, 1), [0.1, 0.2, ...]
         mode: "sufficiency" or "comprehensiveness"
         """
-        input_ids = torch.clone(self.inputs['input_ids'])
-        lengths = self.inputs['attention_mask'].sum(1)
+        input_ids = torch.clone(self.inputs["input_ids"])
+        lengths = self.inputs["attention_mask"].sum(1)
 
         # print(input_ids)
         for idx, l in enumerate(lengths.tolist()):
-            k = int(l * portion) 
+            k = int(l * portion)
             sorted_idxs = self.scores[idx, :l].argsort(descending=True)
 
-            if mode=='comprehensiveness':
+            if mode == "comprehensiveness":
                 to_mask = sorted_idxs[:k]
                 input_ids[idx, to_mask] = self.mask_id
-            elif mode=="sufficiency": 
+            elif mode == "sufficiency":
                 to_mask = sorted_idxs[k:l]
                 input_ids[idx, to_mask] = self.mask_id
             else:
-                raise(ValueError)
+                raise (ValueError)
 
-        return input_ids # [B, L]
-
+        return input_ids  # [B, L]
 
     def concat_batches(self, batches):
         output = dict()
@@ -55,20 +53,19 @@ class Faithfulness:
                     output[col] = [b[col]]
         for col in output:
             output[col] = torch.cat(output[col], dim=0)
-        return output 
-
+        return output
 
     def get_sufficiency(self):
         sufficiency = []
-        batch_size = self.inputs['input_ids'].size()[0]
+        batch_size = self.inputs["input_ids"].size()[0]
         batches = [self.inputs]
         for p in range(1, 6):
-            p = p / 10 
-            input_ids = self.mask_tokens(portion=p, mode='sufficiency')
+            p = p / 10
+            input_ids = self.mask_tokens(portion=p, mode="sufficiency")
             batch = self.replace_input_ids(input_ids=input_ids)
             batches.append(batch)
 
-        batch = self.concat_batches(batches) # [B0,B1,B2,..B5]
+        batch = self.concat_batches(batches)  # [B0,B1,B2,..B5]
 
         logits = self.predict(inputs=batch)
         logits = torch.nn.functional.softmax(logits, dim=-1)
@@ -84,13 +81,13 @@ class Faithfulness:
 
     def get_comprehensiveness(self):
         # https://arxiv.org/pdf/1911.03429.pdf
-        
+
         comprehensiveness = []
-        batch_size = self.inputs['input_ids'].size()[0]
+        batch_size = self.inputs["input_ids"].size()[0]
         batches = [self.inputs]
         for p in range(1, 6):
-            p = p / 10 
-            input_ids = self.mask_tokens(portion=p, mode='comprehensiveness')
+            p = p / 10
+            input_ids = self.mask_tokens(portion=p, mode="comprehensiveness")
             batch = self.replace_input_ids(input_ids=input_ids)
             batches.append(batch)
 
@@ -112,7 +109,7 @@ class Faithfulness:
     def replace_input_ids(self, input_ids):
         batch = dict()
         for col in self.inputs:
-            if col=='input_ids' and input_ids is not None:
+            if col == "input_ids" and input_ids is not None:
                 batch[col] = input_ids
             else:
                 batch[col] = self.inputs[col]
