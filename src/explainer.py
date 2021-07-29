@@ -3,6 +3,7 @@ from explain import ExplainModel
 from explain.faithfulness import Faithfulness
 from tqdm import tqdm
 import logging
+import json
 import numpy as np
 import pandas as pd
 
@@ -43,6 +44,7 @@ class Explainer:
         explanations = []
         sufficiency = []
         comprehensiveness = []
+        decision_flip_mit = []
 
         for batch in tqdm(dataloader):
             inputs = self.make_inputs(batch)
@@ -59,11 +61,13 @@ class Explainer:
                 )
                 sufficiency.extend(faithfulness.sufficiency)
                 comprehensiveness.extend(faithfulness.comprehensiveness)
+                decision_flip_mit.extend(faithfulness.decision_flip_mit)
 
         dataset.insert_diagnosis_column(explanations, "explanations")
         if self.run_faithfulness:
             dataset.insert_diagnosis_column(sufficiency, "sufficiency")
             dataset.insert_diagnosis_column(comprehensiveness, "comprehensiveness")
+            dataset.insert_diagnosis_column(decision_flip_mit, "decision_flip_mit")
 
         tokens = dataset.diagnosis_df["tokens"].tolist()
         tokens_sorted = []
@@ -78,6 +82,7 @@ class Explainer:
         if self.run_faithfulness:
             sufficiency_avg = np.mean(sufficiency, axis=0)
             comprehensiveness_avg = np.mean(comprehensiveness, axis=0)
+
             faithfulness_rep = pd.DataFrame(
                 data={
                     "p": np.arange(0, 6) / 10,
@@ -85,8 +90,20 @@ class Explainer:
                     "comprehensiveness_avg": comprehensiveness_avg,
                 }
             )
+
+            faithfulness_sum = {
+                "decision_flip_mit": np.mean(decision_flip_mit, axis=0), 
+                "sufficiency": np.mean(sufficiency_avg, axis=0),
+                "comprehensiveness": np.mean(comprehensiveness_avg, axis=0),
+            }
+
             faithfulness_rep.to_csv(
-                self.args.result_dir / 
-                f"faithfulness_rep_{self.config['method'].lower()}.csv",
+                self.args.result_dir 
+                / f"faithfulness_rep_{self.config['method'].lower()}.csv",
                 index=False,
+            )
+
+            json.dump(
+                faithfulness_sum, 
+                open(self.args.result_dir / f"faithfulness_sum_{self.config['method'].lower()}.json", "w")
             )

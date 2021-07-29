@@ -12,12 +12,15 @@ class Faithfulness:
         self.model = model
         self.inputs = inputs
         self.scores = scores
-        self.predicted_cls = self.predict(inputs=self.inputs).argmax(-1)
+        self.logits = self.predict(inputs=self.inputs)
+        self.predicted_cls = self.logits.argmax(-1)
         self.mask_id = mask_id
-
         # run faithfulness
         self.sufficiency = self.get_sufficiency()
         self.comprehensiveness = self.get_comprehensiveness()
+        self.decision_flip_mit = self.decision_flip_mit()
+        # self.decision_flip_mit = self.decision_flip_mit()
+        # self.decision_flip_mit = self.decision_flip_mit()
 
     def mask_tokens(self, portion, mode):
         """
@@ -42,6 +45,17 @@ class Faithfulness:
                 raise (ValueError)
 
         return input_ids  # [B, L]
+
+    def mask_most_informative_token(self):
+        input_ids = torch.clone(self.inputs["input_ids"])
+        lengths = self.inputs["attention_mask"].sum(1)
+
+        # print(input_ids)
+        for idx, l in enumerate(lengths.tolist()):
+            mit_idx = self.scores[idx, :l].argmax()
+            input_ids[idx, mit_idx] = self.mask_id
+
+        return input_ids
 
     def concat_batches(self, batches):
         output = dict()
@@ -105,6 +119,25 @@ class Faithfulness:
             comprehensiveness.append(tmp)
 
         return comprehensiveness
+
+    def decision_flip_mit(self):
+        dec_flip_mit = []
+        batch_size = self.inputs["input_ids"].size()[0]
+
+        input_ids = self.mask_most_informative_token()
+        batch = self.replace_input_ids(input_ids=input_ids)
+        batch = self.concat_batches([self.inputs, batch])
+
+        logits = self.predict(inputs=batch)
+        logits = torch.nn.functional.softmax(logits, dim=-1)
+
+        for idx, cls_id in enumerate(self.predicted_cls.tolist()):
+
+            logit0 = logits[idx, cls_id].item()
+            logit1 = logits[batch_size + idx, cls_id].item()
+            dec_flip_mit.append(logit0 - logit1)
+
+        return dec_flip_mit
 
     def replace_input_ids(self, input_ids):
         batch = dict()
