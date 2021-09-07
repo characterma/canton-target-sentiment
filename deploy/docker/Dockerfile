@@ -5,7 +5,7 @@ RUN pip install --upgrade --ignore-installed pip && pip install --no-cache-dir -
 
 COPY ailab/ /ailab/
 VOLUME /ailab
-WORKDIR /ailab
+WORKDIR /ailab/src
 
 EXPOSE 8080
 CMD [ "/bin/sh", "start.sh"]
