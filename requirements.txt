@@ -6,6 +6,7 @@ openpyxl
 pandas==1.0.5
 pre-commit
 regex==2020.10.15
+pyyaml
 sanic
 scikit-learn==0.23.1
 seqeval
