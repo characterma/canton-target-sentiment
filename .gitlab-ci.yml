@@ -1,10 +1,9 @@
-image: ess-repos01.wisers.com:8889/res/docker:dind-k8s-asher
 # Define environment variables in executor container
 variables:
-  # RELEASE_NAME_CI will be formated as <groupnames>-<projectname>-<branch>, i.e. sample-cicd-java-project-master
-  # RELEASE_NAME_CI: "$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG" 
-  RELEASE_NAME_CI: "$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG"
-
+  # RELEASE_NAME_CI will be formated as <groupnames>-<projectname>-<branch>, i.e. sample-cicd-python-project-master
+  RELEASE_NAME_CI: "$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG" 
+  
+  
 before_script:
   - id
   - pwd
@@ -13,7 +12,6 @@ before_script:
   - env
 
 stages:
-  - build
   - package
   - deploy
   - test
@@ -21,27 +19,10 @@ stages:
   - undeploy
 
 
-# ================= Stage: Build ==================
-# Purpose: Compiling source code to executable binaries 
-
-
-# --- Triggered By: Commit / Tag ---
-# Remark: For Java Project only, build the sources via Maven
-# build:maven:
-#   image: $DK_PUB/maven:3-jdk-8
-#   stage: build
-#   script:
-#   - "mvn package -B"
-#   artifacts:
-#     name: build-maven-target
-#     expire_in: 15 min  # will be auto deleted after 15 mins
-#     paths:
-#     - target/
-
-
 
 # ================ Stage: Package =================
 # Purpose: Packaging all necessary program files into docker image 
+
 
 # --- Triggered By: Commit / Tag ---
 # Remark: Collect necessary program files to build docker image, and store to Research Internal Image Repository
@@ -52,11 +33,8 @@ package:docker:
   - rsync -av /BigFiles/Models/wbi-target-sentiment/* ailab/output/
   - set -x
   - sh build_docker.sh
-  dependencies:
-  - build:maven
-  when: manual
   tags:
-  - bigfiles            # default enable access to /BigFiles
+  - bigfiles            # to use bigfiles runner, path /BigFiles accessible
   artifacts:
     name: package-docker-deploy
     expire_in: 1 hrs    # will be auto deleted after 1 hour
@@ -72,8 +50,6 @@ package:harbor_docker:
   - rsync -av /BigFiles/Models/wbi-target-sentiment/* ailab/output/
   - set -x
   - sh build_docker.sh
-  dependencies:
-  - build:maven
   when: manual
   tags:
   - bigfiles            # default enable access to /BigFiles
@@ -84,7 +60,7 @@ package:harbor_docker:
     - deploy/
 
 # ================= Stage: Deploy ==================
-# Purpose: Deploy container to docker servers / K8S environment (mostly playground), OR deploying the helm chart to internal museum
+# Purpose: Deploy container to docker servers / K8S environment (mostly playground), OR deploying the helm chart to internal museum    
 
 
 # --- Triggered By: Commit ---
@@ -111,25 +87,25 @@ deploy:dev-docker:
 
 # --- Triggered By: Commit ---
 # Remark: Deploy the program to K8S (playground namespace) via Helm chart
-deploy:playground-k8s:
-  stage: deploy
-  script:
-  # define environment variables:
-  - export RELEASE_NAME="$RELEASE_NAME_CI"       # override RELEASE_NAME for CI flow
-  - export K8S_DEPLOY_NAMESPACE="playground"     # reset namespace to playground no matter what's in env.sh
- 
-  # execute scripts:
-  - cd deploy/k8s
-  - sh undeploy_k8s.sh  
-  - sh deploy_k8s.sh
-  dependencies:
-  - package:docker
-  when: manual
-  except:
-  - tags
-  environment:
-    name: playground-k8s
-#    url: http://ess-vm01.wisers.com:18080/r/projects/1a71/kubernetes-dashboard:9090/#!/overview?namespace=$K8S_DEPLOY_NAMESPACE
+# deploy:playground-k8s:
+#   stage: deploy
+#   script:
+#   # define environment variables:
+#   - export RELEASE_NAME="$RELEASE_NAME_CI"       # override RELEASE_NAME for CI flow
+#   - export K8S_DEPLOY_NAMESPACE="playground"     # reset namespace to playground no matter what's in env.sh
+# 
+#   # execute scripts:
+#   - cd deploy/k8s
+#   - sh undeploy_k8s.sh
+#   - sh deploy_k8s.sh
+#   dependencies:
+#   - package:docker
+#   #when: manual
+#   except:
+#   - tags
+#   environment:
+#     name: playground-k8s
+#     url: http://ess-vm01.wisers.com:18080/r/projects/1a71/kubernetes-dashboard:9090/#!/overview?namespace=$K8S_DEPLOY_NAMESPACE
 
 
 # --- Triggered By: Tag ---
@@ -141,12 +117,12 @@ deploy:helm-museum:
   - sh package_n_upload_2_res_museum.sh
   dependencies:
   - package:docker
-  when: manual
   only:
   - tags  
   environment:
     name: chart_museum
-#   url: http://ess-deploy.wisers.com:8585/api/charts
+    url: http://ess-deploy.wisers.com:8585/api/charts
+    
 
 # --- Triggered By: Tag ---
 # Remark: Save the helm chart to Research Internal Chart Museum for further deployment
@@ -193,25 +169,26 @@ test:dev-docker:
 # Remark: Test program exposed API (in playground namespace) via Newman utility
 # Override Environment Variables (in env.sh):
 #   POSTMAN_VAR_FILE - to override collection's variables from file inside test/collections/variables/ (i.e. playground.json)
-test:playground-k8s:
-  stage: test
-  script:
-  # define environment variables:
-  - export POSTMAN_VAR_FILE="playground.json"
-   
-  # execute scripts:
-  - cd deploy/test
-  - sh run_newman.sh
-  dependencies:
-  - deploy:playground-k8s
-  when: manual
-  except:
-  - tags  
-  artifacts:
-    name: test-playground-k8s-result
-    expire_in: 30 min
-    paths:
-    - deploy/test/result/
+# test:playground-k8s:
+#   stage: test
+#   script:
+#   # define environment variables:
+#   - export POSTMAN_VAR_FILE="playground.json"
+#   
+#   # execute scripts:
+#   - cd deploy/test
+#   - sleep 180                   # sleep 3 min waiting for k8s deployment to complete
+#   - sh run_newman.sh
+#   dependencies:
+#   - deploy:playground-k8s
+#   #when: manual
+#   except:
+#   - tags
+#   artifacts:
+#     name: test-playground-k8s-result
+#     expire_in: 30 min
+#     paths:
+#     - deploy/test/result/
 
 
 
@@ -231,6 +208,8 @@ upload:owncloud:
   when: manual
   only:
   - tags
+
+
 
 # ================= Stage: Undeploy ==================
 # Purpose: Undeploy the short-lived deploymennt (i.e. on dev server or k8s playground) 
@@ -254,20 +233,22 @@ undeploy:dev-docker:
 
 # --- Triggered By: Commit ---
 # Cleanup the program in K8S (playground namespace)
-undeploy:playground-k8s:
-  stage: undeploy
-  script:
-  - export RELEASE_NAME="$RELEASE_NAME_CI"     # override RELEASE_NAME for CI flow
-  - export K8S_DEPLOY_NAMESPACE="playground"   # reset namespace to playground no matter what's in env.sh
-  - cd deploy/k8s
-  - sh undeploy_k8s.sh  
-  when: manual
-  except:
-  - tags
-  dependencies: []
-  environment:
-    name: playground-k8s
-#    url: http://ess-vm01.wisers.com:18080/r/projects/1a71/kubernetes-dashboard:9090/#!/overview?namespace=$K8S_DEPLOY_NAMESPACE
+# undeploy:playground-k8s:
+#   stage: undeploy
+#   script:
+#   - export RELEASE_NAME="$RELEASE_NAME_CI"     # override RELEASE_NAME for CI flow
+#   - export K8S_DEPLOY_NAMESPACE="playground"   # reset namespace to playground no matter what's in env.sh
+#   - cd deploy/k8s
+#   - sh undeploy_k8s.sh
+#   when: manual
+#   except:
+#   - tags
+#   dependencies: []
+#   environment:
+#     name: playground-k8s
+#     url: http://ess-vm01.wisers.com:18080/r/projects/1a71/kubernetes-dashboard:9090/#!/overview?namespace=$K8S_DEPLOY_NAMESPACE
+
+
 
 # --- Triggered By: Tag ---
 # Remark: Remove the helm chart from museum
@@ -282,5 +263,4 @@ undeploy:helm-museum:
   - tags
   environment:
     name: chart_museum
-#    url: http://ess-deploy.wisers.com:8585/api/charts
-
+    url: http://ess-deploy.wisers.com:8585/api/charts
