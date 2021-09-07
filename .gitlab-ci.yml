@@ -27,16 +27,16 @@ stages:
 
 # --- Triggered By: Commit / Tag ---
 # Remark: For Java Project only, build the sources via Maven
-build:maven:
-  image: $DK_PUB/maven:3-jdk-8
-  stage: build
-  script:
-  - "mvn package -B"
-  artifacts:
-    name: build-maven-target
-    expire_in: 15 min  # will be auto deleted after 15 mins
-    paths:
-    - target/
+# build:maven:
+#   image: $DK_PUB/maven:3-jdk-8
+#   stage: build
+#   script:
+#   - "mvn package -B"
+#   artifacts:
+#     name: build-maven-target
+#     expire_in: 15 min  # will be auto deleted after 15 mins
+#     paths:
+#     - target/
 
 
 
