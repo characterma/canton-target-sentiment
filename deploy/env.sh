@@ -14,7 +14,7 @@ IMAGE_TAG=1.1
 
 # Update Chart Tag if different from any deployed version
 CHART_VERSION=0.1.1
-CHART_DESCRIPTION="Cantonese target sentiment for WBI."
+CHART_DESCRIPTION="Target sentiment for WBI."
 
 # Optional, for running deployment script manually
 K8S_DEPLOY_NAMESPACE=playground
@@ -135,7 +135,6 @@ HARBOR_PROJECT_NAME="ailab"
 HARBOR_IMAGE_REPOS=$HARBOR_REPO/$HARBOR_PROJECT_NAME/$APP_NAME
 
 export HARBOR_REPO HARBOR_PROJECT_NAME HARBOR_IMAGE_REPOS
-
 
 HARBOR_REPO="harbor.wisers.com"
 
