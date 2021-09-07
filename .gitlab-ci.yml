@@ -79,7 +79,7 @@ deploy:dev-docker:
   - cd deploy/docker
   - sh remove_docker.sh
   - sh run_docker.sh
-  # when: manual
+  when: manual
   dependencies:
   - package:docker 
   except:
@@ -170,26 +170,26 @@ test:dev-docker:
 # Remark: Test program exposed API (in playground namespace) via Newman utility
 # Override Environment Variables (in env.sh):
 #   POSTMAN_VAR_FILE - to override collection's variables from file inside test/collections/variables/ (i.e. playground.json)
-# test:playground-k8s:
-#   stage: test
-#   script:
-#   # define environment variables:
-#   - export POSTMAN_VAR_FILE="playground.json"
-#   
-#   # execute scripts:
-#   - cd deploy/test
-#   - sleep 180                   # sleep 3 min waiting for k8s deployment to complete
-#   - sh run_newman.sh
-#   dependencies:
-#   - deploy:playground-k8s
-#   #when: manual
-#   except:
-#   - tags
-#   artifacts:
-#     name: test-playground-k8s-result
-#     expire_in: 30 min
-#     paths:
-#     - deploy/test/result/
+test:playground-k8s:
+  stage: test
+  script:
+  # define environment variables:
+  - export POSTMAN_VAR_FILE="playground.json"
+  
+  # execute scripts:
+  - cd deploy/test
+  - sleep 300                   # sleep 3 min waiting for k8s deployment to complete
+  - sh run_newman.sh
+  dependencies:
+  - deploy:playground-k8s
+  #when: manual
+  except:
+  - tags
+  artifacts:
+    name: test-playground-k8s-result
+    expire_in: 30 min
+    paths:
+    - deploy/test/result/
 
 
 
