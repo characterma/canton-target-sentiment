@@ -33,7 +33,10 @@ class BERT_AVG(BertPreTrainedModel):
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)
 
-    def avg_pool(sel, h):
+    def avg_pool(sel, h, attention_mask):
+
+        attention_mask = attention_mask.unsqueeze(-1)
+        h = h.masked_fill(attention_mask==0, float(0))
         return torch.mean(
             h.float(),
             dim=1,
@@ -44,18 +47,18 @@ class BERT_AVG(BertPreTrainedModel):
         self,
         input_ids,
         attention_mask,
-        token_type_ids,
         label=None,
-        **kwargs
     ):
+        outputs = dict()
         lm = self.pretrained_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
+            token_type_ids=None,
+            output_attentions=True,
             return_dict=True,
         )
         h = lm["last_hidden_state"]
-        h = self.avg_pool(h)
+        h = self.avg_pool(h, attention_mask=attention_mask)
         logits = self.linear(h)
         prediction = torch.argmax(logits, dim=1).cpu().tolist()
 
@@ -66,4 +69,10 @@ class BERT_AVG(BertPreTrainedModel):
             )
         else:
             loss = None
-        return [loss, prediction, logits]
+
+        outputs['loss'] = loss
+        outputs['prediction'] = prediction
+        outputs['logits'] = logits
+        outputs['attentions'] = lm['attentions']
+        # print(logits)
+        return outputs

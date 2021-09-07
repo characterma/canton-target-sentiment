@@ -12,7 +12,8 @@ def compute_metrics(task, labels, predictions):
 
 
 def compute_metrics_sequence_classification(labels, predictions):
-
+    # print(labels)
+    # print(predictions)
     report = sklearn.metrics.classification_report(
         labels, predictions, output_dict=True
     )

@@ -1,1 +1,1 @@
-python serve.py
+python serve_fastapi.py --config_dir="../output/org_bert_avg_20210906/model" --device="cpu"

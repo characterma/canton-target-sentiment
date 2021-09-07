@@ -1,7 +1,7 @@
 import json
 import os
 from preprocess import Preprocessor
-from dataset.chinese_word_segmentation import get_token_level_tags
+from dataset.tagging.utils import get_token_level_tags
 
 
 def get_label_to_id(tokenizer, args):
@@ -22,13 +22,20 @@ def get_label_to_id(tokenizer, args):
 def load_label_to_id_from_datasets(datasets, tokenizer, args):
 
     if args.task == "target_classification":
-        labels = args.run_config["data"]["labels"]
-        if labels == "2_ways":
-            label_to_id = {"neutral": 0, "non_neutral": 1}
-        elif labels == "3_ways":
-            label_to_id = {"neutral": 0, "negative": 1, "positive": 2}
-        else:
-            raise ValueError("Label type not supported.")
+        label_to_id = {}
+        files = []
+        for dataset in datasets:
+            files.append(args.data_config[dataset])
+        files = list(set(files))
+        for filename in files:
+            data_path = args.data_dir / filename
+            raw_data = json.load(open(data_path, "r"))
+            # text preprocessing
+            for data_dict in raw_data:
+                label = str(data_dict["label"])
+                if label not in label_to_id:
+                    label_to_id[label] = len(label_to_id)
+        return label_to_id
 
     elif args.task == "chinese_word_segmentation":
         label_to_id = {"X": 0}

@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "ccf9b50b-9ec3-4bc1-ae0b-e138e08e7740",
-		"name": "rolex_sentiment",
+		"_postman_id": "5a332f17-06d7-43aa-a4a6-8812c50b1279",
+		"name": "wbi_org_sentiment",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -14,7 +14,7 @@
 						"exec": [
 							"pm.test(\"target sentiment\", function () {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData.doclist[0].labelunits[0].sentiment).to.eql(\"1\");\r",
+							"    pm.expect(jsonData.sentiment).to.eql(\"neutral\");\r",
 							"});"
 						],
 						"type": "text/javascript"
@@ -26,16 +26,16 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"language\": \"chinese\",\r\n  \"format\": \"syntactic\",\r\n  \"doclist\": [\r\n    {\r\n        \"docid\": \"123\",\r\n      \"labelunits\": [\r\n{\r\n            \"unit_index\": [0, 81], \r\n            \"unit_text\": \"同樣道理，在黑暗中以紫外 燈照射roger dubuis excalibur blacklight所發出的七彩光芒，在剔透的鏤通機芯映襯下，也顯得更具深度及迷人。\", \r\n            \"subject\": \"66e23c65607e444ca3f844eb8156d4bb\", \r\n            \"subject_name\": \"ROGER DUBUIS--Excalibur王者系列\", \r\n            \"subject_index\": [[16, 21], [22, 28], [29, 38], [39, 49]], \r\n            \"subject_text\": [\"roger\", \"dubuis\", \"excalibur\", \"blacklight\"], \r\n            \"aspect\": \"0e784175173349da824aa695148b484e\", \r\n            \"aspect_name\": \"机芯类型\", \r\n            \"aspect_index\": [[64, 66]], \r\n            \"aspect_text\": [\"機芯\"], \r\n            \"sentiment_index\": [], \r\n            \"sentiment_text\": []\r\n        }]\r\n    }\r\n  ]\r\n}"
+					"raw": "{\r\n    \"organization\": \"保安局\", \r\n    \"source\": \"香江望神州\", \r\n    \"pub_code\": \"im_youtube_hk\",\r\n    \"headline\": \"鄧炳強批612基金「臨解散都要撈油水」 將作調查 不點名批評黎智英是「主腦」\",\r\n    \"content\": \"#國安法#\\n撲滅罪行委員會8月27日開會，保安局局長鄧炳強在會後見記者\",\r\n    \"target_keywords\": [\"保安局\"]\r\n}"
 				},
 				"url": {
-					"raw": "http://{{server}}/target_sentiment",
+					"raw": "http://{{server}}/wbi_org_sentiment",
 					"protocol": "http",
 					"host": [
 						"{{server}}"
 					],
 					"path": [
-						"target_sentiment"
+						"wbi_org_sentiment"
 					]
 				}
 			},

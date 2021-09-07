@@ -46,12 +46,14 @@ class BERT_ATTN(BertPreTrainedModel):
         attention_type = args.model_config.get("attention_type", None)
 
         # reference to http://ess-repos01.wisers.com:9980/UAP/AI/common-dl-model/blob/master/net/layers/attention_layers.py
-
         # attention params
         if attention_type == "additive":
             self.attention = AdditiveAttention(hidden_size)
-        else:
+        elif attention_type == "dot-product":
             self.attention = ScaledDotProductAttention(hidden_size)
+        else:
+            self.attention = None 
+            
         self.num_labels = len(args.label_to_id)
 
         # classifier params
@@ -69,11 +71,12 @@ class BERT_ATTN(BertPreTrainedModel):
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)
 
-    def forward(self, input_ids, attention_mask, token_type_ids, label=None, **kwargs):
+    def forward(self, input_ids, attention_mask, label=None):
+        outputs = dict()
         lm = self.pretrained_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
+            token_type_ids=None,
             return_dict=True,
         )
         h = lm["last_hidden_state"]  # [B,L,h_dim]
@@ -92,4 +95,8 @@ class BERT_ATTN(BertPreTrainedModel):
         else:
             loss = None
 
-        return [loss, prediction, logits, a]
+        outputs['loss'] = loss 
+        outputs['prediction'] = prediction
+        outputs['logits'] = logits
+        outputs['attentions'] = a
+        return outputs

@@ -17,14 +17,6 @@ class Explainer:
         self.model = model
         self.config = self.args.explain_config
         self.device = args.device
-
-        self.explanation_model = ExplainModel(
-            method=self.config["method"],
-            model=self.model,
-            layer=self.config["layer"],
-            logits_index=2,
-        )
-
         self.run_faithfulness = run_faithfulness
 
     def make_inputs(self, batch):
@@ -34,76 +26,114 @@ class Explainer:
         return inputs
 
     def explain(self, dataset):
-        logger.info("***** Running explanation *****")
-        logger.info("  Num examples = %d", len(dataset))
 
-        dataloader = DataLoader(
-            dataset, shuffle=False, batch_size=self.config["batch_size"]
-        )
-
-        explanations = []
-        sufficiency = []
-        comprehensiveness = []
-        decision_flip_mit = []
-
-        for batch in tqdm(dataloader):
-            inputs = self.make_inputs(batch)
-            scores = self.explanation_model(inputs=inputs)
-            explanations.extend(scores.tolist())
-
-            if self.run_faithfulness:
-                faithfulness = Faithfulness(
-                    model=self.model,
-                    inputs=inputs,
-                    scores=scores,
-                    mask_id=100,
-                    args=self.args,
+        for idx, config in self.config.items():
+            logger.info(f"***** Running explanation {idx} *****")
+            logger.info("  Method = %s", config['method'])
+            logger.info("  Num examples = %d", len(dataset))
+            try:
+                explanations = []
+                sufficiency = []
+                comprehensiveness = []
+                decision_flip_mit = []
+                decision_flip_fot = []
+                importance_probability_correlation = []
+                monotonicity = []
+                masked_scores = []
+                dataloader = DataLoader(
+                    dataset, shuffle=False, batch_size=config["batch_size"]
                 )
-                sufficiency.extend(faithfulness.sufficiency)
-                comprehensiveness.extend(faithfulness.comprehensiveness)
-                decision_flip_mit.extend(faithfulness.decision_flip_mit)
+                explanation_model = ExplainModel(
+                    model=self.model,
+                    config=config,
+                )
 
-        dataset.insert_diagnosis_column(explanations, "explanations")
-        if self.run_faithfulness:
-            dataset.insert_diagnosis_column(sufficiency, "sufficiency")
-            dataset.insert_diagnosis_column(comprehensiveness, "comprehensiveness")
-            dataset.insert_diagnosis_column(decision_flip_mit, "decision_flip_mit")
+                for batch in tqdm(dataloader):
+                    inputs = self.make_inputs(batch)
+                    scores = explanation_model(inputs=inputs)
+                    explanations.extend(scores.tolist())
 
-        tokens = dataset.diagnosis_df["tokens"].tolist()
-        tokens_sorted = []
+                    if self.run_faithfulness:
+                        mask_or_remove = config.get('mask_or_remove', 'remove')
+                        unk_token_id = dataset.tokenizer.unk_token_id
+                        pad_token_id = dataset.tokenizer.pad_token_id
 
-        for t, s in zip(tokens, explanations):
-            tkns = zip(t, s)
-            tkns_sorted = sorted(tkns, key=lambda x: x[1], reverse=True)
-            tokens_sorted.append([t[0] for t in tkns_sorted])
+                        faithfulness = Faithfulness(
+                            model=self.model,
+                            inputs=inputs,
+                            scores=scores,
+                            mask_or_remove=mask_or_remove,
+                            unk_token_id=unk_token_id,
+                            pad_token_id=pad_token_id
+                        )
+                        masked_scores.extend(faithfulness.masked_scores)
+                        sufficiency.extend(faithfulness.sufficiency)
+                        comprehensiveness.extend(faithfulness.comprehensiveness)
+                        decision_flip_mit.extend(faithfulness.decision_flip_mit)
+                        decision_flip_fot.extend(faithfulness.decision_flip_fot)
+                        importance_probability_correlation.extend(faithfulness.importance_probability_correlation)
+                        monotonicity.extend(faithfulness.monotonicity)
 
-        dataset.insert_diagnosis_column(tokens_sorted, "tokens_sorted")
+                dataset.insert_diagnosis_column(explanations, f"explanations_{idx}", update=True)
+                if len(masked_scores) > 0:
+                    dataset.insert_diagnosis_column(masked_scores, f"masked_scores_{idx}", update=True)
+                
+                if self.run_faithfulness:
+                    dataset.insert_diagnosis_column(sufficiency, f"sufficiency_{idx}", update=True)
+                    dataset.insert_diagnosis_column(comprehensiveness, f"comprehensiveness_{idx}", update=True)
+                    dataset.insert_diagnosis_column(decision_flip_mit, f"decision_flip_mit_{idx}", update=True)
+                    dataset.insert_diagnosis_column(decision_flip_fot, f"decision_flip_fot_{idx}", update=True)
+                    dataset.insert_diagnosis_column(importance_probability_correlation, f"importance_probability_correlation_{idx}", update=True)
+                    dataset.insert_diagnosis_column(monotonicity, f"monotonicity_{idx}", update=True)
 
-        if self.run_faithfulness:
-            sufficiency_avg = np.mean(sufficiency, axis=0)
-            comprehensiveness_avg = np.mean(comprehensiveness, axis=0)
+                tokens = dataset.diagnosis_df["tokens"].tolist()
+                tokens_sorted = []
+                indice_sorted = []
 
-            faithfulness_rep = pd.DataFrame(
-                data={
-                    "p": np.arange(0, 6) / 10,
-                    "sufficiency_avg": sufficiency_avg,
-                    "comprehensiveness_avg": comprehensiveness_avg,
-                }
-            )
+                for t, s in zip(tokens, explanations):
+                    tkns = zip(t, s)
+                    idxs = zip(range(len(t)), s)
+                    tkns_sorted = sorted(tkns, key=lambda x: x[1], reverse=True)
+                    idxs_sorted = sorted(idxs, key=lambda x: x[1], reverse=True)
+                    tokens_sorted.append([t[0] for t in tkns_sorted])
+                    indice_sorted.append([t[0] for t in idxs_sorted])
 
-            faithfulness_sum = {
-                "decision_flip_mit": np.mean(decision_flip_mit, axis=0), 
-                "sufficiency": np.mean(sufficiency_avg, axis=0),
-                "comprehensiveness": np.mean(comprehensiveness_avg, axis=0),
-            }
+                dataset.insert_diagnosis_column(tokens_sorted, f"tokens_sorted_{idx}", update=True)
+                dataset.insert_diagnosis_column(indice_sorted, f"indice_sorted_{idx}", update=True)
 
-            faithfulness_rep.to_csv(
-                self.args.result_dir 
-                / f"faithfulness_rep_{self.config['method'].lower()}.csv",
-                index=False,
-            )
+                # dataset.diagnosis_df.to_excel(self.args.result_dir / f"explanations_{idx}.xlsx")
 
-            json.dump(
-                faithfulness_sum, 
-                open(self.args.result_dir / f"faithfulness_sum_{self.config['method'].lower()}.json", "w")
-            )
+                if self.run_faithfulness:
+                    sufficiency_avg = np.mean(sufficiency, axis=0)
+                    comprehensiveness_avg = np.mean(comprehensiveness, axis=0)
+                    faithfulness_rep = pd.DataFrame(
+                        data={
+                            "p": np.arange(1, 11) / 10,
+                            "sufficiency": sufficiency_avg,
+                            "comprehensiveness": comprehensiveness_avg,
+                        }
+                    )
+
+                    importance_probability_correlation = [x for x in importance_probability_correlation if not np.isnan(x)]
+                    monotonicity = [x for x in monotonicity if not np.isnan(x)]
+                    faithfulness_sum = {
+                        "decision_flip_mit": np.mean(decision_flip_mit, axis=0), 
+                        "decision_flip_fot": np.mean(decision_flip_fot, axis=0), 
+                        "sufficiency": np.mean(sufficiency_avg, axis=0),
+                        "comprehensiveness": np.mean(comprehensiveness_avg, axis=0),
+                        "importance_probability_correlation": np.mean(importance_probability_correlation, axis=0),
+                        "monotonicity": np.mean(monotonicity, axis=0),
+                    }
+                    faithfulness_rep.to_csv(
+                        self.args.result_dir 
+                        / f"faithfulness_by_bins_{idx}.csv",
+                        index=False,
+                    )
+
+                    json.dump(
+                        faithfulness_sum, 
+                        open(self.args.result_dir / f"faithfulness_summary_{idx}.json", "w")
+                    )
+                logger.info("  Finished.")
+            except Exception as e:
+                logger.info("  Failed: %s", e)

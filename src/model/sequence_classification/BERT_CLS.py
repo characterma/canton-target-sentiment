@@ -7,49 +7,39 @@ from model.utils import load_pretrained_bert, load_pretrained_config
 
 
 class BERT_CLS(BertPreTrainedModel):
+    """
+    https://huggingface.co/transformers/_modules/transformers/models/bert/modeling_bert.html#BertForSequenceClassification
+    """
     def __init__(self, args):
         super(BERT_CLS, self).__init__(load_pretrained_config(args.model_config))
         self.model_config = args.model_config
         self.pretrained_model = load_pretrained_bert(args)
-
         hidden_size = self.pretrained_model.config.hidden_size
-        dropout_rate = self.pretrained_model.config.hidden_dropout_prob
-
         self.num_labels = len(args.label_to_id)
-        output_hidden_dim = args.model_config.get("output_hidden_dim", None)
-        output_hidden_act_func = args.model_config.get("output_hidden_act_func", None)
-
-        if output_hidden_dim is not None:
-            h_dim = [output_hidden_dim, self.num_labels]
-        else:
-            h_dim = [self.num_labels]
-
-        self.linear = LinearLayer(
-            in_dim=hidden_size,
-            h_dim=h_dim,
-            activation=output_hidden_act_func,
-            use_bn=False,
-        )
+        self.classifier = nn.Linear(hidden_size, self.num_labels)
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)
 
-    def forward(self, input_ids, attention_mask, token_type_ids, label=None, **kwargs):
-        lm = self.pretrained_model(
+    def forward(self, input_ids, attention_mask, label=None):
+        outputs = dict()
+        bert_outputs = self.pretrained_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
+            token_type_ids=None,
+            output_attentions=True,
             return_dict=True,
         )
-        h = lm["last_hidden_state"]
-        h = h[:, 0, :]
-        logits = self.linear(h)
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
-
+        logits = self.classifier(bert_outputs[1])
         if label is not None:
             loss = self.loss_func(
                 logits.view(-1, self.num_labels), label.view(-1)  # [N, C]  # [N]
             )
         else:
             loss = None
+        prediction = torch.argmax(logits, dim=1).cpu().tolist()
 
-        return [loss, prediction, logits]
+        outputs['loss'] = loss
+        outputs['prediction'] = prediction
+        outputs['logits'] = logits
+        outputs['attentions'] = bert_outputs['attentions']
+        return outputs

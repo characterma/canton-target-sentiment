@@ -46,6 +46,7 @@ class CNN_CRF(nn.Module):
         self.to(args.device)
 
     def forward(self, input_ids, label=None, attention_mask=None, **kwargs):
+        outputs = dict()
         x = self.embed(input_ids)
 
         for cnn in self.cnns:
@@ -67,8 +68,7 @@ class CNN_CRF(nn.Module):
             loss = None
 
         prediction = [p[0] for p in prediction]
-        return [
-            loss,
-            prediction,
-            logits,
-        ]  # # [[0], [Batch size, Sequence Length], [Batch size, Sequence Length, Label Number]]
+        outputs['loss'] = loss
+        outputs['prediction'] = prediction
+        outputs['logits'] = logits
+        return outputs

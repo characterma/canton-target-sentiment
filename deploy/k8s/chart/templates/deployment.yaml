@@ -19,36 +19,40 @@ spec:
       - name: {{ $appName }}
         image: {{ .Values.imageRepository }}:{{ .Values.imageTag }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
-
-        # Change Accordingly ---------------
         env:
-        - name: TZ
-          value: "Asia/Hong_Kong"
-        # ----------------------------------
-
+        {{- if .Values.extraEnvVars }}
+{{ tpl .Values.extraEnvVars . | indent 8 }}
+        {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
         ports:
         - containerPort: {{ default 8080 .Values.service.internalPort }}
-
-        # Change Accordingly ---------------
-#        volumeMounts:
-#        - name: configs
-#          mountPath: "/ailab/conf/gunicorn.conf"
-#          subPath: "gunicorn.conf"
-#        - name: configs
-#          mountPath: "/ailab/conf/logging.conf"
-#          subPath: "logging.conf"
-        # ----------------------------------
-
+        volumeMounts:
+        {{- range .Values.configmap.configfileMounts }}
+            - name: configs
+              mountPath : {{ .mountTo }}
+              subPath : {{ .name }}
+        {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-      {{- toYaml . | nindent 6 }}
+        {{- toYaml . | nindent 6 }}
       {{- end }}
-      # volumes:
-      # - name: configs
-      #   configMap:
-      #     name: {{ $appName }}
+      volumes:
+      - name: configs
+        configMap:
+          name: {{ $appName }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
 
 
       {{- with .Values.nodeSelector }}

@@ -71,7 +71,10 @@ class NLPDataset:
             self.insert_skipped_samples(predictions)
         self.diagnosis_df["prediction"] = predictions
 
-    def insert_diagnosis_column(self, values, name):
+    def insert_diagnosis_column(self, values, name, update=False):
+        if update and name in self.diagnosis_df:
+            self.diagnosis_df.drop(columns=[name], inplace=True)
+
         if len(values) != len(self.diagnosis):
             self.insert_skipped_samples(values)
         self.diagnosis_df[name] = values
@@ -95,9 +98,10 @@ class NLPDataset:
 
 
 class NLPFeature(abc.ABC):
-    def __init__(self, data_dict, tokenizer, args, diagnosis=False):
+    def __init__(self, data_dict, tokenizer, args, diagnosis=False, padding="max_length"):
         self.succeeded = True
         self.msg = ""
+        self.padding = padding
 
         required_features = get_model_inputs(args)
         prepro_config = args.prepro_config

@@ -111,8 +111,8 @@ class KDTrainer(Trainer):
                         inputs[col] = batch[col].to(self.device).long()
                 outputs = self.model(**inputs)
 
-                hard_loss = outputs[0]
-                student_logits = outputs[2]
+                hard_loss = outputs['loss']
+                student_logits = outputs['logits']
                 teacher_logits = batch["teacher_logit"].to(self.device)
 
                 loss = self.compute_kd_loss(
@@ -140,8 +140,8 @@ class KDTrainer(Trainer):
                         inputs[col] = batch[col].to(self.device).long()
 
                 outputs = self.model(**inputs)
-                hard_loss = outputs[0]
-                student_logits = outputs[2]
+                hard_loss = outputs['loss']
+                student_logits = outputs['logits']
                 teacher_logits = batch["teacher_logit"].to(self.device)
 
                 loss = self.compute_kd_loss(

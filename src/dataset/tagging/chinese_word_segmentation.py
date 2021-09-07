@@ -2,6 +2,7 @@
 import torch
 from dataset.base import NLPFeature
 from dataset.utils import pad_array
+from dataset.tagging.utils import get_token_level_tags
 
 
 def get_token_level_tags(tokens_encoded, sent_indexs, postags, scheme="BI"):

@@ -193,3 +193,25 @@ BERT_ATTN:
     scheduler: "linear"
     max_steps: -1
     warmup_steps: 0
+BERT_LABEL_ATTN:
+    # ================= Preprocessing params =================
+    max_length: 256
+    tokenizer_source: "transformers"
+    tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
+    # ================= Model params =================
+    pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
+    dropout_rate: 0.1
+    output_hidden_act_func: "ReLU"
+    output_hidden_dim: 128
+    sampler: "random"
+    learning_rate: 2e-5
+    # ================= Training params =================
+    num_train_epochs: 10
+    weight_decay: 0.0
+    gradient_accumulation_steps: 1
+    adam_epsilon: 1e-8
+    max_grad_norm: 1.0
+    optimizer: "AdamW"
+    scheduler: "linear"
+    max_steps: -1
+    warmup_steps: 0

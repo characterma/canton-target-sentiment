@@ -6,7 +6,7 @@ from collections import namedtuple
 from pathlib import Path 
 
 sys.path.append("../src/")
-from dataset.target_classification import TargetClassificationFeature
+from dataset import TargetClassificationFeature
 from utils import load_config
 from tokenizer import get_tokenizer
 from label import get_label_to_id
@@ -32,7 +32,7 @@ class TestGetFeatures(unittest.TestCase):
         data_dict = {
             'content': "#仪式感不能少没有卡地亚， 🔥浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！", 
             'target_locs': [[15, 17]], 
-            'sentiment': 'positive'
+            'label': 'positive'
         }
 
         feature = TargetClassificationFeature(

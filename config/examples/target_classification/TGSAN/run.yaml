@@ -6,7 +6,7 @@ data:
   train: sample.json
   dev: sample.json
   test: sample.json
-  labels: 3_ways # 2_ways
+  labels: 3_ways  # 2_ways
 text_prepro:
   steps:
     - simplified_chinese
@@ -29,5 +29,5 @@ eval:
   model_file: "model.pt" # under output_dir / "model"
   # ================= TDBERT =================
 model_params:
-  num_train_epochs: 2
+  num_train_epochs: 1
   embedding_trainable: False

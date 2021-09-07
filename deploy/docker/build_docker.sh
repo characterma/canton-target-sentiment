@@ -1,14 +1,14 @@
 #!/bin/sh
-
 SRC_ROOT=../..
-echo $(ls ailab/)
 
 # !!Require Changes!!: 
 # =====================
 # Copy necessary deployment files to /ailab
 
-rsync -av $SRC_ROOT/src/ ailab/
-echo $(ls ailab/)
+# Create (if not exist) ailab/ and Copy everything under ./src/ to ailab/
+# E.g. ./src/run.py to ailab/run.py
+rsync -av $SRC_ROOT/src/ ailab/src/
+rsync -av $SRC_ROOT/output/ ailab/output/
 # =====================
 
 

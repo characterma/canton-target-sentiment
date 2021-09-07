@@ -1,0 +1,3 @@
+from dataset.classification.sequence_classification import SequenceClassificationFeature
+from dataset.classification.bisequence_classification import BiSequenceClassificationFeature
+from dataset.classification.target_classification import TargetClassificationFeature

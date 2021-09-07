@@ -10,6 +10,7 @@ from tqdm import tqdm, trange
 from transformers import AdamW, get_linear_schedule_with_warmup
 from metric import compute_metrics
 from torch.utils.tensorboard import SummaryWriter
+import torch.nn.functional as F
 
 
 logger = logging.getLogger(__name__)
@@ -25,19 +26,22 @@ def prediction_step(model, batch, args):
                 inputs[col] = batch[col].to(args.device).long()
         x = model(**inputs)
 
+    results["prediction_id"] = []
     results["prediction"] = []
-    for x1 in x[1]:
+    for x1 in x['prediction']:
         if isinstance(x1, list):
+            results["prediction_id"].append(x1)
             results["prediction"].append(
-                list(map(lambda x: args.label_to_id_inv[x], x1))
+                list(map(lambda y: args.label_to_id_inv[y], x1))
             )
         else:
+            results["prediction_id"].append(x1)
             results["prediction"].append(args.label_to_id_inv[x1])
     # check
 
-    results["logits"] = x[2].cpu().tolist()
-    if x[0] is not None:
-        results["loss"] = x[0].cpu().tolist()
+    results["probabilities"] = F.softmax(x["logits"]).cpu().tolist()
+    if x["loss"] is not None:
+        results["loss"] = x["loss"].cpu().tolist()
     else:
         results["loss"] = None
     return results
@@ -58,28 +62,41 @@ def evaluate(model, eval_dataset, args):
 
     label_ids = []
     predictions = []
+    prediction_ids = []
+    probabilities = []
     losses = []
 
+    has_label = False
     for batch in tqdm(dataloader, desc="Evaluating"):
         results = prediction_step(model, batch, args=args)
-        label_ids.extend(batch["label"].cpu().tolist())
         losses.append(results["loss"])
         predictions.extend(results["prediction"])
+        prediction_ids.extend(results["prediction_id"])
+        probabilities.extend(results["probabilities"])
 
-    labels = []
-    for l1, p1 in zip(label_ids, predictions):
-        if isinstance(l1, list):
-            labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[: len(p1)])
-        else:
-            labels.append(args.label_to_id_inv[l1])
+        if "label" in batch:
+            has_label = True
+            label_ids.extend(batch["label"].cpu().tolist())
 
-    metrics = compute_metrics(task=args.task, labels=labels, predictions=predictions)
-    metrics["loss"] = np.mean(losses)
-    metrics["dataset"] = eval_dataset.dataset
-    for m in metrics:
-        logger.info("  %s = %s", m, str(metrics[m]))
+    if has_label:
+        labels = []
+        for l1, p1 in zip(label_ids, predictions):
+            if isinstance(l1, list):
+                labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[: len(p1)])
+            else:
+                labels.append(args.label_to_id_inv[l1])
+
+        metrics = compute_metrics(task=args.task, labels=labels, predictions=predictions)
+        metrics["loss"] = np.mean(losses)
+        metrics["dataset"] = eval_dataset.dataset
+        for m in metrics:
+            logger.info("  %s = %s", m, str(metrics[m]))
+    else:
+        metrics = {}
 
     eval_dataset.insert_diagnosis_column(predictions, "prediction")
+    eval_dataset.insert_diagnosis_column(prediction_ids, "prediction_id")
+    eval_dataset.insert_diagnosis_column(probabilities, "probabilities")
     return metrics
 
 
@@ -193,8 +210,8 @@ class Trainer:
                 for col in batch:
                     inputs[col] = batch[col].to(self.device).long()
                 outputs = self.model(**inputs)
-                loss = outputs[0]
-                logits = outputs[1]
+                loss = outputs['loss']
+                logits = outputs['logits']
                 loss.backward()
                 loss = loss.tolist()
                 if global_step % log_steps == 0:

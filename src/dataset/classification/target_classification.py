@@ -5,9 +5,9 @@ from dataset.base import NLPFeature
 
 
 class TargetClassificationFeature(NLPFeature):
-    def __init__(self, data_dict, tokenizer, args, diagnosis=False):
+    def __init__(self, data_dict, tokenizer, args, diagnosis=False, padding="max_length"):
         super(TargetClassificationFeature, self).__init__(
-            data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=diagnosis
+            data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=diagnosis, padding=padding
         )
 
     def get_feature(
@@ -19,17 +19,16 @@ class TargetClassificationFeature(NLPFeature):
         # data fields
         content = data_dict["content"]
         target_locs = data_dict["target_locs"]
-        label = data_dict.get("sentiment", None)
+        label = data_dict.get("label", None)
 
         # params
         max_length = args.model_config["max_length"]
         label_to_id = args.label_to_id
-
         tokens_encoded = tokenizer(
             content,
             max_length=max_length,
             truncation=True,
-            padding="max_length",
+            padding=self.padding,
             add_special_tokens=True,
             return_offsets_mapping=True,
         )
@@ -49,29 +48,35 @@ class TargetClassificationFeature(NLPFeature):
                     target_mask[token_idx] = 1
 
         if diagnosis:
-            diagnosis_dict["fea_content"] = content
-            diagnosis_dict["fea_input_ids"] = input_ids
-            diagnosis_dict["fea_target_locs"] = target_locs
-            diagnosis_dict["fea_tokens"] = tokens
-            diagnosis_dict["fea_target_token_loc"] = target_token_loc
-            diagnosis_dict["fea_target_char"] = [
+            if "raw" in data_dict:
+                diagnosis_dict["raw_headline"] = data_dict["raw"].get("headline", None)
+                diagnosis_dict["raw_content"] = data_dict["raw"].get("content", None)
+
+            diagnosis_dict["content"] = content
+            diagnosis_dict["input_ids"] = input_ids
+            diagnosis_dict["target_locs"] = target_locs
+            diagnosis_dict["tokens"] = tokens
+            diagnosis_dict["target_token_loc"] = target_token_loc
+            diagnosis_dict["target_char"] = [
                 content[si:ei] for (si, ei) in target_locs
             ]
-            diagnosis_dict["fea_target_token"] = []
-            diagnosis_dict["fea_success"] = True if sum(target_mask) > 0 else False
-            diagnosis_dict["fea_error_msg"] = []
+            diagnosis_dict["target_token"] = []
+            diagnosis_dict["label"] = label
+            diagnosis_dict["label_id"] = label_to_id.get(str(label), None)
+            diagnosis_dict["success"] = True if sum(target_mask) > 0 else False
+            diagnosis_dict["error_msg"] = []
             for i in target_token_loc:
                 if i is None:
-                    diagnosis_dict["fea_target_token"].append("NOT FOUND")
-                    diagnosis_dict["fea_error_msg"].append("TARGET NOT FOUND")
+                    diagnosis_dict["target_token"].append("NOT FOUND")
+                    diagnosis_dict["error_msg"].append("TARGET NOT FOUND")
                 elif i < max_length:
-                    diagnosis_dict["fea_target_token"].append(tokens[i])
+                    diagnosis_dict["target_token"].append(tokens[i])
                 else:
-                    diagnosis_dict["fea_target_token"].append("> MAX_LEN")
-                    diagnosis_dict["fea_error_msg"].append("TARGET > MAX_LEN")
+                    diagnosis_dict["target_token"].append("> MAX_LEN")
+                    diagnosis_dict["error_msg"].append("TARGET > MAX_LEN")
 
-            diagnosis_dict["fea_error_msg"] = sorted(
-                list(set(diagnosis_dict["fea_error_msg"]))
+            diagnosis_dict["error_msg"] = sorted(
+                list(set(diagnosis_dict["error_msg"]))
             )
 
         if sum(target_mask) == 0:

@@ -114,6 +114,10 @@ def combine_and_save_statistics(datasets, args):
                 "diagnosis_test_only.xlsx" if args.test_only else "diagnosis.xlsx"
             )
             diagnosis_df.to_excel(args.result_dir / filename, index=False)
+            filename = (
+                "diagnosis_test_only.pkl" if args.test_only else "diagnosis.pkl"
+            )
+            pickle.dump(diagnosis_df, open(args.result_dir / filename, 'wb'))
         except Exception as e:
             print(e)
             filename = "diagnosis_test_only.pkl" if args.test_only else "diagnosis.pkl"

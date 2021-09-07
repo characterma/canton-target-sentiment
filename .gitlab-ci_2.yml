@@ -1,9 +1,8 @@
-image: ess-repos01.wisers.com:8889/res/docker:dind-k8s-asher
 # Define environment variables in executor container
 variables:
-  # RELEASE_NAME_CI will be formated as <groupnames>-<projectname>-<branch>, i.e. sample-cicd-java-project-master
-  # RELEASE_NAME_CI: "$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG" 
+  # RELEASE_NAME_CI will be formated as <groupnames>-<projectname>-<branch>, i.e. sample-cicd-python-project-master
   RELEASE_NAME_CI: "$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG"
+
 
 before_script:
   - id
@@ -13,7 +12,6 @@ before_script:
   - env
 
 stages:
-  - build
   - package
   - deploy
   - test
@@ -21,42 +19,28 @@ stages:
   - undeploy
 
 
-# ================= Stage: Build ==================
-# Purpose: Compiling source code to executable binaries 
-
-
-# --- Triggered By: Commit / Tag ---
-# Remark: For Java Project only, build the sources via Maven
-build:maven:
-  image: $DK_PUB/maven:3-jdk-8
-  stage: build
-  script:
-  - "mvn package -B"
-  artifacts:
-    name: build-maven-target
-    expire_in: 15 min  # will be auto deleted after 15 mins
-    paths:
-    - target/
-
-
 
 # ================ Stage: Package =================
-# Purpose: Packaging all necessary program files into docker image 
+# Purpose: Packaging all necessary program files into docker image
+
 
 # --- Triggered By: Commit / Tag ---
 # Remark: Collect necessary program files to build docker image, and store to Research Internal Image Repository
 package:docker:
   stage: package
   script:
+  # copy bigfiles
   - cd deploy/docker
-  - rsync -av /BigFiles/Models/wbi-target-sentiment/* ailab/output/
+  - mkdir -p ailab/models/rolex
+  - mkdir -p ailab/config/
+  - cp -r /BigFiles/Models/canton-target-sentiment/rolex/* ailab/models/
+  - cp -r /BigFiles/Models/canton-target-sentiment/rolex/config/* ailab/config/
+  # run scripts
   - set -x
   - sh build_docker.sh
-  dependencies:
-  - build:maven
-  when: manual
+  # - rm -rf ailab/models/
   tags:
-  - bigfiles            # default enable access to /BigFiles
+  - bigfiles            # to use bigfiles runner, path /BigFiles accessible
   artifacts:
     name: package-docker-deploy
     expire_in: 1 hrs    # will be auto deleted after 1 hour
@@ -69,11 +53,13 @@ package:harbor_docker:
   stage: package
   script:
   - cd deploy/docker
-  - rsync -av /BigFiles/Models/wbi-target-sentiment/* ailab/output/
-  - set -x
-  - sh build_docker.sh
-  dependencies:
-  - build:maven
+  - mkdir -p ailab/models/rolex
+  - mkdir -p ailab/config/
+  - cp -r /BigFiles/Models/canton-target-sentiment/rolex/* ailab/models/rolex/
+  - cp -r /BigFiles/Models/canton-target-sentiment/rolex/config/* ailab/config/
+  - sh build_harbor_docker.sh
+  # dependencies:
+  # - build:maven
   when: manual
   tags:
   - bigfiles            # default enable access to /BigFiles
@@ -82,6 +68,7 @@ package:harbor_docker:
     expire_in: 1 hrs    # will be auto deleted after 1 hour
     paths:
     - deploy/
+
 
 # ================= Stage: Deploy ==================
 # Purpose: Deploy container to docker servers / K8S environment (mostly playground), OR deploying the helm chart to internal museum
@@ -104,7 +91,7 @@ deploy:dev-docker:
   - sh run_docker.sh
   when: manual
   dependencies:
-  - package:docker 
+  - package:docker
   except:
   - tags
 
@@ -117,19 +104,58 @@ deploy:playground-k8s:
   # define environment variables:
   - export RELEASE_NAME="$RELEASE_NAME_CI"       # override RELEASE_NAME for CI flow
   - export K8S_DEPLOY_NAMESPACE="playground"     # reset namespace to playground no matter what's in env.sh
- 
+
   # execute scripts:
   - cd deploy/k8s
-  - sh undeploy_k8s.sh  
+  - sh undeploy_k8s.sh
   - sh deploy_k8s.sh
   dependencies:
   - package:docker
-  when: manual
+  #when: manual
   except:
   - tags
   environment:
     name: playground-k8s
-#    url: http://ess-vm01.wisers.com:18080/r/projects/1a71/kubernetes-dashboard:9090/#!/overview?namespace=$K8S_DEPLOY_NAMESPACE
+    url: http://ess-vm01.wisers.com:18080/r/projects/1a71/kubernetes-dashboard:9090/#!/overview?namespace=$K8S_DEPLOY_NAMESPACE
+
+# --- Triggered By: Tag ---
+# Remark: Deploy to ailab demo docker servers (ailab-demo-api01 & ailab-demo-api02)
+# Override Environment Variables (in env.sh):
+#   DOCKER_DEPLOY_SERVER - Set container deployment server
+#   DOCKER_DEPLOY_CONTAINER_NAME - Set docker container name, naming standard: (project|<user_name>)-<app name>
+#   DOCKER_DEPLOY_CONTAINER_PORT_PARAMS - Define docker port mappings. multiple mappings can be defined like: "-p 9090:8080 -p 80:80 -p 20000~20005:10000~10005"
+#   DOCKER_ENV_VARS - Optional, set environment variables inside container, i.e. "-e TZ=Asia/Hong_Kong"
+#   DOCKER_VOLUMES_MOUNT - Optional, set volume mount from host to container, i.e. "-v /tmp/dummyfile:/ailab/dummyfile"
+#   DOCKER_CMD - Optional, set container start command
+#deploy:ailab-demo-docker:
+#  stage: deploy
+#  script:
+#  # define environment variables:
+#  - export DOCKER_DEPLOY_CONTAINER_NAME="project-$APP_NAME"
+#  - export DOCKER_DEPLOY_CONTAINER_PORT_PARAMS="-p 8082:8080"
+#  - export DOCKER_VOLUMES_MOUNT="-v ~/Projects/$APP_NAME/config.ini:/ailab/conf/config.ini"
+#
+#  # copy properties to remote server:
+#  - rsync -av conf/ailab-demo-api01/config.ini developer@ailab-demo-api01:~/Projects/"$APP_NAME"/       # override to ailab demo properties
+#  - rsync -av conf/ailab-demo-api02/config.ini developer@ailab-demo-api02:~/Projects/"$APP_NAME"/       # override to ailab demo properties
+#
+#  # execute scripts:
+#  - cd deploy/docker
+#  - export DOCKER_DEPLOY_SERVER="ailab-demo-api01"   # run on demo server 1
+#  - sh remove_docker.sh
+#  - sh run_docker.sh
+#
+#  - export DOCKER_DEPLOY_SERVER="ailab-demo-api02"   # run on demo server 2
+#  - sh remove_docker.sh
+#  - sh run_docker.sh
+#  when: manual
+#  dependencies:
+#  - package:docker
+#  only:
+#  - tags
+#  environment:
+#    name: ailab-demo-docker
+#    url: https://www.wisers.ai/browse/sentiment-analysis/demo/
 
 
 # --- Triggered By: Tag ---
@@ -141,12 +167,11 @@ deploy:helm-museum:
   - sh package_n_upload_2_res_museum.sh
   dependencies:
   - package:docker
-  when: manual
   only:
-  - tags  
+  - tags
   environment:
     name: chart_museum
-#   url: http://ess-deploy.wisers.com:8585/api/charts
+    url: http://ess-deploy.wisers.com:8585/api/charts
 
 # --- Triggered By: Tag ---
 # Remark: Save the helm chart to Research Internal Chart Museum for further deployment
@@ -159,7 +184,7 @@ deploy:harbor-helm:
   - package:harbor_docker
   when: manual
   only:
-  - tags  
+  - tags
   environment:
     name: chart_museum
 
@@ -174,14 +199,18 @@ deploy:harbor-helm:
 #   POSTMAN_VAR_FILE - to override collection's variables from file inside test/collections/variables/ (i.e. playground.json)
 test:dev-docker:
   stage: test
-  script: 
+  script:
+  # define environment variables:
+  - export POSTMAN_VAR_FILE="ess38.json"
+
   - cd deploy/test
+  - sleep 60                   # sleep 3 min waiting for k8s deployment to complete
   - sh run_newman.sh
   dependencies:
   - deploy:dev-docker
   when: manual
   except:
-  - tags  
+  - tags
   artifacts:
     name: test-dev-docker-result
     expire_in: 30 min
@@ -198,15 +227,16 @@ test:playground-k8s:
   script:
   # define environment variables:
   - export POSTMAN_VAR_FILE="playground.json"
-   
+
   # execute scripts:
   - cd deploy/test
+  - sleep 250                   # sleep 3 min waiting for k8s deployment to complete
   - sh run_newman.sh
   dependencies:
   - deploy:playground-k8s
-  when: manual
+  #when: manual
   except:
-  - tags  
+  - tags
   artifacts:
     name: test-playground-k8s-result
     expire_in: 30 min
@@ -220,10 +250,10 @@ test:playground-k8s:
 
 
 # --- Triggered By: Tag ---
-# Remark: Upload deploy-k8s.yaml, README.md, postman_collection.json and version.txt to OwnCloud 
+# Remark: Upload deploy-k8s.yaml, README.md, postman_collection.json and version.txt to OwnCloud
 upload:owncloud:
   stage: upload
-  script: 
+  script:
   - cd deploy/upload
   - sh upload_files.sh
   dependencies:
@@ -232,8 +262,10 @@ upload:owncloud:
   only:
   - tags
 
+
+
 # ================= Stage: Undeploy ==================
-# Purpose: Undeploy the short-lived deploymennt (i.e. on dev server or k8s playground) 
+# Purpose: Undeploy the short-lived deploymennt (i.e. on dev server or k8s playground)
 
 
 # --- Triggered By: Commit ---
@@ -260,14 +292,40 @@ undeploy:playground-k8s:
   - export RELEASE_NAME="$RELEASE_NAME_CI"     # override RELEASE_NAME for CI flow
   - export K8S_DEPLOY_NAMESPACE="playground"   # reset namespace to playground no matter what's in env.sh
   - cd deploy/k8s
-  - sh undeploy_k8s.sh  
+  - sh undeploy_k8s.sh
   when: manual
   except:
   - tags
   dependencies: []
   environment:
     name: playground-k8s
-#    url: http://ess-vm01.wisers.com:18080/r/projects/1a71/kubernetes-dashboard:9090/#!/overview?namespace=$K8S_DEPLOY_NAMESPACE
+    url: http://ess-vm01.wisers.com:18080/r/projects/1a71/kubernetes-dashboard:9090/#!/overview?namespace=$K8S_DEPLOY_NAMESPACE
+
+# --- Triggered By: Tag ---
+# Remark: Remove the deployed container on ailabe demo docker servers (ailab-demo-api01 & ailab-demo-api02)
+# Override Environment Variables (in env.sh):
+#   DOCKER_DEPLOY_SERVER - Set container deployment server
+#   DOCKER_DEPLOY_CONTAINER_NAME - Set docker container name, naming standard: (project|<user_name>)-<app name>
+#undeploy:ailab-demo-docker:
+#  stage: undeploy
+#  script:
+#  # define environment variables:
+#  - export DOCKER_DEPLOY_CONTAINER_NAME="project-$APP_NAME"
+#
+#  # execute scripts:
+#  - cd deploy/docker
+#  - export DOCKER_DEPLOY_SERVER="ailab-demo-api01"   # run on demo server 1
+#  - sh remove_docker.sh
+#
+#  - export DOCKER_DEPLOY_SERVER="ailab-demo-api02"   # run on demo server 2
+#  - sh remove_docker.sh
+#  when: manual
+#  dependencies: []
+#  only:
+#  - tags
+#  environment:
+#    name: ailab-demo-docker
+#    url: https://www.wisers.ai/browse/sentiment-analysis/demo/
 
 # --- Triggered By: Tag ---
 # Remark: Remove the helm chart from museum
@@ -282,5 +340,4 @@ undeploy:helm-museum:
   - tags
   environment:
     name: chart_museum
-#    url: http://ess-deploy.wisers.com:8585/api/charts
-
+    url: http://ess-deploy.wisers.com:8585/api/charts

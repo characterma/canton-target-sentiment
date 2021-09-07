@@ -28,7 +28,7 @@ class BERT_CRF(BertPreTrainedModel):
                 param.requires_grad = False
 
     def forward(self, input_ids, attention_mask, label=None):
-
+        outputs = dict()
         lm = self.pretrained_model(
             input_ids=input_ids, attention_mask=attention_mask, return_dict=True
         )
@@ -46,8 +46,7 @@ class BERT_CRF(BertPreTrainedModel):
             loss = None
 
         prediction = [p[0] for p in prediction]
-        return [
-            loss,
-            prediction,
-            logits,
-        ]  # # [[0], [Batch size, Sequence Length], [Batch size, Sequence Length, Label Number]]
+        outputs['loss'] = loss
+        outputs['prediction'] = prediction
+        outputs['logits'] = logits
+        return outputs

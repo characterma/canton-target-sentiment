@@ -280,6 +280,7 @@ class TGSAN(nn.Module):
         soft_label=None,
         **kwargs
     ):
+        outputs = dict()
         x = self.embed(input_ids).to(torch.float32)  # [B, L, E]
         len_max = x.size(1)  # embedding dimension
         lens = attention_mask.sum(
@@ -341,4 +342,7 @@ class TGSAN(nn.Module):
                 )
         else:
             loss = None
-        return [loss, prediction, logits]
+        outputs['loss'] = loss
+        outputs['prediction'] = prediction
+        outputs['logits'] = logits
+        return outputs

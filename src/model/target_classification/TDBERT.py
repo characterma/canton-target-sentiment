@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from transformers import BertPreTrainedModel
+import torch.nn.functional as F
 from model.utils import load_pretrained_bert, load_pretrained_config
 from model.layer.fc import LinearLayer
 
@@ -61,6 +62,7 @@ class TDBERT(BertPreTrainedModel):
         label=None,
         **kwargs
     ):
+        outputs = dict()
         lm = self.pretrained_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -75,11 +77,18 @@ class TDBERT(BertPreTrainedModel):
         )  # outputs: [B, S, Dim], target_mask: [B, S]
 
         logits = self.linear(tgt_h)
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
 
         if label is not None:
             loss = self.loss_func(logits.view(-1, self.num_labels), label.view(-1))
             loss = loss.mean()
         else:
             loss = None
-        return [loss, prediction, logits]
+
+
+        prediction = torch.argmax(logits, dim=1).cpu().tolist()
+        outputs['loss'] = loss
+        outputs['prediction'] = prediction
+        outputs['logits'] = logits
+        outputs['probabilities'] = F.softmax(logits, -1)
+
+        return outputs

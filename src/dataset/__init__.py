@@ -1,6 +1,6 @@
-from dataset.target_classification import TargetClassificationFeature
-from dataset.chinese_word_segmentation import ChineseWordSegmentationFeature
-from dataset.sequence_classification import SequenceClassificationFeature
+from dataset.classification import *
+from dataset.tagging import *
+from dataset.clue import *
 from dataset.base import NLPDataset
 
 

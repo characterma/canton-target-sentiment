@@ -53,7 +53,7 @@ class TGSAN2(nn.Module):
         return t_h.values
 
     def forward(self, input_ids, attention_mask, target_mask, label=None, **kwargs):
-
+        outputs = dict()
         x = self.embedding(
             input_ids=input_ids,
             token_type_ids=target_mask,
@@ -74,5 +74,7 @@ class TGSAN2(nn.Module):
             loss = self.loss_fct(logits.view(-1, self.num_labels), label.view(-1))
         else:
             loss = None
-
-        return [loss, prediction, logits]
+        outputs['loss'] = loss
+        outputs['prediction'] = prediction
+        outputs['logits'] = logits
+        return outputs

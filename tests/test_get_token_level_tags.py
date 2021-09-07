@@ -2,7 +2,7 @@ import unittest
 import sys
 import torch
 sys.path.append("../src/")
-from dataset.chinese_word_segmentation import get_token_level_tags
+from dataset.tagging.chinese_word_segmentation import get_token_level_tags
 from transformers import AutoTokenizer
 
 

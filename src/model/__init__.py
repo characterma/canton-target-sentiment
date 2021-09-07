@@ -17,6 +17,7 @@ def get_model(args):
     if not os.path.exists(model_path):
         model = Model(args=args)
     else:
+        logger.info("  Model path = %s", model_path)
         model = torch.load(model_path)
         model = model.to(args.device)
     return model
