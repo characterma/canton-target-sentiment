@@ -2,7 +2,6 @@ asyncio==3.4.3
 cachetools
 captum
 opencc-python-reimplemented==0.1.6
-openpyxl
 pandas==1.0.5
 pyyaml
 regex==2020.10.15
