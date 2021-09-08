@@ -18,6 +18,5 @@ def get_model(args):
         model = Model(args=args)
     else:
         logger.info("  Model path = %s", model_path)
-        model = torch.load(model_path)
-        model = model.to(args.device)
+        model = torch.load(model_path, map_location=torch.device(args.device))
     return model
