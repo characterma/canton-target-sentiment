@@ -63,7 +63,7 @@ resources:
 hpa:
   enabled: true
   minReplicas: 1
-  maxReplicas: 3
+  maxReplicas: 1
   cpu:
     averageUtilization: 75
   memory:
