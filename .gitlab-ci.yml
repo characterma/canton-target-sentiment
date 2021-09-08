@@ -234,19 +234,19 @@ undeploy:dev-docker:
 
 # --- Triggered By: Commit ---
 # Cleanup the program in K8S (playground namespace)
-# undeploy:playground-k8s:
-#   stage: undeploy
-#   script:
-#   - export RELEASE_NAME="$RELEASE_NAME_CI"     # override RELEASE_NAME for CI flow
-#   - export K8S_DEPLOY_NAMESPACE="playground"   # reset namespace to playground no matter what's in env.sh
-#   - cd deploy/k8s
-#   - sh undeploy_k8s.sh
-#   when: manual
-#   except:
-#   - tags
-#   dependencies: []
-#   environment:
-#     name: playground-k8s
+undeploy:playground-k8s:
+  stage: undeploy
+  script:
+  - export RELEASE_NAME="$RELEASE_NAME_CI"     # override RELEASE_NAME for CI flow
+  - export K8S_DEPLOY_NAMESPACE="playground"   # reset namespace to playground no matter what's in env.sh
+  - cd deploy/k8s
+  - sh undeploy_k8s.sh
+  when: manual
+  except:
+  - tags
+  dependencies: []
+  environment:
+    name: playground-k8s
 #     url: http://ess-vm01.wisers.com:18080/r/projects/1a71/kubernetes-dashboard:9090/#!/overview?namespace=$K8S_DEPLOY_NAMESPACE
 
 
