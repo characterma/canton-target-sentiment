@@ -34,7 +34,7 @@ class TDBERT(BertPreTrainedModel):
             activation=output_hidden_act_func,
             use_bn=False,
         )
-
+        self.return_tensors = None
         self.loss_func = nn.CrossEntropyLoss(reduction="none")
         self.to(args.device)
 
@@ -53,6 +53,9 @@ class TDBERT(BertPreTrainedModel):
             if "embeddings" in param_name:
                 param.requires_grad = False
 
+    def set_return_options(self, return_tensors=None):
+        self.return_tensors = return_tensors
+
     def forward(
         self,
         input_ids,
@@ -62,7 +65,6 @@ class TDBERT(BertPreTrainedModel):
         label=None,
         **kwargs
     ):
-        outputs = dict()
         lm = self.pretrained_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -71,7 +73,6 @@ class TDBERT(BertPreTrainedModel):
         )
 
         h = lm["last_hidden_state"]
-        # Average or max
         tgt_h = self.pool_target(
             h, target_mask
         )  # outputs: [B, S, Dim], target_mask: [B, S]
@@ -84,11 +85,14 @@ class TDBERT(BertPreTrainedModel):
         else:
             loss = None
 
+        results = dict()
+        results['loss'] = loss
+        results['logits'] = logits
+        results['prediction'] = torch.argmax(logits, dim=1)
+        results['probabilities'] = F.softmax(logits, -1)
 
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
-        outputs['probabilities'] = F.softmax(logits, -1)
-
+        if self.return_tensors is None:
+            outputs = results
+        else:
+            outputs = [results[nme] for nme in self.return_tensors]
         return outputs

@@ -7,7 +7,8 @@ from pydantic import BaseModel
 import uvicorn
 from fastapi import FastAPI, HTTPException
 
-from model import get_model
+import numpy as np
+from model import get_onnx_session
 from tokenizer import get_tokenizer
 from utils import load_config
 from label import get_label_to_id
@@ -20,8 +21,7 @@ APP_NAME = "wbi_org_sentiment"
 
 class ModelRunner(object):
     def __init__(self, args):
-        self.model = get_model(args=args)
-        self.model.set_return_options(return_tensors=None)
+        self.session = get_onnx_session(args=args)
         self.device = args.device
         self.label_to_id_inv = args.label_to_id_inv
 
@@ -29,12 +29,13 @@ class ModelRunner(object):
     def predict(self, feature_dict):
         batch = dict()
         for col in feature_dict:
-            batch[col] = feature_dict[col].unsqueeze(0).to(self.device)
-        output = self.model(**batch)
-        prediction = output["prediction"].item()
-        sentiment = self.label_to_id_inv[prediction]
+            batch[col] = feature_dict[col].unsqueeze(0).numpy()
+        output = self.session.run(None, input_feed=batch)
+        probabilities = output[0].flatten()
+        sentiment_id = probabilities.argmax()
+        sentiment = self.label_to_id_inv[sentiment_id]
         scores = {}
-        for i, s in enumerate(output["probabilities"].squeeze(0).tolist()):
+        for i, s in enumerate(probabilities.tolist()):
             scores[self.label_to_id_inv[i]] = s
         score = scores[sentiment]
         return sentiment, scores, score
