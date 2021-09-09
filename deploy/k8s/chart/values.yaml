@@ -54,10 +54,10 @@ resources:
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   limits:
     cpu: 4000m
-    memory: 8G
+    memory: 2G
   requests:
     cpu: 4000m
-    memory: 8G
+    memory: 2G
 
 # Whether to enable Horizontal Pod Autoscaler
 hpa:
