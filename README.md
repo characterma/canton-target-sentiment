@@ -1,340 +1,81 @@
-# **Target-dependent sentiment analysis**
+# **Target sentiment analysis for WBI**
 
 ## API Specification
 
-**URL: /target_sentiment**
+**End-point: /predict**
 
 **Type: POST**
 
 **Description**
 
-1. Process target-guided sentiment analysis.
-2. Chinese model are currently supported. 
 
-### Input & output formats (general)
+## Input & output formats (general)
 
 
 **Input Data**
 
-- `language` indicates the language ("chinese" or "english")  of input text.
-- `text`: contents.
-- `target`: the indices of the target.
-- `format`: 'general'
+| Field                    | Descriptions                                                                     |
+|--------------------------|----------------------------------------------------------------------------------|
+| organization             | The organization name.                                                           |
+| source                   | The source or author.                                                            |
+| pub_code                 |                                                                                  |
+| headline                 |                                                                                  |
+| content                  |                                                                                  |
+| extended_target_keywords | A list of target keywords. Each keyword should appear in headline or in content. |
 
 **Sample Input**
 
 ```json
 {
-    "language": "chinese",
-    "format": "general",
-    "text": "蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。",
-    "target": [[0,2],[58,60],[58,60]],
+    "organization": "保安局", 
+    "source": "香江望神州", 
+    "pub_code": "im_youtube_hk",
+    "headline": "鄧炳強批612基金「臨解散都要撈油水」 將作調查 不點名批評黎智英是「主腦」",
+    "content": "#國安法#\n撲滅罪行委員會8月27日開會，保安局局長鄧炳強在會後見記者",
+    "target_keywords": ["保安局"]
 }
+
 ```
 
 **Output Data**
+| Field     | Descriptions                                                          |
+|-----------|-----------------------------------------------------------------------|
+| sentiment | The sentiment output by model. ("positive", "neutral", or "negative") |
+| scores    | The probabilities of all sentiments.                                  |
+| score     | The probability of the output sentiment.                              |
+| need_pr   | Indicating whether proof-reading is needed. (true or false)           |
 
-- Original input with an extra field:
-  * sentiment ("0", "-1", or "1")
 
 **Sample Output**
 
 ```json
 {
-    "language": "chinese",
-    "format": "general",
-    "text": "蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。",
-    "target": [[0,2],[58,60],[58,60]],
-    "sentiment": "-1",
-}
-```
-
-### Input & output formats (syntactic API)
-
-**Input Data**
-
-- `language` indicates the language ("chinese" or "english")  of input text.
-- `doclist`: contains one or multiple documents
-- `labelunits`: contains labelunits in each document. Each labelunit has four required fields.
-  * unit_index
-  * unit_text
-  * subject_index
-  * aspect_index
-- `format`: 'syntactic'
-
-**Sample Input**
-
-```json
-{
-  "language": "chinese",
-  "format": "syntactic",
-  "doclist": [
-    {
-      "labelunits": [
-        {
-          "unit_index": [0,67],
-          "subject": "84ee5a1186004c528828cd24e96c7f6e",
-          "unit_text": "蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。",
-          "subject_name": "WATCH--CHOPARD",
-          "subject_index": [[0, 2], [58, 60]], 
-          "subject_text": ["蕭邦"],
-          "subject_source": null,
-          "aspect": "a02b98acb8434cb1a4b68ee4b9381cd7", 
-          "aspect_name": "表针", 
-          "aspect_index": [[58, 60]], 
-          "aspect_text": ["表針"], 
-          "sentiment": null, 
-          "sentiment_index": [], 
-          "sentiment_text": []
-        }
-        ]
+    "sentiment": "negative",
+    "scores": {
+        "neutral": 0.23816733062267303,
+        "negative": 0.759811282157898,
+        "positive": 0.002021389314904809
     },
-    {
-      "labelunits": [
-        {
-            "unit_index": [0, 81], 
-            "unit_text": "同樣道理，在黑暗中以紫外 燈照射roger dubuis excalibur blacklight所發出的七彩光芒，在剔透的鏤通機芯映襯下，也顯得更具深度及迷人。", 
-            "subject": "66e23c65607e444ca3f844eb8156d4bb", 
-            "subject_name": "ROGER DUBUIS--Excalibur王者系列", 
-            "subject_index": [[16, 21], [22, 28], [29, 38], [39, 49]], 
-            "subject_text": ["roger", "dubuis", "excalibur", "blacklight"], 
-            "subject_source": null, 
-            "aspect": "0e784175173349da824aa695148b484e", 
-            "aspect_name": "机芯类型", 
-            "aspect_index": [[64, 66]], 
-            "aspect_text": ["機芯"], 
-            "sentiment": null, 
-            "sentiment_index": [], 
-            "sentiment_text": []
-        }
-        ]
-    }
-  ]
-}
-```
-
-**Output Data**
-
-- Original input with an extra field for each labelunit:
-  * sentiment ("0", "-1", or "1")
-
-**Sample Output**
-
-```json
-{
-    "language": "chinese",
-    "format": "syntactic",
-    "doclist": [
-        {
-            "labelunits": [
-                {
-                    "unit_index": [
-                        0,
-                        67
-                    ],
-                    "subject": "84ee5a1186004c528828cd24e96c7f6e",
-                    "unit_text": "蕭邦手錶一直是上層社會的寵愛之物，但長期性的應用過程中在所難免出現一些常見故障，假如腕錶遭受強烈的撞擊，會給腕錶導致表針掉下來的狀況。",
-                    "subject_name": "WATCH--CHOPARD",
-                    "subject_index": [
-                        [
-                            0,
-                            2
-                        ],
-                        [
-                            58,
-                            60
-                        ]
-                    ],
-                    "subject_text": [
-                        "蕭邦"
-                    ],
-                    "subject_source": null,
-                    "aspect": "a02b98acb8434cb1a4b68ee4b9381cd7",
-                    "aspect_name": "表针",
-                    "aspect_index": [
-                        [
-                            58,
-                            60
-                        ]
-                    ],
-                    "aspect_text": [
-                        "表針"
-                    ],
-                    "sentiment": "-1",
-                    "sentiment_index": [],
-                    "sentiment_text": []
-                }
-            ]
-        },
-        {
-            "labelunits": [
-                {
-                    "unit_index": [
-                        0,
-                        81
-                    ],
-                    "unit_text": "同樣道理，在黑暗中以紫外 燈照射roger dubuis excalibur blacklight所發出的七彩光芒，在剔透的鏤通機芯映襯下，也顯得更具深度及迷人。",
-                    "subject": "66e23c65607e444ca3f844eb8156d4bb",
-                    "subject_name": "ROGER DUBUIS--Excalibur王者系列",
-                    "subject_index": [
-                        [
-                            16,
-                            21
-                        ],
-                        [
-                            22,
-                            28
-                        ],
-                        [
-                            29,
-                            38
-                        ],
-                        [
-                            39,
-                            49
-                        ]
-                    ],
-                    "subject_text": [
-                        "roger",
-                        "dubuis",
-                        "excalibur",
-                        "blacklight"
-                    ],
-                    "subject_source": null,
-                    "aspect": "0e784175173349da824aa695148b484e",
-                    "aspect_name": "机芯类型",
-                    "aspect_index": [
-                        [
-                            64,
-                            66
-                        ]
-                    ],
-                    "aspect_text": [
-                        "機芯"
-                    ],
-                    "sentiment": "1",
-                    "sentiment_index": [],
-                    "sentiment_text": []
-                }
-            ]
-        }
-    ]
+    "score": 0.759811282157898,
+    "need_pr": true
 }
 ```
 
 ## API Load Test
 
 **Description**
-* Test case: 
-  * Single document with single label unit.
-  * Unit text length=81. (Median unit text length=72)
 
 * K8S enviroment: 
-  * cpu: 2000m
-  * memory: 8G
+  * cpu: 4000m
+  * memory: 2G
   * maximum replicas: 1
 
 **Results -- CPU only**
 
-| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization | GPU memory utilization |
+| Number of concurrent callers | Number of requests processed | Requests per second | Failure |
 |----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|----------------------------|
-| 20                         | 6323                         | 91.53               | 0       | 600m                    | 4.88G                      ||
-| 50                         | 10169                        | 147.38              | 0       | 600m                    | 4.88G                      ||
-| 100                        | 9988                         | 144.53              | 0       | 600m                    | 4.88G                      ||
-| 200                        | 11458                        | 165.8               | 0       | 1200m                   | 5.90G                      ||
-
-**Results -- with GPU (TGSAN)**
-
-| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization | GPU memory utilization |
-|----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|----------------------------|
-| 20                         | 10094                         | 140.49               | 0       | <1000m                    | <1.20G                      |6.3GB|
-| 50                         | 39730                        | 492.39              | 0       | <1000m                    | <1.20G                      |6.3GB|
-| 100                        | 49828                         | 611.59              | 0       | <1000m                    | <1.20G                      |6.3GB|
-| 200                        | 53229                        | 664.67               | 0       | <1000m                   | <1.20G                      |6.3GB|
-
-
-**Results -- with GPU (TGSAN2)**
-| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization | GPU memory utilization |
-|----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|----------------------------|
-| 20                         | 2585                         | 133.43               | 0       | <1000m                    | <1.20G                      |6.25GB|
-| 50                         | 3425                        | 461.81              | 0       | <1000m                    | <1.20G                      |6.25GB|
-| 100                        | 3499                         | 673.52              | 0       | <1000m                    | <1.20G                      |6.25GB|
-| 200                        | 3534                        | 725.33               | 0       | <1000m                   | <1.20G                      |6.25GB|
-
-
-**Results -- with GPU (TDBERT)**
-| Number of concurrent users | Number of requests processed | Requests per second | Failure | Maximum CPU utilization | Maximum memory utilization | GPU memory utilization |
-|----------------------------|------------------------------|---------------------|---------|-------------------------|----------------------------|----------------------------|
-| 20                         | 2585                         | 36.97               | 0       | <1000m                    | <1.20G                      |7.75GB|
-| 50                         | 3425                        | 46.47              | 0       | <1000m                    | <1.20G                      |7.75GB|
-| 100                        | 3499                         | 50.12              | 0       | <1000m                    | <1.20G                      |7.75GB|
-| 200                        | 3534                        | 50.53               | 0       | <1000m                   | <1.20G                      |7.75GB|
-
-
-## Accuracy
-
-**Description**
-* Test data:
- * Up to 3000 samples from CN, HK, TW data.
- * Unseen during model training.
-
-**Results (TGSAN)**
-
-| Class    | Metric    | Score    |
-|----------|-----------|----------|
-| Overall  | Accuracy  | 0.8767 |
-|          | Macro F1  | 0.7160  |
-|          | Micro F1  | 0.8767 |
-| Neutral  | Precision | 0.9206  |
-|          | Recall    | 0.9345 |
-|          | F1        | 0.9274 |
-|          | Support   | 2519     |
-| Negative | Precision | 0.6071 |
-|          | Recall    | 0.5484 |
-|          | F1        | 0.5763 |
-|          | Support   | 62       |
-| Positive | Precision | 0.6667 |
-|          | Recall    | 0.6235 |
-|          | F1        | 0.6444 |
-|          | Support   | 494      |
-
-**Results (TGSAN2)**
-
-| Class    | Metric    | Score    |
-|----------|-----------|----------|
-| Overall  | Accuracy  | 0.8849 |
-|          | Macro F1  | 0.7118  |
-|          | Micro F1  | 0.8849 |
-| Neutral  | Precision | 0.9136  |
-|          | Recall    | 0.9571 |
-|          | F1        | 0.9349 |
-|          | Support   | 2519     |
-| Negative | Precision | 0.5538 |
-|          | Recall    | 0.5806 |
-|          | F1        | 0.5669 |
-|          | Support   | 62       |
-| Positive | Precision | 0.7385 |
-|          | Recall    | 0.5547 |
-|          | F1        | 0.6335 |
-|          | Support   | 494      |
-
-**Results (TDBERT)**
-
-| Class    | Metric    | Score    |
-|----------|-----------|----------|
-| Overall  | Accuracy  | 0.9273 |
-|          | Macro F1  | 0.8192  |
-|          | Micro F1  | 0.9273 |
-| Neutral  | Precision | 0.9538  |
-|          | Recall    | 0.9610|
-|          | F1        | 0.9574 |
-|          | Support   | 2513     |
-| Negative | Precision | 0.7547 |
-|          | Recall    | 0.6557 |
-|          | F1        | 0.7018 |
-|          | Support   | 61       |
-| Positive | Precision | 0.67713 |
-|          | Recall    | 0.61134 |
-|          | F1        | 0.64255 |
-|          | Support   | 494      |
+| 1                         |   53                       |          0.87      | 0       | 
+| 3                         |   88                       |          1.41      | 0       | 
+| 5                         |   101                       |          1.56      | 0       | 
+| 10                         |   102                       |          1.58      | 0       | 
 

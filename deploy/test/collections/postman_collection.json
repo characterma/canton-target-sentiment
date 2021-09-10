@@ -34,13 +34,13 @@
 					}
 				},
 				"url": {
-					"raw": "http://{{server}}/wbi_org_sentiment",
+					"raw": "http://{{server}}/predict",
 					"protocol": "http",
 					"host": [
 						"{{server}}"
 					],
 					"path": [
-						"wbi_org_sentiment"
+						"predict"
 					]
 				}
 			},

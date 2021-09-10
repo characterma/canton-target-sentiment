@@ -16,9 +16,8 @@ from dataset import get_feature_class
 from dataset.utils import get_model_inputs
 
 
-APP_NAME = "wbi_org_sentiment"
-TH_POS = 0.0004 
-TH_NEG = 0.0004 
+END_PT = "predict"
+TH_POS = TH_NEG = 0.00075
 
 
 class ModelRunner(object):
@@ -93,7 +92,7 @@ if __name__ == "__main__":
     app = FastAPI()
     runner = ModelRunner(args)
 
-    @app.post(f'/{APP_NAME}', status_code=200)
+    @app.post(f'/{END_PT}', status_code=200)
     async def run_api(json_dict:Article):
         data_dict = dict(json_dict)
         raw = data_dict.copy()
@@ -108,15 +107,18 @@ if __name__ == "__main__":
         feature_dict = feature_class(
             data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=False, padding=False
         ).feature_dict
+
         if feature_dict is None:
             raise HTTPException(status_code=422, detail=f"Target not found or exceeding maximum length ({args.model_config['max_length']}).")
         sentiment, scores, score = runner.predict(feature_dict=feature_dict)
+
         if TH_NEG is not None and scores['negative'] > TH_NEG:
             need_pr = True 
         elif TH_POS is not None and scores['positive'] > TH_NEG:
             need_pr = True 
         else:
             need_pr = False
+            
         return {"sentiment": sentiment, "scores": scores, "score": score, "need_pr": need_pr}
 
     uvicorn.run(app, host='0.0.0.0', port=8080)

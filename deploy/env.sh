@@ -7,7 +7,7 @@ GROUP_NAME=senti
 
 # This will be used for image and K8S module / ingress name
 # If GIT Lab project name is different from deployed module on K8S, please use K8S module name instead
-APP_NAME=wbi-org-sentiment
+APP_NAME=wbi-target-sentiment
 
 # Update Image Tag if different from any deployed version
 IMAGE_TAG=1.1
