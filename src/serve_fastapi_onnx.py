@@ -67,7 +67,7 @@ class Article(BaseModel):
     pub_code: str
     headline : str
     content : str
-    target_keywords: list
+    extended_target_keywords: list
 
 
 def format_result(data_dict, sentiment):
@@ -99,7 +99,7 @@ if __name__ == "__main__":
         target_locs_hl, target_locs_ct = find_target_locs(
             headline=data_dict['headline'], 
             content=data_dict['content'], 
-            target_keywords=data_dict['target_keywords']
+            target_keywords=data_dict['extended_target_keywords']
         )
         data_dict['target_locs_hl'] = target_locs_hl
         data_dict['target_locs_ct'] = target_locs_ct

@@ -32,7 +32,7 @@
     "pub_code": "im_youtube_hk",
     "headline": "鄧炳強批612基金「臨解散都要撈油水」 將作調查 不點名批評黎智英是「主腦」",
     "content": "#國安法#\n撲滅罪行委員會8月27日開會，保安局局長鄧炳強在會後見記者",
-    "target_keywords": ["保安局"]
+    "extended_target_keywords": ["保安局"]
 }
 
 ```
