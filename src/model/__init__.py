@@ -20,6 +20,7 @@ def get_model(args):
     else:
         logger.info("  Model path = %s", model_path)
         model = torch.load(model_path, map_location=torch.device(args.device))
+    model.return_tensors = None
     return model
 
 

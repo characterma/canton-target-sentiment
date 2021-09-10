@@ -17,6 +17,8 @@ from dataset.utils import get_model_inputs
 
 
 APP_NAME = "wbi_org_sentiment"
+TH_POS = 0.0004 
+TH_NEG = 0.0004 
 
 
 class ModelRunner(object):
@@ -109,7 +111,12 @@ if __name__ == "__main__":
         if feature_dict is None:
             raise HTTPException(status_code=422, detail=f"Target not found or exceeding maximum length ({args.model_config['max_length']}).")
         sentiment, scores, score = runner.predict(feature_dict=feature_dict)
-        need_pr = False if sentiment=="neutral" else True
+        if TH_NEG is not None and scores['negative'] > TH_NEG:
+            need_pr = True 
+        elif TH_POS is not None and scores['positive'] > TH_NEG:
+            need_pr = True 
+        else:
+            need_pr = False
         return {"sentiment": sentiment, "scores": scores, "score": score, "need_pr": need_pr}
 
     uvicorn.run(app, host='0.0.0.0', port=8080)
