@@ -49,7 +49,7 @@ package:harbor_docker:
   - cd deploy/docker
   - rsync -av /BigFiles/Models/wbi-target-sentiment/* ailab/output/
   - set -x
-  - sh build_docker.sh
+  - sh build_harbor_docker.sh
   when: manual
   tags:
   - bigfiles            # default enable access to /BigFiles
