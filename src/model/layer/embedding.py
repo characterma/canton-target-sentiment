@@ -35,8 +35,9 @@ class WordEmbeddings(nn.Module):
             embeddings = _load_pretrained_emb(pretrained_emb_path)
             _, emb_dim = embeddings.shape
             embeddings = np.concatenate([np.zeros([1, emb_dim]), embeddings], axis=0)
+            embeddings = torch.tensor(embeddings).float()
             self.embed = nn.Embedding.from_pretrained(
-                torch.tensor(embeddings), freeze=(not embedding_trainable)
+                embeddings, freeze=(not embedding_trainable)
             )
         else:
             self.embed = nn.Embedding(num_embeddings=vocab_size, embedding_dim=emb_dim)

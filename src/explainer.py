@@ -41,7 +41,7 @@ class Explainer:
                 monotonicity = []
                 masked_scores = []
                 dataloader = DataLoader(
-                    dataset, shuffle=False, batch_size=config["batch_size"]
+                    dataset, shuffle=False, batch_size=config.get("batch_size", 1)
                 )
                 explanation_model = ExplainModel(
                     model=self.model,

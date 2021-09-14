@@ -8,15 +8,21 @@ from model.utils import load_pretrained_bert, load_pretrained_config
 
 class BERT_CLS(BertPreTrainedModel):
     """
-    https://huggingface.co/transformers/_modules/transformers/models/bert/modeling_bert.html#BertForSequenceClassification
+    Reference to:
+        https://huggingface.co/transformers/_modules/transformers/models/bert/modeling_bert.html#BertForSequenceClassification
     """
     def __init__(self, args):
         super(BERT_CLS, self).__init__(load_pretrained_config(args.model_config))
         self.model_config = args.model_config
         self.pretrained_model = load_pretrained_bert(args)
-        hidden_size = self.pretrained_model.config.hidden_size
         self.num_labels = len(args.label_to_id)
-        self.classifier = nn.Linear(hidden_size, self.num_labels)
+        self.dropout = nn.Dropout(
+            p=args.model_config["classifier_dropout"]
+        )
+        self.classifier = nn.Linear(
+            in_features=self.pretrained_model.config.hidden_size, 
+            out_features=self.num_labels
+        )
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)
 
@@ -29,7 +35,9 @@ class BERT_CLS(BertPreTrainedModel):
             output_attentions=True,
             return_dict=True,
         )
-        logits = self.classifier(bert_outputs[1])
+        pooler_output = bert_outputs["pooler_output"]
+        pooler_output = self.dropout(pooler_output)
+        logits = self.classifier(pooler_output)
         if label is not None:
             loss = self.loss_func(
                 logits.view(-1, self.num_labels), label.view(-1)  # [N, C]  # [N]
@@ -41,5 +49,5 @@ class BERT_CLS(BertPreTrainedModel):
         outputs['loss'] = loss
         outputs['prediction'] = prediction
         outputs['logits'] = logits
-        outputs['attentions'] = bert_outputs['attentions']
+        # outputs['attentions'] = bert_outputs['attentions']
         return outputs

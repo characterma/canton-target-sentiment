@@ -237,4 +237,5 @@ class Preprocessor:
 
         reconst_sids = sorted(list(set(reconst_sids)))
         self.data_dict["content"] = "".join([sents[i] for i in reconst_sids])
+        # add assert
         self.data_dict["target_locs"] = reconstruct_target_locs(reconst_sids, sents, tid_to_sid, tid_to_locs)
