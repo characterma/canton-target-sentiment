@@ -6,6 +6,7 @@ import logging
 import json
 import numpy as np
 import pandas as pd
+import pickle as pkl
 
 
 logger = logging.getLogger(__name__)
@@ -76,8 +77,11 @@ class Explainer:
 
                 dataset.insert_diagnosis_column(explanations, f"explanations_{idx}", update=True)
                 if len(masked_scores) > 0:
-                    dataset.insert_diagnosis_column(masked_scores, f"masked_scores_{idx}", update=True)
-                
+                    pkl.dump(
+                        masked_scores, 
+                        open(self.args.result_dir / f"masked_scores_{idx}.pkl", "wb")
+                    )
+
                 if self.run_faithfulness:
                     dataset.insert_diagnosis_column(sufficiency, f"sufficiency_{idx}", update=True)
                     dataset.insert_diagnosis_column(comprehensiveness, f"comprehensiveness_{idx}", update=True)
