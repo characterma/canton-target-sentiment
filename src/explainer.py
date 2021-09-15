@@ -26,7 +26,7 @@ class Explainer:
             inputs[col] = batch[col].to(self.device)
         return inputs
 
-    def explain(self, dataset):
+    def explain(self, dataset, cache_rate=1000):
 
         for idx, config in self.config.items():
             logger.info(f"***** Running explanation {idx} *****")
@@ -74,13 +74,14 @@ class Explainer:
                         decision_flip_fot.extend(faithfulness.decision_flip_fot)
                         importance_probability_correlation.extend(faithfulness.importance_probability_correlation)
                         monotonicity.extend(faithfulness.monotonicity)
+                        if len(masked_scores) > 0 and len(masked_scores) % cache_rate == 0:
+                            pkl.dump(
+                                masked_scores, 
+                                open(self.args.result_dir / f"masked_scores_{idx}_{len(masked_scores)}.pkl", "wb")
+                            )
+                            masked_scores = []
 
                 dataset.insert_diagnosis_column(explanations, f"explanations_{idx}", update=True)
-                if len(masked_scores) > 0:
-                    pkl.dump(
-                        masked_scores, 
-                        open(self.args.result_dir / f"masked_scores_{idx}.pkl", "wb")
-                    )
 
                 if self.run_faithfulness:
                     dataset.insert_diagnosis_column(sufficiency, f"sufficiency_{idx}", update=True)
