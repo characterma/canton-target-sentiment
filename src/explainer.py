@@ -48,7 +48,7 @@ class Explainer:
                     model=self.model,
                     config=config,
                 )
-
+                cache_id = 0
                 for batch in tqdm(dataloader):
                     inputs = self.make_inputs(batch)
                     scores = explanation_model(inputs=inputs)
@@ -77,8 +77,9 @@ class Explainer:
                         if len(masked_scores) > 0 and len(masked_scores) % cache_rate == 0:
                             pkl.dump(
                                 masked_scores, 
-                                open(self.args.result_dir / f"masked_scores_{idx}_{len(masked_scores)}.pkl", "wb")
+                                open(self.args.result_dir / f"masked_scores_{idx}_{cache_id}_{len(masked_scores)}.pkl", "wb")
                             )
+                            cache_id += 1
                             masked_scores = []
 
                 dataset.insert_diagnosis_column(explanations, f"explanations_{idx}", update=True)
