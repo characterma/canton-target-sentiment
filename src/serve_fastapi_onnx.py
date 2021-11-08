@@ -77,11 +77,11 @@ def format_result(data_dict, sentiment):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config_dir", type=str, default="../output/model/")
+    parser.add_argument("--config_dir", type=str, default="../model/")
     parser.add_argument("--device", type=str, default="")
     args = parser.parse_args()
     device = args.device
-    args = load_config(args)
+    args = load_config(args, is_deployment=True)
     if device!="":
         args.device = device
     tokenizer = get_tokenizer(args=args)

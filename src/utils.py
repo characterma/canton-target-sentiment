@@ -55,7 +55,7 @@ def get_args(config_dir):
     return args
 
 
-def load_config(args):
+def load_config(args, is_deployment=False):
     config_dir = Path(args.config_dir)
     print(config_dir)
     run_config = load_yaml(config_dir / "run.yaml")
@@ -74,22 +74,25 @@ def load_config(args):
     args.model_config.update(run_config["model_params"])
 
     args.config_dir = config_dir
-    output_dir = Path(args.data_config["output_dir"])
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    args.output_dir = output_dir
-    args.data_dir = Path(args.data_config["data_dir"])
-    args.model_dir = output_dir / "model"
-    args.result_dir = output_dir / "result"
-    if not os.path.exists(args.model_dir):
-        os.makedirs(args.model_dir)
-    if not os.path.exists(args.result_dir):
-        os.makedirs(args.result_dir)
-
-    args.pretrained_emb_path = args.model_config.get("pretrained_emb_path", None)
-    args.tensorboard_dir = Path(output_dir / "logs")
-    if not os.path.exists(args.tensorboard_dir):
-        os.makedirs(args.tensorboard_dir)
+    if not is_deployment:
+        output_dir = Path(args.data_config["output_dir"])
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        args.output_dir = output_dir
+        args.data_dir = Path(args.data_config["data_dir"])
+        args.model_dir = output_dir / "model"
+        args.result_dir = output_dir / "result"
+        if not os.path.exists(args.model_dir):
+            os.makedirs(args.model_dir)
+        if not os.path.exists(args.result_dir):
+            os.makedirs(args.result_dir)
+        args.pretrained_emb_path = args.model_config.get("pretrained_emb_path", None)
+        args.tensorboard_dir = Path(output_dir / "logs")
+        if not os.path.exists(args.tensorboard_dir):
+            os.makedirs(args.tensorboard_dir)
+    else:
+        args.output_dir = config_dir
+        args.model_dir = config_dir
     return args
 
 
