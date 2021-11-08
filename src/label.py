@@ -5,6 +5,7 @@ from dataset.tagging.utils import get_token_level_tags
 
 
 def get_label_to_id(tokenizer, args):
+    print(os.listdir(args.model_dir))
     label_to_id_path = args.model_dir / "label_to_id.json"
 
     if os.path.exists(label_to_id_path):
