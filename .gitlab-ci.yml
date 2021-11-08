@@ -31,6 +31,7 @@ package:docker:
   script:
   - cd deploy/docker
   - mkdir ailab/model
+  - echo "/BigFiles/Models/$APP_NAME/$MODEL_DIR"
   - rsync -av "/BigFiles/Models/$APP_NAME/$MODEL_DIR" ailab/model/
   - set -x
   - sh build_docker.sh
@@ -48,6 +49,8 @@ package:harbor_docker:
   stage: package
   script:
   - cd deploy/docker
+  - mkdir ailab/model
+  - echo "/BigFiles/Models/$APP_NAME/$MODEL_DIR"
   - rsync -av "/BigFiles/Models/$APP_NAME/$MODEL_DIR" ailab/model/
   - set -x
   - sh build_harbor_docker.sh
