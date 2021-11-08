@@ -1,2 +1,2 @@
-python serve_fastapi_onnx.py --config_dir="../output/org_per_bert_avg_20210928_all_ext/model" --device="cpu"
+python serve_fastapi_onnx.py --config_dir="../output/model" --device="cpu"
 # python serve_fastapi_onnx.py --config_dir="../output/org_bert_avg_20210906/model" --device="cpu"
