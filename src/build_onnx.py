@@ -34,7 +34,9 @@ data_dict = {"organization": "保安局",
   "headline": "鄧炳強批612基金「臨解散都要撈油水」 將作調查 不點名批評黎智英是「主腦」",
   "content": "#國安法#\n撲滅罪行委員會8月27日開會，保安局局長鄧炳強在會後見記者",
   "target_locs_hl": [],
-  "target_locs_ct": [[21, 24]]
+  "target_locs_ct": [[21, 24]],
+  "entity": "保安局", 
+  "pub_code": "wm_stheadlinehk"
 }
 
 feature = feature_class(
@@ -57,7 +59,7 @@ batch['token_type_ids'].squeeze(-1))
 
 torch.onnx.export(model,               # model being run
                   args=x,                         # model input (or a tuple for multiple inputs)
-                  f=args.out_dir / "test.onnx",   # where to save the model (can be a file or file-like object)
+                  f=args.model_dir / "model.onnx",   # where to save the model (can be a file or file-like object)
                   do_constant_folding=True,
                   opset_version=11,
                   input_names = ['input_ids', 'target_mask', 'attention_mask', 'token_type_ids'],   # the model's input names

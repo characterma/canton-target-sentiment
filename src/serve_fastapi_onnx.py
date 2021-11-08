@@ -17,7 +17,7 @@ from dataset.utils import get_model_inputs
 
 
 END_PT = "predict"
-TH_POS = TH_NEG = 0.00075
+TH_POS = TH_NEG = 0.0072
 
 
 class ModelRunner(object):
