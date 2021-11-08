@@ -62,7 +62,7 @@ def find_target_locs(headline, content, target_keywords):
 
 
 class Article(BaseModel):
-    organization: str
+    entity: str
     source: str
     pub_code: str
     headline : str
