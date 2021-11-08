@@ -44,6 +44,7 @@ class SequenceClassificationFeature(NLPFeature):
             diagnosis_dict["tokens"] = tokens
             diagnosis_dict["label"] = label
             diagnosis_dict["label_id"] = label_to_id.get(str(label), None)
+            diagnosis_dict["length"] = np.sum(attention_mask)
 
         if np.sum(attention_mask) == 0:
             return None, diagnosis_dict

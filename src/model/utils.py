@@ -37,6 +37,8 @@ CONFIG_CLASS_MAP = {
     "denpa92/bert-base-cantonese": BertConfig,  # missing tokenizer.
     "voidful/albert_chinese_tiny": AlbertConfig,  #
     "clue/albert_chinese_tiny": AlbertConfig,  #
+    "hfl/chinese-bert-wwm-ext": BertConfig, 
+    "hfl/chinese-macbert-base": BertConfig, 
     "voidful/albert_chinese_small": AlbertConfig,  #
     "clue/albert_chinese_small": AlbertConfig,
     "voidful/albert_chinese_base": AlbertConfig,  #
@@ -57,6 +59,8 @@ MODEL_CLASS_MAP = {
     "bert-base-chinese": BertModel,  # BertForMaskedLM
     "denpa92/bert-base-cantonese": AlbertModel,
     "voidful/albert_chinese_tiny": AlbertModel,  #
+    "hfl/chinese-bert-wwm-ext": BertModel,  #
+    "hfl/chinese-macbert-base": BertModel, 
     "clue/albert_chinese_tiny": AlbertModel,  #
     "voidful/albert_chinese_small": AlbertModel,  #
     "clue/albert_chinese_small": AlbertModel,

@@ -131,6 +131,13 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
                 use_fast=True,
                 add_special_tokens=args.model_config.get("add_special_tokens", True),
             )
+
+            # load extra tokens
+            if args.data_config.get("extra_tokens"):
+                extra_tokens_path = args.data_dir / args.data_config.get("extra_tokens")
+                if extra_tokens_path and os.path.isfile(extra_tokens_path):
+                    extra_tokens = json.load(open(extra_tokens_path, 'r'))
+                    tokenizer.add_tokens(extra_tokens, special_tokens=True)
         else:
             prev_args = get_args(prev_model_dir)
             prev_args = load_config(prev_args)
@@ -141,6 +148,8 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
                 use_fast=True,
                 add_special_tokens=args.model_config.get("add_special_tokens", True),
             )
+
+        # tokenizer
         return tokenizer
 
     elif source in ["internal", "char_split"]:
