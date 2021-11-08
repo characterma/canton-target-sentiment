@@ -134,7 +134,11 @@ def run(args):
         dev_metrics = None
 
     if args.explain:
-        explainer = Explainer(model=model, args=args)
+        explainer = Explainer(
+            model=model, 
+            args=args, 
+            run_faithfulness=False
+        )
         explainer.explain(dataset=test_dataset)
 
     test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)

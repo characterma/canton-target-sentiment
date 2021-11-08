@@ -26,7 +26,7 @@ class Explainer:
             inputs[col] = batch[col].to(self.device)
         return inputs
 
-    def explain(self, dataset, cache_rate=1000):
+    def explain(self, dataset, cache_rate=500):
 
         for idx, config in self.config.items():
             logger.info(f"***** Running explanation {idx} *****")
