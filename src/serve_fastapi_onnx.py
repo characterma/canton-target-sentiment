@@ -77,7 +77,7 @@ def format_result(data_dict, sentiment):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config_dir", type=str, default="../config/")
+    parser.add_argument("--config_dir", type=str, default="../output/model/")
     parser.add_argument("--device", type=str, default="")
     args = parser.parse_args()
     device = args.device
