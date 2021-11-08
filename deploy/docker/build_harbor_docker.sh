@@ -7,7 +7,7 @@ SRC_ROOT=../..
 # Copy necessary deployment files to /ailab
 
 rsync -av $SRC_ROOT/src/ ailab/src/
-rsync -av $SRC_ROOT/output/ ailab/output/
+rsync -av $SRC_ROOT/model/ ailab/model/
 
 # =====================
 
