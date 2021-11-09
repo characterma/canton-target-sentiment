@@ -134,11 +134,18 @@ def run(args):
         dev_metrics = None
 
     if args.explain:
-        explainer = Explainer(
-            model=model, 
-            args=args, 
-            run_faithfulness=False
-        )
+        if args.faithfulness:
+            explainer = Explainer(
+                model=model, 
+                args=args, 
+                run_faithfulness=True
+            )
+        else:
+            explainer = Explainer(
+                model=model, 
+                args=args, 
+                run_faithfulness=False
+            )
         explainer.explain(dataset=test_dataset)
 
     test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
@@ -155,6 +162,7 @@ if __name__ == "__main__":
     parser.add_argument("--config_dir", type=str, default="../config/")
     parser.add_argument("--test_only", action="store_true")
     parser.add_argument("--explain", action="store_true")
+    parser.add_argument("--faithfulness", action="store_true")
     args = parser.parse_args()
 
     args = load_config(args)

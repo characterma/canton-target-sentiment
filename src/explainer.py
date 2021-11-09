@@ -28,8 +28,8 @@ class Explainer:
 
     def explain(self, dataset, cache_rate=500):
 
-        for idx, config in self.config.items():
-            logger.info(f"***** Running explanation {idx} *****")
+        for explainer_name, config in self.config.items():
+            logger.info(f"***** Running explanation {explainer_name} *****")
             logger.info("  Method = %s", config['method'])
             logger.info("  Num examples = %d", len(dataset))
             # try:
@@ -77,20 +77,20 @@ class Explainer:
                     if len(masked_scores) > 0 and len(masked_scores) % cache_rate == 0:
                         pkl.dump(
                             masked_scores, 
-                            open(self.args.result_dir / f"masked_scores_{idx}_{cache_id}_{len(masked_scores)}.pkl", "wb")
+                            open(self.args.result_dir / f"masked_scores_{explainer_name}_{cache_id}_{len(masked_scores)}.pkl", "wb")
                         )
                         cache_id += 1
                         masked_scores = []
 
-            dataset.insert_diagnosis_column(explanations, f"explanations_{idx}", update=True)
+            dataset.insert_diagnosis_column(explanations, f"explanations_{explainer_name}", update=True)
 
             if self.run_faithfulness:
-                dataset.insert_diagnosis_column(sufficiency, f"sufficiency_{idx}", update=True)
-                dataset.insert_diagnosis_column(comprehensiveness, f"comprehensiveness_{idx}", update=True)
-                dataset.insert_diagnosis_column(decision_flip_mit, f"decision_flip_mit_{idx}", update=True)
-                dataset.insert_diagnosis_column(decision_flip_fot, f"decision_flip_fot_{idx}", update=True)
-                dataset.insert_diagnosis_column(importance_probability_correlation, f"importance_probability_correlation_{idx}", update=True)
-                dataset.insert_diagnosis_column(monotonicity, f"monotonicity_{idx}", update=True)
+                dataset.insert_diagnosis_column(sufficiency, f"sufficiency_{explainer_name}", update=True)
+                dataset.insert_diagnosis_column(comprehensiveness, f"comprehensiveness_{explainer_name}", update=True)
+                dataset.insert_diagnosis_column(decision_flip_mit, f"decision_flip_mit_{explainer_name}", update=True)
+                dataset.insert_diagnosis_column(decision_flip_fot, f"decision_flip_fot_{explainer_name}", update=True)
+                dataset.insert_diagnosis_column(importance_probability_correlation, f"importance_probability_correlation_{explainer_name}", update=True)
+                dataset.insert_diagnosis_column(monotonicity, f"monotonicity_{explainer_name}", update=True)
 
             tokens = dataset.diagnosis_df["tokens"].tolist()
             tokens_sorted = []
@@ -104,10 +104,8 @@ class Explainer:
                 tokens_sorted.append([t[0] for t in tkns_sorted])
                 indice_sorted.append([t[0] for t in idxs_sorted])
 
-            dataset.insert_diagnosis_column(tokens_sorted, f"tokens_sorted_{idx}", update=True)
-            dataset.insert_diagnosis_column(indice_sorted, f"indice_sorted_{idx}", update=True)
-
-            # dataset.diagnosis_df.to_excel(self.args.result_dir / f"explanations_{idx}.xlsx")
+            dataset.insert_diagnosis_column(tokens_sorted, f"tokens_sorted_{explainer_name}", update=True)
+            dataset.insert_diagnosis_column(indice_sorted, f"indice_sorted_{explainer_name}", update=True)
 
             if self.run_faithfulness:
                 sufficiency_avg = np.mean(sufficiency, axis=0)
@@ -132,14 +130,12 @@ class Explainer:
                 }
                 faithfulness_rep.to_csv(
                     self.args.result_dir 
-                    / f"faithfulness_by_bins_{idx}.csv",
+                    / f"faithfulness_by_bins_{explainer_name}.csv",
                     index=False,
                 )
 
                 json.dump(
                     faithfulness_sum, 
-                    open(self.args.result_dir / f"faithfulness_summary_{idx}.json", "w")
+                    open(self.args.result_dir / f"faithfulness_summary_{explainer_name}.json", "w")
                 )
             logger.info("  Finished.")
-            # except Exception as e:
-            #     logger.info("  Failed: %s", e)
