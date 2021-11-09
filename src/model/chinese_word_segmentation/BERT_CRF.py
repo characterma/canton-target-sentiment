@@ -7,7 +7,7 @@ from model.utils import load_pretrained_bert, load_pretrained_config
 
 class BERT_CRF(BertPreTrainedModel):
     def __init__(self, args):
-        super(BERT_CRF, self).__init__(load_pretrained_config(args.model_config))
+        super(BERT_CRF, self).__init__(load_pretrained_config(args))
 
         self.model_config = args.model_config
         self.pretrained_model = load_pretrained_bert(args)

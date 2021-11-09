@@ -88,12 +88,17 @@ def load_pretrained_bert(args):
         return model.pretrained_model
 
 
-def load_pretrained_config(model_config):
+def load_pretrained_config(args):
+    model_config = args.model_config 
+    
     prev_model_dir = model_config.get("pretrained_lm_from_prev", None)
     if prev_model_dir is None:
         model_name = model_config["pretrained_lm"]
         model_dir = model_config.get("pretrained_lm_dir", model_name)
-        return CONFIG_CLASS_MAP[model_name].from_pretrained(model_dir)
+        config = CONFIG_CLASS_MAP[model_name].from_pretrained(model_dir)
+        tokenizer_dir = args.model_dir / "tokenizer"
+        config.save_pretrained(str(tokenizer_dir))
+        return config 
     else:
         prev_args = get_args(prev_model_dir)
         prev_args = load_config(prev_args)

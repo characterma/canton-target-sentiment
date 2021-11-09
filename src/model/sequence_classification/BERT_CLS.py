@@ -12,7 +12,7 @@ class BERT_CLS(BertPreTrainedModel):
         https://huggingface.co/transformers/_modules/transformers/models/bert/modeling_bert.html#BertForSequenceClassification
     """
     def __init__(self, args):
-        super(BERT_CLS, self).__init__(load_pretrained_config(args.model_config))
+        super(BERT_CLS, self).__init__(load_pretrained_config(args))
         self.model_config = args.model_config
         self.pretrained_model = load_pretrained_bert(args)
         self.num_labels = len(args.label_to_id)
