@@ -126,18 +126,32 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
         if prev_model_dir is None:
             name = args.model_config["tokenizer_name"]
             Tokenizer = TOKENIZER_CLASS_MAP.get(name, AutoTokenizer)
-            tokenizer = Tokenizer.from_pretrained(
-                name,
-                use_fast=True,
-                add_special_tokens=args.model_config.get("add_special_tokens", True),
-            )
+            
+            tokenizer_dir = args.model_dir / "tokenizer"
+            if os.path.isdir(tokenizer_dir):
+                tokenizer = Tokenizer.from_pretrained(
+                    str(tokenizer_dir),
+                    use_fast=True,
+                    add_special_tokens=args.model_config.get("add_special_tokens", True),
+                )
+            else:
+                tokenizer = Tokenizer.from_pretrained(
+                    name,
+                    use_fast=True,
+                    add_special_tokens=args.model_config.get("add_special_tokens", True),
+                )
 
-            # load extra tokens
-            if args.data_config.get("extra_tokens"):
-                extra_tokens_path = args.data_dir / args.data_config.get("extra_tokens")
-                if extra_tokens_path and os.path.isfile(extra_tokens_path):
-                    extra_tokens = json.load(open(extra_tokens_path, 'r'))
-                    tokenizer.add_tokens(extra_tokens, special_tokens=True)
+                # load extra tokens
+                if args.data_config.get("extra_tokens"):
+                    extra_tokens_path = args.data_dir / args.data_config.get("extra_tokens")
+                    if extra_tokens_path and os.path.isfile(extra_tokens_path):
+                        extra_tokens = json.load(open(extra_tokens_path, 'r'))
+                        tokenizer.add_tokens(extra_tokens)
+                        logger.info("***** Added extra tokens *****")
+                        logger.info("  Extra tokens = '%s'", extra_tokens)
+                        
+                tokenizer.save_pretrained(str(tokenizer_dir))
+            args.tokenizer_len = len(tokenizer)
         else:
             prev_args = get_args(prev_model_dir)
             prev_args = load_config(prev_args)
@@ -148,8 +162,7 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
                 use_fast=True,
                 add_special_tokens=args.model_config.get("add_special_tokens", True),
             )
-
-        # tokenizer
+        
         return tokenizer
 
     elif source in ["internal", "char_split"]:

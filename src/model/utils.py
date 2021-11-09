@@ -78,7 +78,9 @@ def load_pretrained_bert(args):
         model_name = model_config["pretrained_lm"]
         model_dir = model_config.get("pretrained_lm_dir", model_name)
         logger.info("  Pretrained BERT = '%s'", str(model_dir))
-        return MODEL_CLASS_MAP[model_name].from_pretrained(model_dir)
+        model = MODEL_CLASS_MAP[model_name].from_pretrained(model_dir)
+        model.resize_token_embeddings(args.tokenizer_len)
+        return model
     else:
         prev_args = get_args(prev_model_dir)
         prev_args = load_config(prev_args)
