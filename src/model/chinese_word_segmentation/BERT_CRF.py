@@ -13,7 +13,7 @@ class BERT_CRF(BertPreTrainedModel):
         self.pretrained_model = load_pretrained_bert(args)
         if not args.model_config["embedding_trainable"]:
             self.freeze_emb()
-        self.pretrained_config = load_pretrained_config(args.model_config)
+        self.pretrained_config = load_pretrained_config(args)
         self.num_labels = len(args.label_to_id)
 
         self.bert_dropout = nn.Dropout(self.model_config["bert_dropout"])

@@ -32,7 +32,7 @@ class TestGetFeatures(unittest.TestCase):
         data_dict = {
             'content': "#仪式感不能少没有卡地亚， 🔥浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！", 
             'target_locs': [[15, 17]], 
-            'label': 'positive'
+            'label': 'negative'
         }
 
         feature = TargetClassificationFeature(
@@ -95,7 +95,7 @@ class TestGetFeatures(unittest.TestCase):
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         )
-        label = torch.tensor(2)
+        label = torch.tensor(label_to_id[data_dict['label']])
         self.assertTrue(torch.equal(feature_dict["input_ids"], input_ids))
         self.assertTrue(torch.equal(feature_dict["target_mask"], target_mask))
         self.assertTrue(torch.equal(feature_dict["attention_mask"], attention_mask))
