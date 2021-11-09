@@ -16,7 +16,7 @@
 
 | Field                    | Descriptions                                                                     |
 |--------------------------|----------------------------------------------------------------------------------|
-| organization             | The organization name.                                                           |
+| entity             | The organization or person name.                                                           |
 | source                   | The source or author.                                                            |
 | pub_code                 |                                                                                  |
 | headline                 |                                                                                  |
@@ -27,7 +27,7 @@
 
 ```json
 {
-    "organization": "保安局", 
+    "entity": "保安局", 
     "source": "香江望神州", 
     "pub_code": "im_youtube_hk",
     "headline": "鄧炳強批612基金「臨解散都要撈油水」 將作調查 不點名批評黎智英是「主腦」",
