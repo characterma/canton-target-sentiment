@@ -1,11 +1,18 @@
 # Instruction
 
 ## 1. Copying datasets
-* For canton experiment (first set current directory as src/)
+* For canton (cws only) experiment (first set current directory as src/)
 
 ```bash
 mkdir -p ../data/datasets/internal/cws/canton
 cp -r /ailab/shared/Users/tonychan/cws_handover/data/canton/* ../data/datasets/internal/cws/canton/
+```
+
+* For canton cws+pos experiment (first set current directory as src/)
+
+```bash
+mkdir -p ../data/datasets/internal/cws/canton_pos
+cp -r /ailab/shared/Users/tonychan/cws_handover/data/canton_pos/* ../data/datasets/internal/cws/canton_pos/
 ```
 
 * For ctb5 experiment (first set current directory as src/)

@@ -24,17 +24,14 @@ train:
   log_steps: 100
   batch_size: 32
   final_model: "best" # "best" or "last"
-  optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
+  optimization_metric: "micro_f1" # "micro_f1" or "macro_f1"
   early_stop: 5
-# explanation:
-#   batch_size: 8 
-#   model_class: LayerIntegratedGradients
 model_params:
   # ================= TDBERT =================
   num_train_epochs: 15
   embedding_trainable: True
-  tokenizer_name: "clue/albert_chinese_tiny"
-  pretrained_lm: "clue/albert_chinese_tiny"
+  tokenizer_name: "bert-base-chinese"
+  pretrained_lm: "bert-base-chinese"
   # output_hidden_act_func: "PReLU"
   # output_hidden_dim: 128
   # output_use_bn: True
