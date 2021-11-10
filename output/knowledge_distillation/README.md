@@ -15,8 +15,8 @@ First set current directory=src/,
 python run.py --config_dir="../output/knowledge_distillation/teacher_model"
 ```
 
-## 3. Model testing
-For experiment `X` (first set current directory=src/),
+## 3. Student model training
+First set current directory=src/, 
 ```bash
-python run.py --config_dir="../output/chinese_word_segmentation/X/" --test_only
+python run.py --config_dir="../output/knowledge_distillation/student_model"
 ```
