@@ -2,14 +2,11 @@ task: "sequence_classification"
 device: 'cpu'
 data:
   output_dir: "../config/examples/sequence_classification/TEXT_CNN"
-  # output_dir: "../output/post_sentiment_20210624_text_cnn"
   data_dir: "../data/datasets/sample/sequence_classification"
-  # data_dir: "../data/datasets/post_sentiment"
   train: train_sample.json
   dev: test_sample.json
   test: test_sample.json
   unlabeled: unlabeled_sample.json
-  labels: 3_ways # or 2_ways
 text_prepro:
   steps:
     - utf8_replace
@@ -26,11 +23,6 @@ train:
 eval:
   batch_size: 64
   model_file: "model.pt" # under output_dir / "model"
-  # ================= TDBERT =================
 model_params:
   num_train_epochs: 2
   embedding_trainable: True
-  # ================= TGSAN =================
-  # num_train_epochs: 50
-  # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"
-  # embedding_trainable: False

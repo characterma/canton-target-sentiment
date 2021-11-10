@@ -6,14 +6,11 @@ data:
   train: sample.json
   dev: sample.json
   test: sample.json
-  labels: 3_ways # or 2_ways
 text_prepro:
   steps:
     - simplified_chinese
     - lower_case
     - convert_java_index
-    # - extract_post_context_1
-    # - extract_post_context_2
 train:
   model_class: "TDBERT"
   seed: 42
@@ -24,13 +21,8 @@ train:
 eval:
   batch_size: 64
   model_file: "model.pt" # under output_dir / "model"
-  # ================= TDBERT =================
 model_params:
   num_train_epochs: 2
   embedding_trainable: False
   tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
   pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
-  # ================= TGSAN =================
-  # num_train_epochs: 50
-  # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"
-  # embedding_trainable: False

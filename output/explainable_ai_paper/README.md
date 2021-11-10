@@ -1,25 +1,18 @@
 # Instruction
 
-## 1. Copying datasets
-* For ag experiments (set current directory=src/):
+## 1. Copying datasets & pretrained word embeddings
+* For dataset `X` (set current directory=src/):
 
 ```bash
-mkdir -p ../data/datasets/public/sequence_classification/ag
-cp -r /ailab/shared/Users/tonychan/xai_handover/data/sequence_classification/ag/* ../data/datasets/public/sequence_classification/ag
+mkdir -p ../data/datasets/public/sequence_classification/X
+cp -r /ailab/shared/Users/tonychan/xai_handover/data/sequence_classification/X/* ../data/datasets/public/sequence_classification/X
 ```
 
-* For imdb experiments (set current directory=src/):
+* For `text_cnn` models (set current directory=src/):
 
 ```bash
-mkdir -p ../data/datasets/public/sequence_classification/imdb
-cp -r /ailab/shared/Users/tonychan/xai_handover/data/sequence_classification/imdb/* ../data/datasets/public/sequence_classification/imdb
-```
-
-* For sst experiments (set current directory=src/):
-
-```bash
-mkdir -p ../data/datasets/public/sequence_classification/sst
-cp -r /ailab/shared/Users/tonychan/xai_handover/data/sequence_classification/sst/* ../data/datasets/public/sequence_classification/sst
+mkdir -p ../data/word_embeddings/
+cp /ailab/shared/Users/tonychan/xai_handover/data/glove_840B_300d_vectors.txt ../data/word_embeddings/
 ```
 
 ## 2. Model training

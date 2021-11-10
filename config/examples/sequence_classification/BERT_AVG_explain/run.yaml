@@ -30,15 +30,48 @@ train:
   optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
   early_stop: 5
 model_params:
-  # ================= TDBERT =================
   num_train_epochs: 2
   embedding_trainable: True
   output_hidden_act_func: "PReLU"
   output_hidden_dim: 128
-  # output_hidden_act_func: null
   tokenizer_name: "clue/albert_chinese_tiny"
   pretrained_lm: "clue/albert_chinese_tiny"
 explanation:
+    Random:
+      method: "Random"
     Lime:
       method: "Lime"
-
+    WordOmission: 
+      method: "WordOmission"
+    SaliencyAvg:
+      method: "Saliency"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: null
+    SaliencyL2:
+      method: "Saliency"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: l2
+    GradientXActivationAvg:
+      method: "GradientXActivation"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: null
+    GradientXActivationL2:
+      method: "GradientXActivation"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: l2
+    IntegratedGradientsAvg:
+      method: "IntegratedGradients"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: null
+    IntegratedGradientsL2:
+      method: "IntegratedGradients"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: l2
+    DeepLiftAvg:
+      method: "DeepLift"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: null
+    DeepLiftL2:
+      method: "DeepLift"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: l2

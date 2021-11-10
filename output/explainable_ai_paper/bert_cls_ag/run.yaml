@@ -16,10 +16,6 @@ train:
   model_class: "BERT_CLS"
   kd:
     use_kd: False
-#     teacher_dir: "../output/post_sentiment_20210707_bert_avg/model"
-#     loss_type: 'mse'
-#     soft_lambda: 0.5
-#     kl_T: 5
   seed: 42
   log_steps: 100
   batch_size: 16
