@@ -1,0 +1,68 @@
+task: "sequence_classification"
+device: 0
+data:
+  output_dir: "../output/explainable_ai_paper/text_cnn_imdb_glove"
+  data_dir: "../data/datasets/public/sequence_classification/imdb"
+  train: train.json
+  dev: test.json
+  test: test_reduced.json
+  unlabeled: unlabeled.json
+text_prepro:
+  steps: []
+eval:
+  batch_size: 16
+  model_file: "model.pt"
+train:
+  model_class: "TEXT_CNN"
+  kd:
+    use_kd: False
+#     teacher_dir: "../output/post_sentiment_20210707_bert_avg/model"
+#     loss_type: 'mse'
+#     soft_lambda: 0.5
+#     kl_T: 5
+  seed: 42
+  log_steps: 100
+  batch_size: 16
+  final_model: "best" # "best" or "last"
+  optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
+  early_stop: null
+model_params:
+  # ================= TDBERT =================
+  max_length: 256
+  num_train_epochs: 35
+  embedding_trainable: True
+  output_hidden_act_func: "PReLU"
+  output_hidden_dim: 128
+  output_use_bn: False
+  pretrained_emb_path: "../data/word_embeddings/glove_840B_300d_vectors.txt"
+  tokenizer_name: "bert-base-cased"  # voidful/albert_chinese_tiny
+  pretrained_lm: "bert-base-cased" # voidful/albert_chinese_tiny
+  # pretrained_lm_dir: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
+  # ================= TGSAN =================
+  # num_train_epochs: 50
+  # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"
+  # embedding_trainable: False
+explanation:
+# explanation:
+    Random:
+      method: "Random"
+    Lime:
+      method: "Lime"
+    WordOmission: 
+      method: "WordOmission"
+    SaliencyAvg:
+      method: "Saliency"
+      layer: "emb.embed"
+      norm: null
+    SaliencyL2:
+      method: "Saliency"
+      layer: "emb.embed"
+      norm: l2
+    IntegratedGradientsAvg:
+      method: "IntegratedGradients"
+      layer: "emb.embed"
+      norm: null
+    IntegratedGradientsL2:
+      method: "IntegratedGradients"
+      layer: "emb.embed"
+      norm: l2

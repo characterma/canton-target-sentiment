@@ -1,0 +1,20 @@
+2021-11-10 02:09:27 ***** Args *****
+2021-11-10 02:09:27    task: sequence_classification
+2021-11-10 02:09:27    device: 0
+2021-11-10 02:09:27    data: {'output_dir': '../output/explainable_ai_paper/bert_cls_ag', 'data_dir': '../data/datasets/public/sequence_classification/ag', 'train': 'train.json', 'dev': 'test.json', 'test': 'test.json', 'unlabeled': 'unlabeled.json'}
+2021-11-10 02:09:27    text_prepro: {'steps': []}
+2021-11-10 02:09:27    eval: {'batch_size': 16, 'model_file': 'model.pt'}
+2021-11-10 02:09:27    train: {'model_class': 'BERT_CLS', 'kd': {'use_kd': False}, 'seed': 42, 'log_steps': 100, 'batch_size': 16, 'final_model': 'best', 'optimization_metric': 'macro_f1', 'early_stop': None}
+2021-11-10 02:09:27    model_params: {'max_length': 256, 'num_train_epochs': 10, 'embedding_trainable': True, 'output_hidden_act_func': 'PReLU', 'output_hidden_dim': 128, 'output_use_bn': False, 'tokenizer_name': 'bert-base-cased', 'pretrained_lm': 'bert-base-cased'}
+2021-11-10 02:09:27    explanation: {'Random': {'method': 'Random'}, 'Lime': {'method': 'Lime'}, 'WordOmission': {'method': 'WordOmission'}, 'SaliencyAvg': {'method': 'Saliency', 'layer': 'pretrained_model.embeddings.word_embeddings', 'norm': None}, 'SaliencyL2': {'method': 'Saliency', 'layer': 'pretrained_model.embeddings.word_embeddings', 'norm': 'l2'}, 'IntegratedGradientsAvg': {'method': 'IntegratedGradients', 'layer': 'pretrained_model.embeddings.word_embeddings', 'norm': None}, 'IntegratedGradientsL2': {'method': 'IntegratedGradients', 'layer': 'pretrained_model.embeddings.word_embeddings', 'norm': 'l2'}}
+2021-11-10 02:09:27 ***** Loading tokenizer *****
+2021-11-10 02:09:27   Tokenizer source = 'transformers'
+2021-11-10 02:09:30 ***** Initializing model *****
+2021-11-10 02:09:30   Task = sequence_classification
+2021-11-10 02:09:30   Model class = BERT_CLS
+2021-11-10 02:09:31 ***** Loading pretrained language model *****
+2021-11-10 02:09:31   Pretrained BERT = 'bert-base-cased'
+2021-11-10 02:09:32 Lock 139921845073552 acquired on /home/jovyan/.cache/torch/transformers/d8f11f061e407be64c4d5d7867ee61d1465263e24085cfa26abf183fdc830569.3fadbea36527ae472139fe84cddaa65454d7429f12d543d80bfc3ad70de55ac2.lock
+2021-11-10 02:10:35 Lock 139921845073552 released on /home/jovyan/.cache/torch/transformers/d8f11f061e407be64c4d5d7867ee61d1465263e24085cfa26abf183fdc830569.3fadbea36527ae472139fe84cddaa65454d7429f12d543d80bfc3ad70de55ac2.lock
+2021-11-10 02:10:43 ***** Loading data *****
+2021-11-10 02:10:43   Data path = ../data/datasets/public/sequence_classification/ag/train.json
