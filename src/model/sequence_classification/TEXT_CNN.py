@@ -46,7 +46,7 @@ class TEXT_CNN(nn.Module):
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)
 
-    def forward(self, input_ids, attention_mask, label=None):
+    def forward(self, input_ids, attention_mask, label=None, **kwargs):
         outputs = dict()
         x = self.emb(input_ids.long())  # [B, L, E]
         x = self.conv(x, attention_mask.long())  # [B, Kn*#ks]

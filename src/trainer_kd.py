@@ -14,8 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 def get_logits(model, dataset, teacher_args, student_args):
-    # load
-    # chang to student model dir
     logits_path = student_args.model_dir / f"logits_{dataset.dataset}.pkl"
     if os.path.isfile(logits_path):
         logger.info("***** Loading logits *****")
@@ -30,9 +28,9 @@ def get_logits(model, dataset, teacher_args, student_args):
         for batch in tqdm(dataloader, desc="Getting logits"):
             results = prediction_step(model, batch, args=teacher_args)
             if len(logits) == 0:
-                logits = results["logits"]
+                logits = results["probabilities"]
             else:
-                logits.extend(results["logits"])
+                logits.extend(results["probabilities"])
         dataset.insert_skipped_samples(logits)
         # save
         pickle.dump(logits, open(logits_path, "wb"))
