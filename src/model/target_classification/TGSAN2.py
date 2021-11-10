@@ -10,7 +10,7 @@ class TGSAN2(nn.Module):
     def __init__(self, args):
         super(TGSAN2, self).__init__()
 
-        self.bert_config = load_pretrained_config(args.model_config)
+        self.bert_config = load_pretrained_config(args)
         self.bert_config.hidden_size = args.model_config["emb_dim"]
         self.bert_config.hidden_dropout_prob = args.model_config["emb_dropout"]
         if hasattr(args, "vocab_size"):
