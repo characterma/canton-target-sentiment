@@ -1,16 +1,18 @@
 task: "target_classification"
-device: 0
+device: 1
 data:
-  output_dir: "../output/wbi/org_bert_avg_20210906_fixed"
-  data_dir: "../data/datasets/internal/wbi_org"
-  train: train.json
-  dev: dev.json
-  test: test.json
+  output_dir: "../output/wbi/org_per_bert_avg_20211108"
+  data_dir: "../data/datasets/internal/wbi_comb"
+  train: test_non_ext.json
+  dev: test_non_ext.json
+  test: test_non_ext.json
   unlabeled: unlabeled.json
+  extra_tokens: nan.json
 text_prepro:
   steps:
     - concat_headline_content_with_sep
-    # - rm_url
+#     - concat_pub_code
+#     - concat_entity_name
     - extract_post_context_1
     - simplified_chinese
     - full_to_half
@@ -39,33 +41,8 @@ model_params:
   output_hidden_act_func: "PReLU"
   output_hidden_dim: 128
   output_use_bn: False
-  attention_type: additive
-  tokenizer_name: "bert-base-chinese"  # voidful/albert_chinese_tiny
-  pretrained_lm: "bert-base-chinese" # voidful/albert_chinese_tiny
-  # pretrained_lm_dir: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
-  # ================= TGSAN =================
-  # num_train_epochs: 50
-  # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"
-  # embedding_trainable: False
+  tokenizer_name: "hfl/chinese-macbert-base"  # voidful/albert_chinese_tiny
+  pretrained_lm: "hfl/chinese-macbert-base" # voidful/albert_chinese_tiny
 explanation:
     Random:
-      method: "Random" # Random LayerIntegratedGradients Custom
-      batch_size: 1
-      exclude_cls_sep: True
-    AttnSum:
-      method: "Custom" # Random LayerIntegratedGradients Custom
-      model_output: "attentions"
-      attn_agg_method: "ATTN_SUM"
-      batch_size: 1
-      exclude_cls_sep: True
-    AttnBackprop: 
-      method: "Custom" # Random LayerIntegratedGradients Custom
-      model_output: "attentions"
-      attn_agg_method: "ATTN_BACKPROP"
-      batch_size: 1
-      exclude_cls_sep: True
-    IntegratedGradients:
-      method: "LayerIntegratedGradients" # Random LayerIntegratedGradients Custom
-      layer: "pretrained_model.embeddings.word_embeddings"
-      batch_size: 1
-      exclude_cls_sep: True
+      method: "Random"
