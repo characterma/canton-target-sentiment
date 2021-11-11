@@ -1,6 +1,7 @@
 import unittest
 import sys
 import torch
+import os
 from transformers import AutoTokenizer
 from collections import namedtuple 
 from pathlib import Path 
@@ -101,3 +102,10 @@ class TestGetFeatures(unittest.TestCase):
         self.assertTrue(torch.equal(feature_dict["attention_mask"], attention_mask))
         self.assertTrue(torch.equal(feature_dict["token_type_ids"], token_type_ids))
         self.assertTrue(torch.equal(feature_dict["label"], label))
+        
+    def tearDown(self):
+
+        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/result")
+        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/model")
+        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/logs")
+        os.system(f"rm ../tests/test_end_to_end_samples/8/log")
