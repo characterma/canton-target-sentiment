@@ -34,14 +34,10 @@ class BERT_AVG(BertPreTrainedModel):
         self.to(args.device)
 
     def avg_pool(sel, h, attention_mask):
-
         attention_mask = attention_mask.unsqueeze(-1)
         h = h.masked_fill(attention_mask==0, float(0))
-        return torch.mean(
-            h.float(),
-            dim=1,
-            keepdim=False,
-        )
+        h = h.sum(dim=1) / attention_mask.sum(dim=1)        
+        return h
 
     def forward(
         self,
@@ -61,7 +57,6 @@ class BERT_AVG(BertPreTrainedModel):
         h = self.avg_pool(h, attention_mask=attention_mask)
         logits = self.linear(h)
         prediction = torch.argmax(logits, dim=1).cpu().tolist()
-
         if label is not None:
             loss = self.loss_func(
                 logits,  # [N, C]
