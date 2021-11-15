@@ -8,17 +8,33 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 
 
-def _load_pretrained_emb(emb_path):
+def _load_pretrained_emb(emb_path, word_to_id):
     logger.info("***** Loading pretrained embeddings *****")
-    vectors = []
+    
+    emb_dim = None
     with open(emb_path, encoding="utf-8", errors="ignore") as f:
         for _ in f:
             break
         for line in tqdm(f):
-            vectors.append(line.rstrip().split(" ")[1:])
-    vectors = np.array(vectors, dtype=float)
-    logger.info("  Embeddings size = '%s'", str(vectors.shape))
-    return vectors
+            line = line.rstrip().split(" ")
+            emb_dim = len(line[1:])
+            break
+
+    embeddings = np.zeros((len(word_to_id), emb_dim))
+    
+    with open(emb_path, encoding="utf-8", errors="ignore") as f:
+        for _ in f:
+            break
+        for line in tqdm(f):
+            line = line.rstrip().split(" ")
+            word = line[0]
+
+            if word in word_to_id:
+                word_id = word_to_id[word]
+                embeddings[word_id] = line[1:]
+            
+    logger.info("  Embeddings size = '%s'", str(embeddings.shape))
+    return embeddings
 
 
 class WordEmbeddings(nn.Module):
@@ -29,12 +45,12 @@ class WordEmbeddings(nn.Module):
         emb_dim=None,
         vocab_size=None,
         emb_dropout=0,
+        word_to_id=None
     ):
         super(WordEmbeddings, self).__init__()
         if pretrained_emb_path is not None:
-            embeddings = _load_pretrained_emb(pretrained_emb_path)
+            embeddings = _load_pretrained_emb(pretrained_emb_path, word_to_id)
             _, emb_dim = embeddings.shape
-            embeddings = np.concatenate([np.zeros([1, emb_dim]), embeddings], axis=0)
             embeddings = torch.tensor(embeddings).float()
             self.embed = nn.Embedding.from_pretrained(
                 embeddings, freeze=(not embedding_trainable)

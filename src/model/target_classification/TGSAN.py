@@ -185,6 +185,7 @@ class TGSAN(nn.Module):
             emb_dim=args.model_config["emb_dim"],
             vocab_size=args.vocab_size,
             emb_dropout=args.model_config["emb_dropout"],
+            word_to_id=args.word_to_id
         )
         emb_dim = self.embed.emb_dim
         # Bi-LSTM encoder

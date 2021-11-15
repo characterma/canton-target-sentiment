@@ -65,6 +65,23 @@ def build_vocab_from_pretrained(tokenizer, args):
     tokenizer.update_word_id(word_to_id)
     args.vocab_size = len(word_to_id)
 
+    
+def load_vocab_from_pretrained(args):
+    emb_path = Path(args.model_config["pretrained_emb_path"])
+    logger.info("***** Building vocab from pretrained *****")
+    logger.info("  Embedding path = %s", str(emb_path))
+    if os.path.isfile(emb_path):
+
+        words = {}
+        with open(emb_path, encoding="utf-8", errors="ignore") as f:
+            for _ in f:
+                break
+            for line in tqdm(f):
+                words[line.split(" ")[0]] = True
+        return words
+    else:
+        return {}
+
 
 def build_vocab_from_dataset(datasets, tokenizer, args):
     logger.info("***** Building vocab from dataset *****")
@@ -101,9 +118,11 @@ def build_vocab_from_dataset(datasets, tokenizer, args):
 
     word_to_id["<PAD>"] = 0
     word_to_id["<OOV>"] = 1
+    
+    pretrained_words = load_vocab_from_pretrained(args)
 
     for w in words:
-        if w not in infreq_words:
+        if w not in infreq_words and pretrained_words.get(w):
             word_to_id[w] = len(word_to_id)
 
     logger.info("  Infrequenct words = %d", len(infreq_words))
@@ -176,12 +195,10 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
         if os.path.exists(vocab_path):
             load_vocab(tokenizer=tokenizer, vocab_path=vocab_path, args=args)
         else:
-            if args.model_config.get("pretrained_emb", None) is not None:
-                build_vocab_from_pretrained(tokenizer=tokenizer, args=args)
-            else:
-                build_vocab_from_dataset(
-                    datasets=datasets, tokenizer=tokenizer, args=args
-                )
+            build_vocab_from_dataset(
+                datasets=datasets, tokenizer=tokenizer, args=args
+            )
+        args.word_to_id = tokenizer.word_to_id
         return tokenizer
     else:
         raise ValueError("Unsupported tokenizer source.")
