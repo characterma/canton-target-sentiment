@@ -1,5 +1,5 @@
 task: "target_classification"
-device: 'cpu'
+device: 0
 data:
   output_dir: "../config/examples/target_classification/TGSAN2"
   data_dir: "../data/datasets/sample/target_classification"

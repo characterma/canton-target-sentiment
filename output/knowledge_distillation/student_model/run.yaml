@@ -19,7 +19,7 @@ train:
   model_class: "TEXT_CNN"
   kd:
     use_kd: True
-    teacher_dir: "../output/knowledge_distillation/teacher_model"
+    teacher_dir: "../output/knowledge_distillation/teacher_model4/model"
     loss_type: 'mse'
     soft_lambda: 0.5
     kl_T: 5

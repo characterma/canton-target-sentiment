@@ -1,5 +1,5 @@
 task: "sequence_classification"
-device: 'cpu'
+device: 0
 data:
   output_dir: "../config/examples/sequence_classification/BERT_AVG_explain"
   data_dir: "../data/datasets/sample/sequence_classification"

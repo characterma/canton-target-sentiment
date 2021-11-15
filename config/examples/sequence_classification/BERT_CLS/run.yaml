@@ -1,7 +1,7 @@
 task: "sequence_classification"
 device: 0
 data:
-  output_dir: "../config/examples/sequence_classification/BERT_AVG"
+  output_dir: "../config/examples/sequence_classification/BERT_CLS"
   data_dir: "../data/datasets/sample/sequence_classification"
   train: train_sample.json
   dev: train_sample.json
@@ -16,7 +16,7 @@ eval:
   batch_size: 64
   model_file: "model.pt"
 train:
-  model_class: "BERT_AVG"
+  model_class: "BERT_CLS"
   kd:
     use_kd: False
     teacher_dir: "../output/post_sentiment_20210707_bert_avg/model"

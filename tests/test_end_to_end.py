@@ -9,6 +9,7 @@ class TestEndToEnd(unittest.TestCase):
                    'chinese_word_segmentation/CNN_CRF',
                    'chinese_word_segmentation/BERT_CRF', 
                    'sequence_classification/BERT_AVG', 
+                   'sequence_classification/BERT_CLS', 
                    'sequence_classification/TEXT_CNN', 
 #                    'sequence_classification/BERT_AVG_explain', 
                    'target_classification/TDBERT', 
