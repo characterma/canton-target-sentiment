@@ -23,9 +23,13 @@ class TestEndToEnd(unittest.TestCase):
             code = os.system(f"python run.py --config_dir='../config/examples/{task_model}'")
             self.assertEqual(code, 0, task_model)
             
-            if "explain" in task_model:
-                code = os.system(f"python run.py --config_dir='../config/examples/{task_model}' --test_only --explain --faithfulness")
-                self.assertEqual(code, 0, task_model)
+        for task_model in self.task_models:
+            code = os.system(f"python run.py --config_dir='../config/examples/{task_model}' --test_only")
+            self.assertEqual(code, 0, task_model)
+            
+#             if "explain" in task_model:
+#                 code = os.system(f"python run.py --config_dir='../config/examples/{task_model}' --test_only --explain --faithfulness")
+#                 self.assertEqual(code, 0, task_model)
 
     def tearDown(self):
         for task_model in self.task_models:
