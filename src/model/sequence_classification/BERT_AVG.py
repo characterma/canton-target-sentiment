@@ -13,8 +13,8 @@ class BERT_AVG(BertPreTrainedModel):
         self.pretrained_model = load_pretrained_bert(args)
 
         hidden_size = self.pretrained_model.config.hidden_size
-        output_hidden_dim = args.model_config.get('output_hidden_dim', None)
-        output_hidden_act_func = args.model_config.get('output_hidden_act_func', None)
+        output_hidden_dim = args.model_config['output_hidden_dim']
+        output_hidden_act_func = args.model_config['output_hidden_act_func']
 
         self.num_labels = len(args.label_to_id)
 

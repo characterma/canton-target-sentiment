@@ -16,7 +16,9 @@ class BERT_CRF(BertPreTrainedModel):
         self.pretrained_config = load_pretrained_config(args)
         self.num_labels = len(args.label_to_id)
 
-        self.bert_dropout = nn.Dropout(self.model_config["bert_dropout"])
+        self.bert_dropout = nn.Dropout(
+            self.model_config["bert_dropout"]
+        )
         self.crf = LinearChainCRF(self.pretrained_config.hidden_size, self.num_labels)
 
         self.to(args.device)

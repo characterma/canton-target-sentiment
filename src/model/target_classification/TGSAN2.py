@@ -29,7 +29,7 @@ class TGSAN2(nn.Module):
                     nhead=12,
                     dim_feedforward=360,
                     dropout=args.model_config["encoder_dropout"],
-                    activation=args.model_config.get("activation", "relu"),
+                    activation=args.model_config["encoder_activation"],
                 )
                 for i in range(args.model_config["n_encoder"])
             ]
@@ -39,7 +39,7 @@ class TGSAN2(nn.Module):
             input_dim=self.bert_config.hidden_size,
             output_dim=self.num_labels,
             dropout_rate=args.model_config["fc_dropout"],
-            activation=args.model_config.get("activation", None),
+            activation=args.model_config["fc_activation"],
         )
         self.loss_fct = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)
