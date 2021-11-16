@@ -20,6 +20,7 @@ train:
   final_model: "best" # or "last"
   optimization_metric: "micro_f1"
   early_stop: 5
+  weight_decay: 0.9
 model_params:
   # ================= TDBERT =================
   num_train_epochs: 50

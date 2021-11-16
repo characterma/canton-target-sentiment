@@ -67,11 +67,10 @@ def build_vocab_from_pretrained(tokenizer, args):
 
     
 def load_vocab_from_pretrained(args):
-    emb_path = Path(args.model_config["pretrained_emb_path"])
+    emb_path = args.model_config.get("pretrained_emb_path")
     logger.info("***** Building vocab from pretrained *****")
     logger.info("  Embedding path = %s", str(emb_path))
-    if os.path.isfile(emb_path):
-
+    if emb_path is not None and os.path.isfile(emb_path):
         words = {}
         with open(emb_path, encoding="utf-8", errors="ignore") as f:
             for _ in f:
@@ -80,7 +79,7 @@ def load_vocab_from_pretrained(args):
                 words[line.split(" ")[0]] = True
         return words
     else:
-        return {}
+        return None
 
 
 def build_vocab_from_dataset(datasets, tokenizer, args):
@@ -120,10 +119,14 @@ def build_vocab_from_dataset(datasets, tokenizer, args):
     word_to_id["<OOV>"] = 1
     
     pretrained_words = load_vocab_from_pretrained(args)
-
-    for w in words:
-        if w not in infreq_words and pretrained_words.get(w):
-            word_to_id[w] = len(word_to_id)
+    if pretrained_words is not None:
+        for w in words:
+            if w not in infreq_words and pretrained_words.get(w):
+                word_to_id[w] = len(word_to_id)
+    else:
+        for w in words:
+            if w not in infreq_words:
+                word_to_id[w] = len(word_to_id)
 
     logger.info("  Infrequenct words = %d", len(infreq_words))
     logger.info("  Vocab size = %d", len(word_to_id))

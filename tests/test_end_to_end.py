@@ -11,8 +11,8 @@ class TestEndToEnd(unittest.TestCase):
                    'sequence_classification/BERT_AVG', 
                    'sequence_classification/BERT_CLS', 
                    'sequence_classification/TEXT_CNN', 
-#                    'sequence_classification/BERT_AVG_explain', 
-                   'target_classification/TDBERT', 
+# #                    'sequence_classification/BERT_AVG_explain', 
+#                    'target_classification/TDBERT', 
                    'target_classification/TGSAN', 
                    'target_classification/TGSAN2'
                    ]

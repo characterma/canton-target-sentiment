@@ -69,7 +69,7 @@ def load_config(args, is_deployment=False):
     args.kd_config = run_config["train"].get("kd", {"use_kd": False})
     args.prepro_config = run_config["text_prepro"]
     args.explain_config = run_config.get("explanation", {})
-    model_config = load_yaml(config_dir / "model.yaml")
+    model_config = load_yaml("../config/model.yaml")
     model_class = args.train_config["model_class"]
     args.model_config = model_config[model_class]
     args.model_config.update(run_config["model_params"])
@@ -99,7 +99,7 @@ def load_config(args, is_deployment=False):
 
 def save_config(args):
     shutil.copy(args.config_dir / "run.yaml", args.model_dir / "run.yaml")
-    shutil.copy(args.config_dir / "model.yaml", args.model_dir / "model.yaml")
+    shutil.copy("../config/model.yaml", args.model_dir / "model.yaml")
 
 
 def combine_and_save_metrics(metrics, args):

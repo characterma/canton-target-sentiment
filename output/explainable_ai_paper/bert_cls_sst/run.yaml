@@ -1,5 +1,5 @@
 task: "sequence_classification"
-device: 1
+device: 0
 data:
   output_dir: "../output/explainable_ai_paper/bert_cls_sst"
   data_dir: "../data/datasets/public/sequence_classification/sst"
