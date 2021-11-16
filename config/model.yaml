@@ -1,7 +1,7 @@
 # Target Classification
 TDBERT:
     # ================= Preprocessing params =================
-    max_length: 210
+    max_length: 256
     tokenizer_source: "transformers"
     tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
     # ================= Model params =================
@@ -21,7 +21,7 @@ TDBERT:
     warmup_steps: 0
 TGSAN:
     # ================= Preprocessing params =================
-    max_length: 150
+    max_length: 256
     tokenizer_source: "internal"
     tokenizer_name: ""
     vocab_freq_cutoff: 0.1
@@ -146,12 +146,12 @@ BERT_AVG:
     warmup_steps: 0
 BERT_CLS:
     # ================= Preprocessing params =================
-    max_length: 128
+    max_length: 256
     tokenizer_source: "transformers"
-    tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
+    tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
     add_special_tokens: False
     # ================= Model params =================
-    pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
+    pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
     classifier_dropout: 0.2
     # ================= Training params =================
     num_train_epochs: 12
