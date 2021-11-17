@@ -8,7 +8,7 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 
 
-def _load_pretrained_emb(emb_path, word_to_id):
+def load_word_embeddings(emb_path, word_to_id):
     logger.info("***** Loading pretrained embeddings *****")
     
     emb_dim = None
@@ -49,7 +49,7 @@ class WordEmbeddings(nn.Module):
     ):
         super(WordEmbeddings, self).__init__()
         if pretrained_emb_path is not None:
-            embeddings = _load_pretrained_emb(pretrained_emb_path, word_to_id)
+            embeddings = load_word_embeddings(pretrained_emb_path, word_to_id)
             _, emb_dim = embeddings.shape
             embeddings = torch.tensor(embeddings).float()
             self.embed = nn.Embedding.from_pretrained(

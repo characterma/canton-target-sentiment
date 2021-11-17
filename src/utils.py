@@ -117,15 +117,20 @@ def combine_and_save_statistics(datasets, args):
             filename = (
                 "diagnosis_test_only.xlsx" if args.test_only else "diagnosis.xlsx"
             )
+            diagnosis_df = diagnosis_df.applymap(lambda x: x.encode('unicode_escape').
+                     decode('utf-8') if isinstance(x, str) else x)
             diagnosis_df.to_excel(args.result_dir / filename, index=False)
+
+
             filename = (
                 "diagnosis_test_only.pkl" if args.test_only else "diagnosis.pkl"
             )
-            pickle.dump(diagnosis_df, open(args.result_dir / filename, 'wb'))
+            with open(args.result_dir / filename, "wb") as f:
+                pickle.dump(diagnosis_df, f)
         except Exception as e:
-            print(e)
+            print("Failed saving diagnosis_df to excel.", e)
             filename = "diagnosis_test_only.pkl" if args.test_only else "diagnosis.pkl"
-            with open(filename, "wb") as f:
+            with open(args.result_dir / filename, "wb") as f:
                 pickle.dump(diagnosis_df, f)
 
     if hasattr(datasets[0], "get_data_analysis"):
@@ -137,8 +142,6 @@ def combine_and_save_statistics(datasets, args):
             statistics_df.to_csv(args.result_dir / filename, index=False)
         except Exception as e:
             print(e)
-            filename = (
-                "statistics_test_only.pkl" if args.test_only else "statistics.pkl"
-            )
-            with open(filename, "wb") as f:
+            filename = "statistics_test_only.pkl" if args.test_only else "statistics.pkl"
+            with open(args.result_dir / filename, "wb") as f:
                 pickle.dump(statistics_df, f)
