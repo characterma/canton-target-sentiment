@@ -291,7 +291,7 @@ class TGSAN(nn.Module):
         idx_ori = idx_sort.sort()[1]
         x = x.index_select(0, idx_sort)
         x = nn.utils.rnn.pack_padded_sequence(
-            x, lens_sort, batch_first=True, enforce_sorted=True
+            x, lens_sort.cpu(), batch_first=True, enforce_sorted=True
         )
         self.bilstm.flatten_parameters()
         x, _ = self.bilstm(x)
