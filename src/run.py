@@ -59,8 +59,6 @@ def run_kd(args):
     assert(teacher_args.label_to_id==args.label_to_id)
     assert(teacher_args.label_to_id_inv==args.label_to_id_inv)
     
-    student_model = get_model(args=args)
-
     # generate soft-labels, TODO: cache to disk
     if unlabeled_dataset is not None:
         teacher_logits_ul = get_logits(
@@ -99,6 +97,7 @@ def run_kd(args):
     del teacher_logits_ul
 
     # run kd_trainer => save model
+    student_model = get_model(args=args)
     kd_trainer = KDTrainer(
         model=student_model,
         train_dataset=train_dataset,
