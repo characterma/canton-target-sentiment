@@ -35,47 +35,64 @@ def run_kd(args):
     )
     teacher_model = get_model(args=teacher_args)
 
-    # load unlabeled data, which will be preprocessed by teacher pipeline TODO: allow label=null
-    unlabeled_dataset = get_dataset(
-        dataset="unlabeled", tokenizer=teacher_tokenizer, args=teacher_args
-    )
+    if args.data_config["unlabeled"] is not None:
+        unlabeled_dataset = get_dataset(
+            dataset="unlabeled", tokenizer=teacher_tokenizer, args=teacher_args
+        )
+    else:
+        unlabeled_dataset = None 
+        
     train_dataset = get_dataset(
         dataset="train", tokenizer=teacher_tokenizer, args=teacher_args
     )
-    # TODO: include logits from train data
 
     # load student
-    student_tokenizer = get_tokenizer(args=args, datasets=["train", "unlabeled"])
+    if args.data_config["unlabeled"] is not None:
+        student_tokenizer = get_tokenizer(args=args, datasets=["train", "unlabeled"])
+    else:
+        student_tokenizer = get_tokenizer(args=args, datasets=["train"])
+        
     args.label_to_id, args.label_to_id_inv = get_label_to_id(
         tokenizer=student_tokenizer, args=args
     )
     student_model = get_model(args=args)
 
     # generate soft-labels, TODO: cache to disk
-    teacher_logits_ul = get_logits(
-        model=teacher_model,
-        dataset=unlabeled_dataset,
-        teacher_args=teacher_args,
-        student_args=args,
-    )
+    if unlabeled_dataset is not None:
+        teacher_logits_ul = get_logits(
+            model=teacher_model,
+            dataset=unlabeled_dataset,
+            teacher_args=teacher_args,
+            student_args=args,
+        )
+    else:
+        teacher_logits_ul = None 
+        
     teacher_logits_tr = get_logits(
         model=teacher_model,
         dataset=train_dataset,
         teacher_args=teacher_args,
         student_args=args,
     )
+    
+    del teacher_model
+    del teacher_tokenizer
+    del train_dataset
+    del unlabeled_dataset
 
     # Features for student model
     train_dataset = get_dataset(dataset="train", tokenizer=student_tokenizer, args=args)
     dev_dataset = get_dataset(dataset="dev", tokenizer=student_tokenizer, args=args)
     test_dataset = get_dataset(dataset="test", tokenizer=student_tokenizer, args=args)
-    unlabeled_dataset = get_dataset(
-        dataset="unlabeled", tokenizer=student_tokenizer, args=args
-    )
-
-    # merge teacher_logits into features
     train_dataset.add_feature("teacher_logit", teacher_logits_tr)
-    unlabeled_dataset.add_feature("teacher_logit", teacher_logits_ul)
+    
+    del teacher_logits_tr
+    
+    if args.data_config["unlabeled"] is not None:
+        unlabeled_dataset = get_dataset(dataset="unlabeled", tokenizer=student_tokenizer, args=args)
+        unlabeled_dataset.add_feature("teacher_logit", teacher_logits_ul)
+        
+    del teacher_logits_ul
 
     # run kd_trainer => save model
     kd_trainer = KDTrainer(

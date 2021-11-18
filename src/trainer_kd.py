@@ -74,14 +74,14 @@ class KDTrainer(Trainer):
     def train(self):
         logger.info("***** Running KD training *****")
         logger.info("  Num examples (train) = %d", len(self.train_dataset))
-        logger.info("  Num examples (unlabeled)= %d", len(self.unlabeled_dataset))
+        logger.info("  Num examples (unlabeled)= %d", len(self.unlabeled_dataset) if self.unlabeled_dataset is not None else 0)
         logger.info("  Num Epochs = %d", self.model_config["num_train_epochs"])
         logger.info("  Batch size = %d", self.train_config["batch_size"])
 
         batch_size = self.train_config["batch_size"]
         total_epochs = self.model_config["num_train_epochs"]
         optimizer, scheduler = self.create_optimizer_and_scheduler(
-            n=len(self.unlabeled_dataset)
+            n=len(self.train_dataset) + len(self.unlabeled_dataset) if self.unlabeled_dataset is not None else len(self.train_dataset)
         )
 
         n_step_tr = 0
@@ -92,10 +92,6 @@ class KDTrainer(Trainer):
         for epoch in range(total_epochs):
             self.model.zero_grad()
             self.model.train()
-
-            dataloader_ul = DataLoader(
-                self.unlabeled_dataset, batch_size=batch_size, shuffle=True
-            )
 
             dataloader_tr = DataLoader(
                 self.train_dataset, batch_size=batch_size, shuffle=True
@@ -129,34 +125,39 @@ class KDTrainer(Trainer):
                 )
                 # n_step_tr_log += 1
                 n_step_tr += 1
-
-            for batch in tqdm(dataloader_ul):
-
-                inputs = dict()
-                for col in batch:
-                    if torch.is_tensor(batch[col]):
-                        inputs[col] = batch[col].to(self.device).long()
-
-                outputs = self.model(**inputs)
-                hard_loss = outputs['loss']
-                student_logits = outputs['logits']
-                teacher_logits = batch["teacher_logit"].to(self.device)
-
-                loss = self.compute_kd_loss(
-                    hard_loss=hard_loss,
-                    student_logits=student_logits,
-                    teacher_logits=teacher_logits,
-                    kd_config=self.kd_config,
+                
+            if self.unlabeled_dataset is not None:
+                dataloader_ul = DataLoader(
+                    self.unlabeled_dataset, batch_size=batch_size, shuffle=True
                 )
 
-                loss.backward()
-                optimizer.step()
-                self.model.zero_grad()
-                # if n_step_ul % log_steps==0:
-                self.tensorboard_writer.add_scalar(
-                    "Loss/unlabeled", loss.tolist(), n_step_ul_log
-                )
-                # n_step_ul_log += 1
-                n_step_ul += 1
+                for batch in tqdm(dataloader_ul):
+
+                    inputs = dict()
+                    for col in batch:
+                        if torch.is_tensor(batch[col]):
+                            inputs[col] = batch[col].to(self.device).long()
+
+                    outputs = self.model(**inputs)
+                    hard_loss = outputs['loss']
+                    student_logits = outputs['logits']
+                    teacher_logits = batch["teacher_logit"].to(self.device)
+
+                    loss = self.compute_kd_loss(
+                        hard_loss=hard_loss,
+                        student_logits=student_logits,
+                        teacher_logits=teacher_logits,
+                        kd_config=self.kd_config,
+                    )
+
+                    loss.backward()
+                    optimizer.step()
+                    self.model.zero_grad()
+                    # if n_step_ul % log_steps==0:
+                    self.tensorboard_writer.add_scalar(
+                        "Loss/unlabeled", loss.tolist(), n_step_ul_log
+                    )
+                    # n_step_ul_log += 1
+                    n_step_ul += 1
             self.on_epoch_end(epoch)
         self.on_training_end()
