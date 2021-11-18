@@ -117,10 +117,10 @@ def combine_and_save_statistics(datasets, args):
             filename = (
                 "diagnosis_test_only.xlsx" if args.test_only else "diagnosis.xlsx"
             )
-            diagnosis_df = diagnosis_df.applymap(lambda x: x.encode('unicode_escape').
-                     decode('utf-8') if isinstance(x, str) else x)
-            diagnosis_df.to_excel(args.result_dir / filename, index=False)
 
+            writer = pd.ExcelWriter(args.result_dir / filename, engine='xlsxwriter')
+            diagnosis_df.to_excel(writer, index=False)
+            writer.save()
 
             filename = (
                 "diagnosis_test_only.pkl" if args.test_only else "diagnosis.pkl"

@@ -55,6 +55,10 @@ def run_kd(args):
     args.label_to_id, args.label_to_id_inv = get_label_to_id(
         tokenizer=student_tokenizer, args=args
     )
+    
+    assert(teacher_args.label_to_id==args.label_to_id)
+    assert(teacher_args.label_to_id_inv==args.label_to_id_inv)
+    
     student_model = get_model(args=args)
 
     # generate soft-labels, TODO: cache to disk
