@@ -32,7 +32,7 @@ train:
   optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
   early_stop: null
 model_params:
-  # ================= TDBERT =================
+  tokenizer_source: "char_split"
   num_train_epochs: 20
   embedding_trainable: True
   pretrained_emb_path: null
