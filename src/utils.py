@@ -38,6 +38,7 @@ def load_yaml(file_path):
 
 
 def set_log_path(log_dir):
+    log_dir = Path(log_dir)
     logging.basicConfig(
         handlers=[
             logging.FileHandler(log_dir / "log", "w+", "utf-8"),
