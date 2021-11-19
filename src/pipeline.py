@@ -107,6 +107,15 @@ class Pipeline:
               output_dir=None, 
               model_params=None
              ):
+        """
+        Args:
+            raw_data: list of dict.
+            data_dir: str or path object.
+            train_file: str
+            dev_file: str
+            output_dir: str or path object.
+            model_params: dict.
+        """
         if model_params is not None:
             self.args.model_config.update(model_params)
         if output_dir is not None:
@@ -145,6 +154,14 @@ class Pipeline:
              data_dir=None, 
              test_file=None
             ):
+        """
+        Args:
+            raw_data: list of dict.
+            data_dir: str or path object.
+            test_file: str
+        Returns:
+            test_metrics: dict.
+        """
         if data_dir is not None:
             self.args.data_dir = Path(data_dir)
         if test_file is not None:
@@ -175,6 +192,12 @@ class Pipeline:
         return test_metrics
 
     def predict(self, data_dict):
+        """
+        Args:
+            data_dict: dict.
+        Returns:
+            prediction: int or str.
+        """
         feature_dict = self.feature_class(
             data_dict=data_dict, 
             tokenizer=self.tokenizer, 
