@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class NLPDataset:
-    def __init__(self, feature_class, dataset, tokenizer, args):
+    def __init__(self, feature_class, dataset, tokenizer, args, raw_data=None):
         self.args = args
         self.dataset = dataset
         self.tokenizer = tokenizer
@@ -25,14 +25,18 @@ class NLPDataset:
         self.diagnosis_df = None
         self.skipped_indexs = []
 
-        self.load_data()
+        self.load_data(raw_data=raw_data)
         self.create_diagnosis()
 
-    def load_data(self):
+    def load_data(self, raw_data=None):
         data_path = self.args.data_dir / self.args.data_config[self.dataset]
         logger.info("***** Loading data *****")
-        logger.info("  Data path = %s", str(data_path))
-        raw_data = json.load(open(data_path, "r"))
+        
+        if raw_data is not None:
+            logger.info("  Raw data is provided.")
+        else:
+            logger.info("  Data path = %s", str(data_path))
+            raw_data = json.load(open(data_path, "r"))
 
         for idx, data_dict in tqdm(enumerate(raw_data)):
             diagnosis_dict = {"idx": idx}

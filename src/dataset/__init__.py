@@ -11,13 +11,14 @@ TASK_TO_FEATURE = {
 }
 
 
-def get_dataset(dataset, tokenizer, args):
+def get_dataset(dataset, tokenizer, args, raw_data=None):
 
     return NLPDataset(
         feature_class=get_feature_class(args),
         dataset=dataset,
         tokenizer=tokenizer,
         args=args,
+        raw_data=raw_data
     )
 
 

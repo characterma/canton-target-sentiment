@@ -1,5 +1,6 @@
 import torch 
 import logging
+import os
 from pathlib import Path
 
 from label import get_label_to_id
@@ -17,6 +18,7 @@ set_log_path("./")
 
 class Pipeline:
     """
+    A high level pipeline for testing, training and prediction.
     TODO: support raw data input for get_dataset.
     
         1. __init__: Provided model_dir? if yes, load previous model, otherwise get ready to initialize new model.
@@ -41,11 +43,12 @@ class Pipeline:
         if model_dir is not None:
             logger.info(f"***** Existing model is provided. *****")
             logger.info("  Model directory = %s", str(model_dir))
-            self.args = get_args(config_dir=model_dir)
+            model_dir = Path(model_dir)
+            self.args = get_args(config_dir=model_dir / "model")
             self.args = load_config(self.args)
+            self.args.model_dir = model_dir / "model"
             if device is not None:
                 self.args.device = device
-            self.args.model_dir = Path(model_dir)
             self.task = self.args.run_config['task']
             self._initialize()
         else:
@@ -78,28 +81,30 @@ class Pipeline:
         self.test_dataset = None 
  
     def train(self, 
-              raw_data=None, 
-              data_dir=None, 
+              model_dir,
+              train_raw_data=None,
+              dev_raw_data=None, 
+              data_dir=None, # data on disk
               train_file=None, 
               dev_file=None, 
-              output_dir=None, 
               model_params=None
              ):
         """
         Args:
-            raw_data: list of dict.
+            model_dir: str or path.
+            train_raw_data: list of dict.
+            dev_raw_data: list of dict.
             data_dir: str or path object.
             train_file: str
             dev_file: str
-            output_dir: str or path object.
+            model_dir: str or path object.
             model_params: dict.
         """
+        assert((train_raw_data is not None and dev_raw_data is not None) or data_dir is not None)
         # Over-writing args parameters
+        self._overwrite_model_dir(model_dir=model_dir)
         if model_params is not None:
             self.args.model_config.update(model_params)
-        if output_dir is not None:
-            output_dir = Path(output_dir)
-            self._overwrite_output_dir(output_dir)
         if data_dir is not None:
             self.args.data_dir = Path(data_dir)
         if train_file is not None:
@@ -108,14 +113,15 @@ class Pipeline:
             self.args.data_config['dev'] = dev_file
             
         self._initialize()
-
         # Prepare datasets.
         self.train_dataset = get_dataset(
+            raw_data=train_raw_data,
             dataset="train", 
             tokenizer=self.tokenizer, 
             args=self.args
         )
         self.dev_dataset = get_dataset(
+            raw_data=dev_raw_data,
             dataset="dev", 
             tokenizer=self.tokenizer, 
             args=self.args
@@ -132,18 +138,19 @@ class Pipeline:
         save_config(self.args)
         
     def test(self, 
-             raw_data=None,
+             test_raw_data=None,
              data_dir=None, 
              test_file=None
             ):
         """
         Args:
-            raw_data: list of dict.
+            test_raw_data: list of dict.
             data_dir: str or path object.
             test_file: str
         Returns:
             test_metrics: dict.
         """
+        assert(test_raw_data is not None or data_dir is not None)
         # Over-writing args parameters
         if data_dir is not None:
             self.args.data_dir = Path(data_dir)
@@ -152,6 +159,7 @@ class Pipeline:
             
         # Prepare datasets.
         self.test_dataset = get_dataset(
+            raw_data=test_raw_data, 
             dataset="test", 
             tokenizer=self.tokenizer, 
             args=self.args
@@ -212,13 +220,13 @@ class Pipeline:
         self.model = get_model(args=self.args)
         self.initialized = True
     
-    def _overwrite_output_dir(self, output_dir):
-        output_dir = Path(output_dir)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        self.args.output_dir = output_dir
-        self.args.model_dir = output_dir / "model"
-        self.args.result_dir = output_dir / "result"
+    def _overwrite_model_dir(self, model_dir):
+        model_dir = Path(model_dir)
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
+        self.args.output_dir = model_dir
+        self.args.model_dir = model_dir / "model"
+        self.args.result_dir = model_dir / "result"
         if not os.path.exists(self.args.model_dir):
             os.makedirs(self.args.model_dir)
         if not os.path.exists(self.args.result_dir):
@@ -230,6 +238,7 @@ if __name__=="__main__":
 #     # Train
 #     task = "sequence_classification"
 #     data_dir = "../data/datasets/internal/sequence_classification/post_sentiment"
+#     model_dir = "../output/test_pipeline"
 #     train_file = "train_sample.json"
 #     dev_file = "train_sample.json"
 #     test_file = "train_sample.json"
@@ -245,6 +254,7 @@ if __name__=="__main__":
 #         device=device
 #     )
 #     pipeline.train(
+#         model_dir=model_dir,
 #         data_dir=data_dir, 
 #         train_file=train_file, 
 #         dev_file=dev_file, 
@@ -259,7 +269,7 @@ if __name__=="__main__":
 #     print(test_metrics)
     
     # Test only
-    model_dir = "../config/examples/sequence_classification/BERT_CLS/model"
+    model_dir = "../output/test_pipeline"
     data_dir = "../data/datasets/internal/sequence_classification/post_sentiment"
     test_file = "train_sample.json"
     device = 0
