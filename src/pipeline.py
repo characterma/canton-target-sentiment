@@ -76,31 +76,7 @@ class Pipeline:
         self.train_dataset = None 
         self.dev_dataset = None 
         self.test_dataset = None 
-        
-    def _initialize(self):
-        """
-        """
-        logger.info("***** Initializing pipeline *****")
-        self.tokenizer = get_tokenizer(args=self.args)
-        self.feature_class = get_feature_class(args=self.args)
-        label_to_id, label_to_id_inv = get_label_to_id(self.tokenizer, self.args)
-        self.args.label_to_id = label_to_id
-        self.args.label_to_id_inv = label_to_id_inv
-        self.model = get_model(args=self.args)
-        self.initialized = True
-    
-    def overwrite_output_dir(self, output_dir):
-        output_dir = Path(output_dir)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        self.args.output_dir = output_dir
-        self.args.model_dir = output_dir / "model"
-        self.args.result_dir = output_dir / "result"
-        if not os.path.exists(self.args.model_dir):
-            os.makedirs(self.args.model_dir)
-        if not os.path.exists(self.args.result_dir):
-            os.makedirs(self.args.result_dir)
-            
+ 
     def train(self, 
               raw_data=None, 
               data_dir=None, 
@@ -118,11 +94,12 @@ class Pipeline:
             output_dir: str or path object.
             model_params: dict.
         """
+        # Over-writing args parameters
         if model_params is not None:
             self.args.model_config.update(model_params)
         if output_dir is not None:
             output_dir = Path(output_dir)
-            self.overwrite_output_dir(output_dir)
+            self._overwrite_output_dir(output_dir)
         if data_dir is not None:
             self.args.data_dir = Path(data_dir)
         if train_file is not None:
@@ -132,6 +109,7 @@ class Pipeline:
             
         self._initialize()
 
+        # Prepare datasets.
         self.train_dataset = get_dataset(
             dataset="train", 
             tokenizer=self.tokenizer, 
@@ -142,6 +120,8 @@ class Pipeline:
             tokenizer=self.tokenizer, 
             args=self.args
         )
+        
+        # Start training.
         trainer = Trainer(
             model=self.model, 
             train_dataset=self.train_dataset, 
@@ -164,11 +144,13 @@ class Pipeline:
         Returns:
             test_metrics: dict.
         """
+        # Over-writing args parameters
         if data_dir is not None:
             self.args.data_dir = Path(data_dir)
         if test_file is not None:
             self.args.data_config['test'] = test_file
             
+        # Prepare datasets.
         self.test_dataset = get_dataset(
             dataset="test", 
             tokenizer=self.tokenizer, 
@@ -186,6 +168,8 @@ class Pipeline:
                 eval_dataset=self.dev_dataset, 
                 args=self.args
             )
+            
+        # Start evaluation.
         test_metrics = evaluate(
             model=self.model, 
             eval_dataset=self.test_dataset, 
@@ -200,12 +184,15 @@ class Pipeline:
         Returns:
             prediction: int or str.
         """
+        
+        # Preprocessing, tokenization, etc.
         feature_dict = self.feature_class(
             data_dict=data_dict, 
             tokenizer=self.tokenizer, 
             args=self.args, 
         ).feature_dict
         
+        # Making batch.
         batch = dict()
         for col in feature_dict:
             batch[col] = feature_dict[col].unsqueeze(0).to(self.model.device)
@@ -215,7 +202,29 @@ class Pipeline:
         prediction = self.args.label_to_id_inv[prediction_id]
         return prediction
     
+    def _initialize(self):
+        logger.info("***** Initializing pipeline *****")
+        self.tokenizer = get_tokenizer(args=self.args)
+        self.feature_class = get_feature_class(args=self.args)
+        label_to_id, label_to_id_inv = get_label_to_id(self.tokenizer, self.args)
+        self.args.label_to_id = label_to_id
+        self.args.label_to_id_inv = label_to_id_inv
+        self.model = get_model(args=self.args)
+        self.initialized = True
     
+    def _overwrite_output_dir(self, output_dir):
+        output_dir = Path(output_dir)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        self.args.output_dir = output_dir
+        self.args.model_dir = output_dir / "model"
+        self.args.result_dir = output_dir / "result"
+        if not os.path.exists(self.args.model_dir):
+            os.makedirs(self.args.model_dir)
+        if not os.path.exists(self.args.result_dir):
+            os.makedirs(self.args.result_dir)
+            
+            
 if __name__=="__main__":
     
 #     # Train
@@ -259,15 +268,12 @@ if __name__=="__main__":
         model_dir=model_dir, 
         device=device
     )
-    
     test_metrics = pipeline.test(
         data_dir=data_dir, 
         test_file=test_file
     )
-    
     print(test_metrics)
     
     # Prediction
     x = {'content': "不过，随着乐视出现资金问题，烧钱严重的乐视体育全面收缩，接连丢掉中超、亚冠等赛事版权，在香港地区仅剩下2017-18赛季英超和NBA两项赛事直播权，此外，乐视体育香港也放弃了\"独播\"战略，对英超版权进行了分销，此举一方面可回笼部分资金，却对会员收入方面带来一定影响。"}
-    
     print(pipeline.predict(x))
