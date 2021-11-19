@@ -39,6 +39,8 @@ class Pipeline:
             device: int or "cpu"
         """
         if model_dir is not None:
+            logger.info(f"***** Existing model is provided. *****")
+            logger.info("  Model directory = %s", str(model_dir))
             self.args = get_args(config_dir=model_dir)
             self.args = load_config(self.args)
             if device is not None:
@@ -48,6 +50,7 @@ class Pipeline:
             self._initialize()
         else:
             assert(task is not None)
+            logger.info(f"***** Model class is not provided for {task}. *****")
             if model is None:
                 if task=="sequence_classification":
                     default_model = "BERT_CLS"
@@ -57,7 +60,7 @@ class Pipeline:
                     default_model = "BERT_CRF"
                 else:
                     raise(ValueError(f"Task {task} is not supported."))
-                    
+            logger.info("  Default model = %s", default_model)
             config_dir = f"../config/examples/{task}/{default_model}"
             self.args = get_args(config_dir=config_dir)
             self.args = load_config(self.args)
@@ -77,8 +80,7 @@ class Pipeline:
     def _initialize(self):
         """
         """
-        logger.info("***** Initializing pipeline (model, feature class, tokenizer, mappings, etc.) *****")
-            
+        logger.info("***** Initializing pipeline *****")
         self.tokenizer = get_tokenizer(args=self.args)
         self.feature_class = get_feature_class(args=self.args)
         label_to_id, label_to_id_inv = get_label_to_id(self.tokenizer, self.args)
