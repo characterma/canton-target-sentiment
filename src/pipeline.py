@@ -31,7 +31,8 @@ class Pipeline:
                  model_dir=None, 
                  task=None, 
                  model=None, 
-                 device=None
+                 device=None, 
+                 text_prepro=None
                 ):
         """
         Args:
@@ -49,12 +50,14 @@ class Pipeline:
             self.args.model_dir = model_dir / "model"
             if device is not None:
                 self.args.device = device
+            if text_prepro is not None:
+                self.args.prepro_config.update(text_prepro)
             self.task = self.args.run_config['task']
             self._initialize()
         else:
             assert(task is not None)
-            logger.info(f"***** Model class is not provided for {task}. *****")
             if model is None:
+                logger.info(f"***** Model class is not specified for {task}. *****")
                 if task=="sequence_classification":
                     default_model = "BERT_CLS"
                 elif task=="target_classification":
@@ -63,12 +66,19 @@ class Pipeline:
                     default_model = "BERT_CRF"
                 else:
                     raise(ValueError(f"Task {task} is not supported."))
-            logger.info("  Default model = %s", default_model)
-            config_dir = f"../config/examples/{task}/{default_model}"
+                logger.info("  Default model = %s", default_model)
+                config_dir = f"../config/examples/{task}/{default_model}"
+            else:
+                logger.info(f"***** Model class is specified for {task}. *****")
+                logger.info("  Model = %s", model)
+                config_dir = f"../config/examples/{task}/{model}"
+
             self.args = get_args(config_dir=config_dir)
             self.args = load_config(self.args)
             if device is not None:
                 self.args.device = device
+            if text_prepro is not None:
+                self.args.prepro_config.update(text_prepro)
             self.task = task
         
             self.initialized = False
@@ -87,7 +97,8 @@ class Pipeline:
               data_dir=None, # data on disk
               train_file=None, 
               dev_file=None, 
-              model_params=None
+              model_params=None, 
+              train_params=None
              ):
         """
         Args:
@@ -105,6 +116,8 @@ class Pipeline:
         self._overwrite_model_dir(model_dir=model_dir)
         if model_params is not None:
             self.args.model_config.update(model_params)
+        if train_params is not None:
+            self.args.train_config.update(train_params)
         if data_dir is not None:
             self.args.data_dir = Path(data_dir)
         if train_file is not None:
@@ -112,7 +125,7 @@ class Pipeline:
         if dev_file is not None:
             self.args.data_config['dev'] = dev_file
             
-        self._initialize()
+        self._initialize(train_raw_data=train_raw_data)
         # Prepare datasets.
         self.train_dataset = get_dataset(
             raw_data=train_raw_data,
@@ -140,7 +153,8 @@ class Pipeline:
     def test(self, 
              test_raw_data=None,
              data_dir=None, 
-             test_file=None
+             test_file=None, 
+             eval_params=None
             ):
         """
         Args:
@@ -156,6 +170,9 @@ class Pipeline:
             self.args.data_dir = Path(data_dir)
         if test_file is not None:
             self.args.data_config['test'] = test_file
+        if eval_params is not None:
+            self.args.eval_config.update(eval_params)
+            # print(self.args.eval_config)
             
         # Prepare datasets.
         self.test_dataset = get_dataset(
@@ -210,11 +227,15 @@ class Pipeline:
         prediction = self.args.label_to_id_inv[prediction_id]
         return prediction
     
-    def _initialize(self):
+    def _initialize(self, train_raw_data=None):
         logger.info("***** Initializing pipeline *****")
         self.tokenizer = get_tokenizer(args=self.args)
         self.feature_class = get_feature_class(args=self.args)
-        label_to_id, label_to_id_inv = get_label_to_id(self.tokenizer, self.args)
+        label_to_id, label_to_id_inv = get_label_to_id(
+            self.tokenizer, 
+            self.args, 
+            raw_data=train_raw_data
+        )
         self.args.label_to_id = label_to_id
         self.args.label_to_id_inv = label_to_id_inv
         self.model = get_model(args=self.args)
