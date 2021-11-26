@@ -11,7 +11,6 @@ TDBERT:
     # ================= Training params =================
     num_train_epochs: 10
     optimizer: "AdamW"
-    batch_size: 16
     learning_rate: 2e-5
     weight_decay: 0.0
     gradient_accumulation_steps: 1
@@ -40,7 +39,6 @@ TGSAN:
     att_dropout: 0.1
     # ================= Training params =================
     num_train_epochs: 40
-    batch_size: 64
     optimizer: "AdamW"
     learning_rate: 0.0015
     weight_decay: 0.9
@@ -87,7 +85,6 @@ BERT_CRF:
     # ================= Training params =================
     num_train_epochs: 10
     optimizer: "AdamW"
-    batch_size: 16
     learning_rate: 2e-5
     weight_decay: 0.0
     gradient_accumulation_steps: 1
@@ -113,7 +110,6 @@ CNN_CRF:
     cnn_layers: 3
     # ================= Training params =================
     num_train_epochs: 40
-    batch_size: 64
     optimizer: "AdamW"
     learning_rate: 0.0015
     weight_decay: 0
@@ -156,7 +152,6 @@ BERT_CLS:
     # ================= Training params =================
     num_train_epochs: 12
     optimizer: "AdamW"
-    batch_size: 32
     learning_rate: 2e-5
     weight_decay: 0.0
     gradient_accumulation_steps: 1
