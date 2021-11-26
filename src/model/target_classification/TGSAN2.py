@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from transformers.modeling_bert import BertEmbeddings
 from model.layer.fc import FCLayer
-from model.utils import load_pretrained_config
+from model.utils import load_pretrained_config, NLPModelOutput
 
 
 class TGSAN2(nn.Module):
@@ -74,7 +74,9 @@ class TGSAN2(nn.Module):
             loss = self.loss_fct(logits.view(-1, self.num_labels), label.view(-1))
         else:
             loss = None
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits, 
+        )
         return outputs

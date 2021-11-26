@@ -211,6 +211,7 @@ class Pipeline:
         """
         
         # Preprocessing, tokenization, etc.
+        self.model.eval()
         feature_dict = self.feature_class(
             data_dict=data_dict, 
             tokenizer=self.tokenizer, 
@@ -220,13 +221,24 @@ class Pipeline:
         # Making batch.
         batch = dict()
         for col in feature_dict:
-            batch[col] = feature_dict[col].unsqueeze(0).to(self.model.device)
+            batch[col] = feature_dict[col].unsqueeze(0).to(self.args.device)
             
         output = self.model(**batch)
-        prediction_id = output["prediction"][0]
-        prediction = self.args.label_to_id_inv[prediction_id]
-        return prediction
-    
+        results = dict(prediction_id=None, prediction=None)
+
+        if isinstance(output['prediction'], torch.Tensor):
+            prediction = output['prediction'].tolist()[0]
+        else:
+            prediction = output['prediction'][0]
+
+        if isinstance(prediction, list):
+            results["prediction_id"] = prediction
+            results["prediction"] = list(map(lambda y: self.args.label_to_id_inv[y], prediction))
+        else:
+            results["prediction_id"] = prediction
+            results["prediction"] = self.args.label_to_id_inv[prediction]
+        return results
+
     def _initialize(self, train_raw_data=None):
         logger.info("***** Initializing pipeline *****")
         self.tokenizer = get_tokenizer(args=self.args)

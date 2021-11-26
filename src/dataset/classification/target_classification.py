@@ -5,13 +5,8 @@ from dataset.base import NLPFeature
 
 
 class TargetClassificationFeature(NLPFeature):
-    def __init__(self, data_dict, tokenizer, args, diagnosis=False, padding="max_length"):
-        super(TargetClassificationFeature, self).__init__(
-            data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=diagnosis, padding=padding
-        )
-
     def get_feature(
-        self, data_dict, tokenizer, required_features, args, diagnosis=False
+        self, data_dict, tokenizer, required_features, args, diagnosis=False, padding='max_length'
     ):
         diagnosis_dict = dict()
         feature_dict = dict()

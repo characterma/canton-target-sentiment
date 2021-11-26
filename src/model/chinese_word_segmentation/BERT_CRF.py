@@ -2,7 +2,7 @@ import torch.nn as nn
 from transformers import BertPreTrainedModel
 
 from model.layer.crf import LinearChainCRF
-from model.utils import load_pretrained_bert, load_pretrained_config
+from model.utils import load_pretrained_bert, load_pretrained_config, NLPModelOutput
 
 
 class BERT_CRF(BertPreTrainedModel):
@@ -48,7 +48,9 @@ class BERT_CRF(BertPreTrainedModel):
             loss = None
 
         prediction = [p[0] for p in prediction]
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits, 
+        )
         return outputs

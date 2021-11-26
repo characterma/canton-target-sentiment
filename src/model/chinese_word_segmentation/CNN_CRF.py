@@ -2,6 +2,7 @@ import torch.nn as nn
 from model.layer.crf import LinearChainCRF
 from model.layer.cnn import ConvLayer
 from model.layer.embedding import WordEmbeddings
+from model.utils import NLPModelOutput
 
 
 class CNN_CRF(nn.Module):
@@ -69,7 +70,9 @@ class CNN_CRF(nn.Module):
             loss = None
 
         prediction = [p[0] for p in prediction]
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits, 
+        )
         return outputs

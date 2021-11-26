@@ -3,7 +3,7 @@ import torch.nn as nn
 from transformers import BertPreTrainedModel
 
 from model.layer.fc import FCLayer, LinearLayer
-from model.utils import load_pretrained_bert, load_pretrained_config
+from model.utils import load_pretrained_bert, load_pretrained_config, NLPModelOutput
 
 
 class BERT_CLS(BertPreTrainedModel):
@@ -45,9 +45,9 @@ class BERT_CLS(BertPreTrainedModel):
         else:
             loss = None
         prediction = torch.argmax(logits, dim=1).cpu().tolist()
-
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
-        # outputs['attentions'] = bert_outputs['attentions']
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits
+        )
         return outputs

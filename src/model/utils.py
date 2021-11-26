@@ -1,4 +1,7 @@
 import logging
+import torch
+from dataclasses import dataclass
+from typing import Optional, Tuple, List
 from model import get_model
 from utils import get_args, load_config
 from transformers import (
@@ -19,6 +22,7 @@ from transformers import (
     BertModel,
     AlbertModel,
 )
+from transformers.file_utils import ModelOutput
 
 logger = logging.getLogger(__name__)
 
@@ -104,3 +108,13 @@ def load_pretrained_config(args):
         prev_args = load_config(prev_args)
         model_name = prev_args.model_config["pretrained_lm"]
         return CONFIG_CLASS_MAP[model_name].from_pretrained(model_name)
+
+
+@dataclass
+class NLPModelOutput(ModelOutput):
+    loss: Optional[torch.FloatTensor] = None
+    logits: torch.FloatTensor = None
+    probabilities: Optional[torch.FloatTensor] = None
+    prediction: Optional[List] = None
+    hidden_states: Optional[Tuple[torch.FloatTensor]] = None
+    attentions: Optional[Tuple[torch.FloatTensor]] = None

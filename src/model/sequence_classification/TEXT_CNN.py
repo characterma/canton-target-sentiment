@@ -3,6 +3,7 @@ import torch.nn as nn
 from model.layer.fc import LinearLayer
 from model.layer.cnn import ConvLayer
 from model.layer.embedding import WordEmbeddings
+from model.utils import NLPModelOutput
 
 
 class TEXT_CNN(nn.Module):
@@ -63,7 +64,9 @@ class TEXT_CNN(nn.Module):
             )
         else:
             loss = None
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits
+        )
         return outputs

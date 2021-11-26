@@ -2,6 +2,7 @@ import torch
 import math
 import torch.nn as nn
 from model.layer.embedding import WordEmbeddings
+from model.utils import NLPModelOutput
 
 
 class StructuredSelfAttention(nn.Module):
@@ -343,7 +344,9 @@ class TGSAN(nn.Module):
                 )
         else:
             loss = None
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits, 
+        )
         return outputs

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 import uvicorn
 from fastapi import FastAPI
 
-from model import get_model
+from model import get_model, get_onnx_session
 from tokenizer import get_tokenizer
 from utils import load_config
 from label import get_label_to_id
@@ -16,7 +16,7 @@ from dataset.utils import get_model_inputs
 
     
 parser = argparse.ArgumentParser()
-parser.add_argument("--config_dir", type=str, default="../output/wbi/org_bert_avg_20210906_ext_fixed/model")
+parser.add_argument("--config_dir", type=str, default="../output/wbi/org_per_bert_avg_20210925_all_ext2/model")
 args = parser.parse_args()
 
 args = load_config(args)
@@ -45,9 +45,6 @@ feature = feature_class(
 
 feature_dict = feature.feature_dict
 model = get_model(args=args)
-model.set_return_options(
-    return_tensors=['probabilities']
-)
 batch = dict()
 for col in feature_dict:
     batch[col] = torch.stack([feature_dict[col]], dim=0).to(args.device)
@@ -70,3 +67,12 @@ torch.onnx.export(model,               # model being run
                       'attention_mask' : {0 : 'batch', 1: 'sequence'}, 
                       'token_type_ids' : {0 : 'batch', 1: 'sequence'}, 
                       'probabilities' : {0 : 'batch', 1: 'class'}})
+
+
+session = get_onnx_session(args=args)
+batch = dict()
+for col in feature_dict:
+    batch[col] = feature_dict[col].unsqueeze(0).numpy()
+output = session.run(None, input_feed=batch)
+print(output)
+print("Build onnx succeeded.")

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from transformers import BertPreTrainedModel
 import torch.nn.functional as F
-from model.utils import load_pretrained_bert, load_pretrained_config
+from model.utils import load_pretrained_bert, load_pretrained_config, NLPModelOutput
 from model.layer.fc import LinearLayer
 
 
@@ -34,7 +34,6 @@ class TDBERT(BertPreTrainedModel):
             activation=output_hidden_act_func,
             use_bn=False,
         )
-        self.return_tensors = None
         self.loss_func = nn.CrossEntropyLoss(reduction="none")
         self.to(args.device)
 
@@ -52,9 +51,6 @@ class TDBERT(BertPreTrainedModel):
         for param_name, param in self.pretrained_model.named_parameters():
             if "embeddings" in param_name:
                 param.requires_grad = False
-
-    def set_return_options(self, return_tensors=None):
-        self.return_tensors = return_tensors
 
     def forward(
         self,
@@ -78,21 +74,23 @@ class TDBERT(BertPreTrainedModel):
         )  # outputs: [B, S, Dim], target_mask: [B, S]
 
         logits = self.linear(tgt_h)
+        prediction = torch.argmax(logits, dim=1)
+        probabilities = F.softmax(logits, -1)
 
         if label is not None:
             loss = self.loss_func(logits.view(-1, self.num_labels), label.view(-1))
             loss = loss.mean()
+            outputs = NLPModelOutput(
+                loss=loss, 
+                prediction=prediction, 
+                logits=logits, 
+                probabilities=probabilities
+            )            
         else:
             loss = None
-
-        results = dict()
-        results['loss'] = loss
-        results['logits'] = logits
-        results['prediction'] = torch.argmax(logits, dim=1)
-        results['probabilities'] = F.softmax(logits, -1)
-
-        if self.return_tensors is None:
-            outputs = results
-        else:
-            outputs = [results[nme] for nme in self.return_tensors]
+            outputs = NLPModelOutput(
+                prediction=prediction, 
+                logits=logits, 
+                probabilities=probabilities
+            )
         return outputs

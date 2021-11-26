@@ -3,7 +3,7 @@ import torch.nn as nn
 from transformers import BertPreTrainedModel
 
 from model.layer.fc import LinearLayer
-from model.utils import load_pretrained_bert, load_pretrained_config
+from model.utils import load_pretrained_bert, load_pretrained_config, NLPModelOutput
 
 
 class BERT_AVG(BertPreTrainedModel):
@@ -64,10 +64,9 @@ class BERT_AVG(BertPreTrainedModel):
             )
         else:
             loss = None
-
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
-        outputs['attentions'] = lm['attentions']
-        # print(logits)
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits
+        )
         return outputs
