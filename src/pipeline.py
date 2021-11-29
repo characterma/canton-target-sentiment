@@ -216,6 +216,7 @@ class Pipeline:
             data_dict=data_dict, 
             tokenizer=self.tokenizer, 
             args=self.args, 
+            padding=False
         ).feature_dict
         
         # Making batch.
@@ -238,6 +239,11 @@ class Pipeline:
             results["prediction_id"] = prediction
             results["prediction"] = self.args.label_to_id_inv[prediction]
         return results
+
+    def explain(self, data_dict, method, params):
+        assert(self.task == "sequence_classification")
+
+        pass
 
     def _initialize(self, train_raw_data=None):
         logger.info("***** Initializing pipeline *****")
