@@ -9,6 +9,7 @@ from dataset.utils import get_model_inputs
 from model import get_model
 from trainer import evaluate, Trainer
 from tokenizer import get_tokenizer
+from explain import ExplainModel
 from utils import get_args, load_config, save_config, set_log_path
 
 
@@ -240,10 +241,36 @@ class Pipeline:
             results["prediction"] = self.args.label_to_id_inv[prediction]
         return results
 
-    def explain(self, data_dict, method, params):
+    def explain(self, data_dict, method, **kwargs):
         assert(self.task == "sequence_classification")
+        config = {'method': method}
+        config.update(kwargs)
+        explain_model = ExplainModel(
+            model=self.model, config=config
+        )
 
-        pass
+        self.model.eval()
+        feature = self.feature_class(
+            data_dict=data_dict, 
+            tokenizer=self.tokenizer, 
+            args=self.args, 
+            diagnosis=True,
+            padding=False
+        )
+
+        feature_dict = feature.feature_dict
+        diagnosis_dict = feature.diagnosis_dict
+        
+        # Making batch.
+        batch = dict()
+        for col in feature_dict:
+            batch[col] = feature_dict[col].unsqueeze(0).to(self.args.device)
+
+        scores = explain_model(batch)
+        scores = scores.tolist()[0]
+        assert(len(scores)==len(diagnosis_dict['tokens']))
+        scores = list(zip(diagnosis_dict['tokens'], scores))
+        return scores
 
     def _initialize(self, train_raw_data=None):
         logger.info("***** Initializing pipeline *****")

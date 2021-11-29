@@ -18,7 +18,7 @@ class WrappedModel(torch.nn.Module):
 
 
 class ExplainModel:
-    def __init__(self,model, config):
+    def __init__(self, model, config):
         # self.args = args
         self.model = model
         self.config = config 
@@ -26,10 +26,6 @@ class ExplainModel:
         self.method = self.config["method"]
         self.layer = self.config.get("layer", None)
         self.norm = self.config.get("norm", None)
-        self.model_output = self.config.get("model_output", None)
-        self.only_gradient = self.config.get("only_gradient", False)
-        self.times_gradient = self.config.get("times_gradient", False)
-        self.attn_agg_method = self.config.get("attn_agg_method", None)
 
         self.wrapped_model = WrappedModel(model=model)
         self.init_explain_model()
@@ -50,7 +46,6 @@ class ExplainModel:
         perturb[attention_mask!=1] = 0
         perturb[:, 0] = 1
         perturb[:, attention_mask.sum().item() - 1] = 1
-        # print(perturb)
         return perturb
 
     def interp_to_input(self, interp_sample, inputs, **kwargs):
