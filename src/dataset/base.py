@@ -105,7 +105,6 @@ class NLPFeature(abc.ABC):
     def __init__(self, data_dict, tokenizer, args, diagnosis=False, padding="max_length"):
         self.succeeded = True
         self.msg = ""
-        self.padding = padding
 
         required_features = get_model_inputs(args)
         prepro_config = args.prepro_config
@@ -118,8 +117,9 @@ class NLPFeature(abc.ABC):
             required_features=required_features,
             args=args,
             diagnosis=diagnosis,
+            padding=padding
         )
 
     @abc.abstractmethod
-    def get_feature(self, data_dict, tokenizer, required_features, args, diagnosis):
+    def get_feature(self, data_dict, tokenizer, required_features, args, diagnosis, padding):
         return NotImplemented

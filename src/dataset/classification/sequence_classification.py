@@ -6,7 +6,7 @@ from dataset.base import NLPFeature
 
 class SequenceClassificationFeature(NLPFeature):
     def get_feature(
-        self, data_dict, tokenizer, required_features, args, diagnosis=False
+        self, data_dict, tokenizer, required_features, args, diagnosis=False, padding='max_length'
     ):
         diagnosis_dict = dict()
         feature_dict = dict()
@@ -23,7 +23,7 @@ class SequenceClassificationFeature(NLPFeature):
             content,
             max_length=max_length,
             truncation=True,
-            padding=self.padding,
+            padding=padding,
             add_special_tokens=True,
             return_offsets_mapping=True,
         )

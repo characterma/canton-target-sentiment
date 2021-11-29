@@ -43,13 +43,13 @@ task_to_config = {
             'eval_params': {'batch_size': 32}, 
             'target_macro_f1': 1
         }, 
-        'TGSAN2': {
-            'text_prepro': None, 
-            'model_params': {'num_train_epochs': 50}, 
-            'train_params': {'batch_size': 16}, 
-            'eval_params': {'batch_size': 32}, 
-            'target_macro_f1': 1
-        }
+        # 'TGSAN2': {
+        #     'text_prepro': None, 
+        #     'model_params': {'num_train_epochs': 100}, 
+        #     'train_params': {'batch_size': 16}, 
+        #     'eval_params': {'batch_size': 32}, 
+        #     'target_macro_f1': 1
+        # }
     },  
     'chinese_word_segmentation': {
         'BERT_CRF': {
