@@ -45,8 +45,8 @@ def prediction_step(model, batch, args):
             results["prediction"].append(args.label_to_id_inv[p])
 
     results["probabilities"] = F.softmax(x["logits"], dim=-1).cpu().tolist()
-    if x["loss"] is not None:
-        results["loss"] = x["loss"].cpu().tolist()
+    if x.loss is not None:
+        results["loss"] = x.loss.cpu().tolist()
     else:
         results["loss"] = None
     return results
