@@ -61,20 +61,22 @@ class ExplainModel:
         attention_mask = attention_mask.unsqueeze(0)
         return (input_ids, attention_mask)
 
-    def get_target(self, inputs):
-        target = inputs.get("target", None)
-        if target is None:
-            logits = self.wrapped_model(**inputs)
-            target = logits.argmax(-1)
-        return target
+    def get_default_target(self, inputs):
+        logits = self.wrapped_model(**inputs)
+        target = logits.argmax(-1).item()
+        probs = F.softmax(logits, dim=-1)
+        prob = probs[0, target].item()
+        return target, prob
 
-    def take_norm(self, x):
+    def summarize_attributions(self, x):
         if self.norm is None:
             return x.mean(dim=-1) 
         elif self.norm == "l2":
             return x.norm(p=2, dim=-1)
-        else:
-            return None 
+        elif self.norm == "sum":
+            x = x.sum(dim=-1).squeeze(0)
+            x = x / torch.norm(x)
+            return x.unsqueeze(0)
 
     def init_explain_model(self):
         if self.method == "Random":
@@ -134,7 +136,14 @@ class ExplainModel:
                 model=self.wrapped_model,
             ) 
 
-    def __call__(self, inputs):
+    def get_bert_ref_input_ids(self, inputs, pad_token_id, sep_token_id, cls_token_id):
+        seq_len = inputs['attention_mask'].sum().item() - 2
+        ref_input_ids = [cls_token_id] + [pad_token_id] * seq_len + [sep_token_id]
+        return torch.tensor([ref_input_ids], device=inputs['attention_mask'].device)
+
+    def __call__(self, inputs, target=None, **kwargs):
+        target_prob = None
+
         if self.method == "Random":
             attention_mask = inputs["attention_mask"]
             scores = torch.rand(*attention_mask.size())
@@ -142,7 +151,8 @@ class ExplainModel:
             scores = scores * attention_mask
 
         elif self.method == "Saliency":
-            target = self.get_target(inputs)
+            if target is None:
+                target, target_prob = self.get_default_target(inputs)
             additional_forward_args = tuple(
                 [inputs[col] for col in inputs if col != "input_ids"]
             )
@@ -157,47 +167,65 @@ class ExplainModel:
                 target_ind=target,
                 additional_forward_args=additional_forward_args,
             )
-            scores = self.take_norm(layer_gradients[0])
+            scores = self.summarize_attributions(layer_gradients[0])
 
         elif self.method == "GradientXActivation":
             additional_forward_args = tuple(
                 [inputs[col] for col in inputs if col != "input_ids"]
             )
-            target = self.get_target(inputs)
+            if target is None:
+                target, target_prob = self.get_default_target(inputs)
             attributions = self.explain_model.attribute(
                 inputs=inputs["input_ids"],
                 target=target,
                 additional_forward_args=additional_forward_args,
             )
-            scores = self.take_norm(attributions)
+            scores = self.summarize_attributions(attributions)
 
         elif self.method == "IntegratedGradients":
+            if  (kwargs.get('pad_token_id') is not None and 
+            kwargs.get('sep_token_id') is not None and 
+            kwargs.get('cls_token_id') is not None):
+            
+                baselines = self.get_bert_ref_input_ids(
+                    inputs=inputs, 
+                    pad_token_id=kwargs.get('pad_token_id'), 
+                    sep_token_id=kwargs.get('sep_token_id'), 
+                    cls_token_id=kwargs.get('cls_token_id')
+                )
+            else:
+                baselines = None
+
             additional_forward_args = tuple(
                 [inputs[col] for col in inputs if col != "input_ids"]
             )
-            target = self.get_target(inputs)
+            if target is None:
+                target, target_prob = self.get_default_target(inputs)
             attributions = self.explain_model.attribute(
                 inputs=inputs["input_ids"],
                 target=target,
+                baselines=baselines,
                 additional_forward_args=additional_forward_args,
             )
-            scores = self.take_norm(attributions)
+            scores = self.summarize_attributions(attributions)
 
         elif self.method == "DeepLift":
             additional_forward_args = tuple(
                 [inputs[col] for col in inputs if col != "input_ids"]
             )
-            target = self.get_target(inputs)
+            if target is None:
+                target, target_prob = self.get_default_target(inputs)
             attributions = self.explain_model.attribute(
                 inputs=inputs["input_ids"],
                 target=target,
                 additional_forward_args=additional_forward_args,
             )
-            scores = self.take_norm(attributions)
+            scores = self.summarize_attributions(attributions)
 
         elif self.method == "Lime":
             n_samples = inputs.get("n_samples", 500)
-            target = self.get_target(inputs)
+            if target is None:
+                target, target_prob = self.get_default_target(inputs)
             attributions = self.explain_model.attribute(
                 inputs=(inputs["input_ids"], inputs['attention_mask']),
                 additional_forward_args=(None,),
@@ -208,7 +236,8 @@ class ExplainModel:
             scores = attributions
 
         elif self.method == "WordOmission":
-            target = self.get_target(inputs)
+            if target is None:
+                target, target_prob = self.get_default_target(inputs)
             scores = self.explain_model.attribute(
                 input_ids=inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],
@@ -216,4 +245,4 @@ class ExplainModel:
             )
         else:
             scores = None
-        return scores
+        return scores, target, target_prob

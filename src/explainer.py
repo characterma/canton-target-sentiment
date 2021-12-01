@@ -51,7 +51,15 @@ class Explainer:
             cache_id = 0
             for batch in tqdm(dataloader):
                 inputs = self.make_inputs(batch)
-                scores = explanation_model(inputs=inputs)
+
+                scores, attr_target, attr_target_prob = explain_model(
+                    inputs=inputs, 
+                    target=None, 
+                    pad_token_id=dataset.tokenizer.pad_token_id if hasattr(self.tokenizer, 'pad_token_id') else None, 
+                    sep_token_id=dataset.tokenizer.sep_token_id if hasattr(self.tokenizer, 'pad_token_id') else None, 
+                    cls_token_id=dataset.tokenizer.cls_token_id if hasattr(self.tokenizer, 'pad_token_id') else None
+                )
+
                 explanations.extend(scores.tolist())
 
                 if self.run_faithfulness:
@@ -67,6 +75,7 @@ class Explainer:
                         unk_token_id=unk_token_id,
                         pad_token_id=pad_token_id
                     )
+                    
                     masked_scores.extend(faithfulness.masked_scores)
                     sufficiency.extend(faithfulness.sufficiency)
                     comprehensiveness.extend(faithfulness.comprehensiveness)

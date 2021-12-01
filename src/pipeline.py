@@ -266,11 +266,18 @@ class Pipeline:
         for col in feature_dict:
             batch[col] = feature_dict[col].unsqueeze(0).to(self.args.device)
 
-        scores = explain_model(batch)
+        scores, attr_target, attr_target_prob = explain_model(
+            inputs=batch, 
+            target=None, 
+            pad_token_id=self.tokenizer.pad_token_id if hasattr(self.tokenizer, 'pad_token_id') else None, 
+            sep_token_id=self.tokenizer.sep_token_id if hasattr(self.tokenizer, 'sep_token_id') else None, 
+            cls_token_id=self.tokenizer.cls_token_id if hasattr(self.tokenizer, 'cls_token_id') else None
+        )
+
         scores = scores.tolist()[0]
-        assert(len(scores)==len(diagnosis_dict['tokens']))
-        scores = list(zip(diagnosis_dict['tokens'], scores))
-        return scores
+        tokens = diagnosis_dict['tokens']
+        assert(len(scores)==len(tokens))
+        return tokens, scores, attr_target, attr_target_prob
 
     def _initialize(self, train_raw_data=None):
         logger.info("***** Initializing pipeline *****")
