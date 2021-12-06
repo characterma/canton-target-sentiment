@@ -1,6 +1,6 @@
-import sklearn
 from seqeval.scheme import IOB2
 from seqeval.metrics import classification_report as seqeval_classification_report
+from sklearn.metrics import classification_report as sklearn_classification_report
 
 
 def compute_metrics(task, labels, predictions):
@@ -12,9 +12,8 @@ def compute_metrics(task, labels, predictions):
 
 
 def compute_metrics_sequence_classification(labels, predictions):
-    # print(labels)
-    # print(predictions)
-    report = sklearn.metrics.classification_report(
+
+    report = sklearn_classification_report(
         labels, predictions, output_dict=True
     )
     labels_unique = set(labels)

@@ -17,4 +17,4 @@ openpyxl
 xlsxwriter
 scrapbook
 papermill
-torch==1.3.0
+torch==1.6.0
