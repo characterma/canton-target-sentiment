@@ -1,6 +1,8 @@
 import torch 
 import logging
 import os
+import numpy as np
+import pandas as pd
 from pathlib import Path
 
 from label import get_label_to_id
@@ -10,6 +12,7 @@ from model import get_model
 from trainer import evaluate, Trainer
 from tokenizer import get_tokenizer
 from explain import ExplainModel
+from explain.faithfulness import Comprehensiveness
 from utils import get_args, load_config, save_config, set_log_path
 
 
@@ -182,25 +185,18 @@ class Pipeline:
             tokenizer=self.tokenizer, 
             args=self.args
         )
-        if self.train_dataset is not None:
-            train_metrics = evaluate(
-                model=self.model, 
-                eval_dataset=self.train_dataset, 
-                args=self.args
-            )
-        if self.dev_dataset is not None:
-            dev_metrics = evaluate(
-                model=self.model, 
-                eval_dataset=self.dev_dataset, 
-                args=self.args
-            )
-            
+
         # Start evaluation.
         test_metrics = evaluate(
             model=self.model, 
             eval_dataset=self.test_dataset, 
             args=self.args
         )
+
+        # save model_dir
+        metrics_df = pd.DataFrame(data=[test_metrics])
+        metrics_df.to_csv(self.args.result_dir / "result_pipeline.csv", index=False)
+
         return test_metrics
 
     def predict(self, data_dict):
@@ -241,7 +237,7 @@ class Pipeline:
             results["prediction"] = self.args.label_to_id_inv[prediction]
         return results
 
-    def explain(self, data_dict, method, **kwargs):
+    def explain(self, data_dict, method, enable_faithfulness=False, **kwargs):
         assert(self.task == "sequence_classification")
         config = {'method': method}
         config.update(kwargs)
@@ -260,6 +256,7 @@ class Pipeline:
 
         feature_dict = feature.feature_dict
         diagnosis_dict = feature.diagnosis_dict
+        tokens_encoded = feature.tokens_encoded
         
         # Making batch.
         batch = dict()
@@ -274,10 +271,24 @@ class Pipeline:
             cls_token_id=self.tokenizer.cls_token_id if hasattr(self.tokenizer, 'cls_token_id') else None
         )
 
+        if enable_faithfulness:
+            faithfulness = np.mean(
+                Comprehensiveness(
+                    model=self.model, 
+                    inputs=batch, 
+                    scores=scores, 
+                    unk_token_id=self.tokenizer.unk_token_id, 
+                    pad_token_id=self.tokenizer.pad_token_id
+                ).comprehensiveness
+            )
+        else:
+            faithfulness = None
+
         scores = scores.tolist()[0]
         tokens = diagnosis_dict['tokens']
         assert(len(scores)==len(tokens))
-        return tokens, scores, attr_target, attr_target_prob
+
+        return tokens, scores, attr_target, attr_target_prob, tokens_encoded, faithfulness
 
     def _initialize(self, train_raw_data=None):
         logger.info("***** Initializing pipeline *****")

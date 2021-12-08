@@ -57,7 +57,7 @@ class TEXT_CNN(nn.Module):
             x = self.cnn_dp(x)
         logits = self.linear(x)  # [B, Nc]
 
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
+        prediction = torch.argmax(logits, dim=1)
         if label is not None:
             loss = self.loss_func(
                 logits.view(-1, self.num_labels), label.view(-1)  # [N, C]  # [N]

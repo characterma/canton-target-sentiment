@@ -56,4 +56,7 @@ class SequenceClassificationFeature(NLPFeature):
             if label is not None and label_to_id is not None:
                 label = label_to_id[str(label)]
                 feature_dict["label"] = torch.tensor(label).long()
-            return feature_dict, diagnosis_dict
+
+        self.feature_dict = feature_dict
+        self.diagnosis_dict = diagnosis_dict
+        self.tokens_encoded = tokens_encoded

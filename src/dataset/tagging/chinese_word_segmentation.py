@@ -80,4 +80,7 @@ class ChineseWordSegmentationFeature(NLPFeature):
             diagnosis_dict["label"] = label
             diagnosis_dict["label_id"] = label_id
 
-        return feature_dict, diagnosis_dict
+        self.feature_dict = feature_dict
+        self.diagnosis_dict = diagnosis_dict
+        self.tokens_encoded = tokens_encoded
+

@@ -105,13 +105,16 @@ class NLPFeature(abc.ABC):
     def __init__(self, data_dict, tokenizer, args, diagnosis=False, padding="max_length"):
         self.succeeded = True
         self.msg = ""
+        self.feature_dict = {}
+        self.diagnosis_dict = {}
+        self.tokens_encoded = None
 
         required_features = get_model_inputs(args)
         prepro_config = args.prepro_config
 
         preprocessor = Preprocessor(data_dict=data_dict, steps=prepro_config["steps"])
 
-        self.feature_dict, self.diagnosis_dict = self.get_feature(
+        self.get_feature(
             data_dict=preprocessor.data_dict,
             tokenizer=tokenizer,
             required_features=required_features,

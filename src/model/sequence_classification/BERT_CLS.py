@@ -44,7 +44,7 @@ class BERT_CLS(BertPreTrainedModel):
             )
         else:
             loss = None
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
+        prediction = torch.argmax(logits, dim=1)
         outputs = NLPModelOutput(
             loss=loss, 
             prediction=prediction, 

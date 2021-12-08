@@ -47,7 +47,7 @@ class CNN_CRF(nn.Module):
         self.crf = LinearChainCRF(fc_in, len(args.label_to_id))
         self.to(args.device)
 
-    def forward(self, input_ids, label=None, attention_mask=None, **kwargs):
+    def forward(self, input_ids, attention_mask,  label=None, **kwargs):
         outputs = dict()
         x = self.embed(input_ids)
 

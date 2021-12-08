@@ -75,7 +75,7 @@ class TargetClassificationFeature(NLPFeature):
             )
 
         if sum(target_mask) == 0:
-            return None, diagnosis_dict
+            feature_dict = None
         else:
 
             if "input_ids" in required_features:
@@ -94,4 +94,6 @@ class TargetClassificationFeature(NLPFeature):
                 label = label_to_id[label]
                 feature_dict["label"] = torch.tensor(label).long()
 
-            return feature_dict, diagnosis_dict
+        self.feature_dict = feature_dict
+        self.diagnosis_dict = diagnosis_dict
+        self.tokens_encoded = tokens_encoded

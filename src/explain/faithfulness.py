@@ -4,8 +4,14 @@ import numpy as np
 import pandas as pd 
 
 
-class Faithfulness:
-    def __init__(self, model, inputs, scores, mask_or_remove, unk_token_id, pad_token_id):
+import torch
+import torch.nn.functional as F
+import numpy as np
+import pandas as pd 
+
+
+class Comprehensiveness:
+    def __init__(self, model, inputs, scores, unk_token_id, pad_token_id):
         """
         """
         self.model = model
@@ -16,9 +22,148 @@ class Faithfulness:
         self.probabilities = self.get_softmax_logits(
             logits=outputs["logits"],
         )
-        self.mask_or_remove = mask_or_remove
         self.unk_token_id = unk_token_id
         self.pad_token_id = pad_token_id
+        self.device = self.inputs["input_ids"].device
+        self.run()
+
+    def run(self):
+        #  Test case
+        self.sorted_idxs, self.sorted_scores, self.lengths = self.get_sorted_idxs()
+        self.total_scores = [np.sum(s) for s in self.sorted_scores]
+        self.masked_scores = self.get_masked_scores()
+        self.comprehensiveness = self.get_comprehensiveness()
+
+    def get_sorted_idxs(self):
+        output1 = []
+        output2 = []
+        output3 = []
+        lengths = self.inputs["attention_mask"].sum(1)
+        
+        for idx, l in enumerate(lengths.tolist()):
+            scores_ = self.scores[idx, :l].tolist()
+            scores = []
+            exclude_idx = [l-1, 0]
+            for i, s in enumerate(scores_):
+                if i not in exclude_idx:
+                    scores.append([i, s])
+            scores = sorted(scores, key=lambda x: -x[1])
+            sorted_idxs = [s[0] for s in scores]
+            sorted_scores = [s[1] for s in scores]
+            # sorted_idxs = torch.tensor(sorted_idxs).to(self.scores.device).long()
+            output1.append(sorted_idxs)
+            output2.append(sorted_scores)
+            output3.append(len(sorted_scores))
+        return output1, output2, output3
+
+    def get_softmax_logits(self, logits):
+        return F.softmax(logits, -1)
+
+    def get_amended_tokens(self, to_mask, idx):
+        max_length = self.inputs["input_ids"].size()[-1]
+        to_keep = [i for i in range(max_length) if i not in to_mask]
+        input_ids = torch.clone(self.inputs["input_ids"][idx, :])
+        input_ids = input_ids[to_keep].tolist()
+        input_ids = input_ids + [self.pad_token_id] * max(0, max_length - len(input_ids))
+        attention_mask = torch.clone(self.inputs["attention_mask"][idx, :])
+        attention_mask = attention_mask[to_keep].tolist()
+        attention_mask = attention_mask + [0] * max(0, max_length - len(attention_mask))
+        input_ids = torch.Tensor(input_ids).to(self.device).long()
+        attention_mask = torch.Tensor(attention_mask).to(self.device).long()
+        sample = self.replace_feature({"input_ids": input_ids, "attention_mask": attention_mask}, idx)
+        return sample
+
+    def mask_top_k(self, idx, k):
+        """
+        Args:
+            idx: int
+            k: int
+        """
+        to_mask = self.sorted_idxs[idx][:k]
+        keep_score = np.sum(self.sorted_scores[idx][k:])
+        mask_score = np.sum(self.sorted_scores[idx][:k])
+        sample = self.get_amended_tokens(to_mask, idx)
+        return sample, keep_score, mask_score, to_mask
+
+    def concat_batches(self, batches):
+        output = dict()
+        for b in batches:
+            for col in b:
+                if col in output:
+                    output[col].append(b[col])
+                else:
+                    output[col] = [b[col]]
+        for col in output:
+            output[col] = torch.cat(output[col], dim=0)
+        return output
+
+    def get_masked_scores(self):
+        output = []
+        for idx, cls_id in enumerate(self.predicted_cls):
+            tmp = []
+            sz = max(int(self.lengths[idx] / 10), 1)
+            ks = []
+            batches = []
+            for k in range(sz, self.lengths[idx], sz):
+                sample, keep_score, mask_score, mask_pos = self.mask_top_k(idx=idx, k=k)
+                ks.append(k)
+                batches.append(sample)
+            logits = self.predict(inputs=self.concat_batches(batches))["logits"]
+            probabilities = self.get_softmax_logits(logits=logits)
+            for i, k in enumerate(ks):
+                tmp.append(
+                    {
+                        "k": k, 
+                        "mask_top_k_input_ids": sample["input_ids"].tolist(), 
+                        "mask_top_k_keep_score": keep_score, 
+                        "mask_top_k_mask_score": mask_score, 
+                        "mask_top_k_mask_idxs": mask_pos, 
+                        "mask_top_k_probabilities": probabilities[i, :].tolist(), 
+                    }
+                )
+            output.append(tmp)
+        return output
+
+    def get_comprehensiveness(self):
+        comprehensiveness = []
+        for idx, cls_id in enumerate(self.predicted_cls):
+            tmp = []
+            for i in range(len(self.masked_scores[idx])):
+                row = self.masked_scores[idx][i]
+                tmp.append(self.probabilities[idx, cls_id].tolist() - row['mask_top_k_probabilities'][cls_id])
+            comprehensiveness.append(tmp)
+        return comprehensiveness
+
+    def replace_feature(self, key_value_pairs, idx):
+        batch = dict()
+        for col in self.inputs:
+            if col in key_value_pairs.keys():
+                batch[col] = key_value_pairs[col].unsqueeze(0)
+            else:
+                batch[col] = self.inputs[col].index_select(0, torch.tensor([idx], device=self.device))
+        return batch
+
+    def predict(self, inputs):
+        self.model.eval()
+        outputs = self.model(**inputs)
+        return outputs
+
+
+class Faithfulness:
+    def __init__(self, model, inputs, scores, unk_token_id, pad_token_id, metric=None):
+        """
+        """
+        self.model = model
+        self.inputs = inputs
+        self.scores = scores
+        outputs = self.predict(inputs=self.inputs)
+        self.predicted_cls = outputs["prediction"]
+        self.probabilities = self.get_softmax_logits(
+            logits=outputs["logits"],
+        )
+        self.unk_token_id = unk_token_id
+        self.pad_token_id = pad_token_id
+        self.metric = metric
         self.device = self.inputs["input_ids"].device
         self.run()
 
@@ -58,23 +203,18 @@ class Faithfulness:
     def get_softmax_logits(self, logits):
         return F.softmax(logits, -1)
 
-    def get_masked_tokens(self, to_mask, idx):
-        if self.mask_or_remove=="mask":
-            input_ids = torch.clone(self.inputs["input_ids"][idx, :])
-            input_ids[to_mask] = self.unk_token_id
-            sample = self.replace_feature({"input_ids": input_ids}, idx)
-        else:  # remove
-            max_length = self.inputs["input_ids"].size()[-1]
-            to_keep = [i for i in range(max_length) if i not in to_mask]
-            input_ids = torch.clone(self.inputs["input_ids"][idx, :])
-            input_ids = input_ids[to_keep].tolist()
-            input_ids = input_ids + [self.pad_token_id] * max(0, max_length - len(input_ids))
-            attention_mask = torch.clone(self.inputs["attention_mask"][idx, :])
-            attention_mask = attention_mask[to_keep].tolist()
-            attention_mask = attention_mask + [0] * max(0, max_length - len(attention_mask))
-            input_ids = torch.Tensor(input_ids).to(self.device).long()
-            attention_mask = torch.Tensor(attention_mask).to(self.device).long()
-            sample = self.replace_feature({"input_ids": input_ids, "attention_mask": attention_mask}, idx)
+    def get_amended_tokens(self, to_mask, idx):
+        max_length = self.inputs["input_ids"].size()[-1]
+        to_keep = [i for i in range(max_length) if i not in to_mask]
+        input_ids = torch.clone(self.inputs["input_ids"][idx, :])
+        input_ids = input_ids[to_keep].tolist()
+        input_ids = input_ids + [self.pad_token_id] * max(0, max_length - len(input_ids))
+        attention_mask = torch.clone(self.inputs["attention_mask"][idx, :])
+        attention_mask = attention_mask[to_keep].tolist()
+        attention_mask = attention_mask + [0] * max(0, max_length - len(attention_mask))
+        input_ids = torch.Tensor(input_ids).to(self.device).long()
+        attention_mask = torch.Tensor(attention_mask).to(self.device).long()
+        sample = self.replace_feature({"input_ids": input_ids, "attention_mask": attention_mask}, idx)
         return sample
 
     def mask_k_th(self, idx, k):
@@ -86,7 +226,7 @@ class Faithfulness:
         to_mask = [self.sorted_idxs[idx][k-1]]
         keep_score = self.sorted_scores[idx][k-1]
         mask_score = self.total_scores[idx] - keep_score
-        sample = self.get_masked_tokens(to_mask, idx)
+        sample = self.get_amended_tokens(to_mask, idx)
         return sample, keep_score, mask_score, to_mask
 
     def keep_k_th(self, idx, k):
@@ -98,7 +238,7 @@ class Faithfulness:
         to_mask = [i for i in self.sorted_idxs[idx] if i!=self.sorted_idxs[idx][k-1]]
         mask_score = self.sorted_scores[idx][k-1]
         keep_score = self.total_scores[idx] - mask_score
-        sample = self.get_masked_tokens(to_mask, idx)
+        sample = self.get_amended_tokens(to_mask, idx)
         return sample, keep_score, mask_score, to_mask
 
     def mask_top_k(self, idx, k):
@@ -110,7 +250,7 @@ class Faithfulness:
         to_mask = self.sorted_idxs[idx][:k]
         keep_score = np.sum(self.sorted_scores[idx][k:])
         mask_score = np.sum(self.sorted_scores[idx][:k])
-        sample = self.get_masked_tokens(to_mask, idx)
+        sample = self.get_amended_tokens(to_mask, idx)
         return sample, keep_score, mask_score, to_mask
 
     def keep_top_k(self, idx, k):
@@ -124,7 +264,7 @@ class Faithfulness:
         to_mask = self.sorted_idxs[idx][k:]
         keep_score = np.sum(self.sorted_scores[idx][:k])
         mask_score = np.sum(self.sorted_scores[idx][k:])
-        sample = self.get_masked_tokens(to_mask, idx)
+        sample = self.get_amended_tokens(to_mask, idx)
         return sample, keep_score, mask_score, to_mask
 
     def concat_batches(self, batches):

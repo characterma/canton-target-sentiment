@@ -68,7 +68,7 @@ class TGSAN2(nn.Module):
 
         tgt = self.pool_target(x, target_mask)
         logits = self.classifier(tgt)
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
+        prediction = torch.argmax(logits, dim=1)
 
         if label is not None:
             loss = self.loss_fct(logits.view(-1, self.num_labels), label.view(-1))

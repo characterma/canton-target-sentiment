@@ -36,6 +36,7 @@ class BERT_CRF(BertPreTrainedModel):
         )
         logits = lm["last_hidden_state"]
         logits = self.bert_dropout(logits)
+
         prediction, scores = self.crf.viterbi_decode(
             logits, length_index=attention_mask
         )  # [B, 1, L], [B, 1]

@@ -63,7 +63,6 @@ class Explainer:
                 explanations.extend(scores.tolist())
 
                 if self.run_faithfulness:
-                    mask_or_remove = config.get('mask_or_remove', 'remove')
                     unk_token_id = dataset.tokenizer.unk_token_id
                     pad_token_id = dataset.tokenizer.pad_token_id
 
@@ -71,7 +70,6 @@ class Explainer:
                         model=self.model,
                         inputs=inputs,
                         scores=scores,
-                        mask_or_remove=mask_or_remove,
                         unk_token_id=unk_token_id,
                         pad_token_id=pad_token_id
                     )

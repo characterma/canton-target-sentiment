@@ -322,7 +322,7 @@ class TGSAN(nn.Module):
         ctx_vec, _ = self.ctx_tgt_an(tgt_vec, ctx_r, ctx_r, self.r_mask)  # [B, 1, H]
         # OUTPUT
         logits = self.fc_active(self.fc(ctx_vec.squeeze(1)))  # [B, Nc]
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
+        prediction = torch.argmax(logits, dim=1)
 
         penal_term = tgt_penal
         if ctx_penal is not None:

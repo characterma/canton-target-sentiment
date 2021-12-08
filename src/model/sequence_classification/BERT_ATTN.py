@@ -86,7 +86,7 @@ class BERT_ATTN(BertPreTrainedModel):
         h = h.squeeze(1)
 
         logits = self.linear(h)
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
+        prediction = torch.argmax(logits, dim=1)
 
         if label is not None:
             loss = self.loss_func(

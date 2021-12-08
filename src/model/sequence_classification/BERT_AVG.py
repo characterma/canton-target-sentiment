@@ -56,7 +56,7 @@ class BERT_AVG(BertPreTrainedModel):
         h = lm["last_hidden_state"]
         h = self.avg_pool(h, attention_mask=attention_mask)
         logits = self.linear(h)
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
+        prediction = torch.argmax(logits, dim=1)
         if label is not None:
             loss = self.loss_func(
                 logits,  # [N, C]
