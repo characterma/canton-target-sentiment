@@ -38,6 +38,9 @@ class TestEndToEnd(unittest.TestCase):
                 code = os.system(f"python build_onnx.py --config_dir='../config/examples/{task_model}'")
                 self.assertEqual(code, 0, task_model)
 
+                code = os.system(f"python optimize_onnx.py --config_dir='../config/examples/{task_model}'")
+                self.assertEqual(code, 0, task_model)
+
     def tearDown(self):
         for task_model in self.task_models:
             os.system(f"rm -rf ../config/examples/{task_model}/result")
