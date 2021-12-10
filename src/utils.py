@@ -103,46 +103,57 @@ def save_config(args):
     shutil.copy("../config/model.yaml", args.model_dir / "model.yaml")
 
 
-def combine_and_save_metrics(metrics, args):
+def combine_and_save_metrics(metrics, args, suffix=None):
     metrics = [m for m in metrics if m is not None]
     metrics_df = pd.DataFrame(data=metrics)
-    filename = "result_test_only.csv" if args.test_only else "result.csv"
+    if suffix is not None:
+        filename = f"result_{suffix}.csv"
+    else:
+        filename = "result_test_only.csv" if args.test_only else "result.csv"
     metrics_df.to_csv(args.result_dir / filename, index=False)
 
 
-def combine_and_save_statistics(datasets, args):
+def combine_and_save_statistics(datasets, args, suffix=None):
     datasets = [ds for ds in datasets if ds is not None]
     if hasattr(datasets[0], "diagnosis_df"):
         diagnosis_df = pd.concat([ds.diagnosis_df for ds in datasets])
         try:
-            filename = (
-                "diagnosis_test_only.xlsx" if args.test_only else "diagnosis.xlsx"
-            )
-
+            if suffix is not None:
+                filename = f"diagnosis_{suffix}.xlsx"
+            else:
+                filename = (
+                    "diagnosis_test_only.xlsx" if args.test_only else "diagnosis.xlsx"
+                )
             writer = pd.ExcelWriter(args.result_dir / filename, engine='xlsxwriter')
             diagnosis_df.to_excel(writer, index=False)
             writer.save()
+        except Exception as e:
+            print(e)
 
+        if suffix is not None:
+            filename = f"diagnosis_{suffix}.pkl"
+        else:
             filename = (
                 "diagnosis_test_only.pkl" if args.test_only else "diagnosis.pkl"
             )
-            with open(args.result_dir / filename, "wb") as f:
-                pickle.dump(diagnosis_df, f)
-        except Exception as e:
-            print("Failed saving diagnosis_df to excel.", e)
-            filename = "diagnosis_test_only.pkl" if args.test_only else "diagnosis.pkl"
-            with open(args.result_dir / filename, "wb") as f:
-                pickle.dump(diagnosis_df, f)
+        with open(args.result_dir / filename, "wb") as f:
+            pickle.dump(diagnosis_df, f)
 
     if hasattr(datasets[0], "get_data_analysis"):
         statistics_df = pd.DataFrame(data=[ds.get_data_analysis() for ds in datasets])
         try:
-            filename = (
-                "statistics_test_only.csv" if args.test_only else "statistics.csv"
-            )
+            if suffix is not None:
+                filename = f"statistics_{suffix}.csv"
+            else:
+                filename = (
+                    "statistics_test_only.csv" if args.test_only else "statistics.csv"
+                )
             statistics_df.to_csv(args.result_dir / filename, index=False)
         except Exception as e:
             print(e)
-            filename = "statistics_test_only.pkl" if args.test_only else "statistics.pkl"
+            if suffix is not None:
+                filename = f"statistics_{suffix}.pkl"
+            else:
+                filename = "statistics_test_only.pkl" if args.test_only else "statistics.pkl"
             with open(args.result_dir / filename, "wb") as f:
                 pickle.dump(statistics_df, f)

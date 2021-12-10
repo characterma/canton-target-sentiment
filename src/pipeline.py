@@ -14,6 +14,7 @@ from tokenizer import get_tokenizer
 from explain import ExplainModel
 from explain.faithfulness import Comprehensiveness
 from utils import get_args, load_config, save_config, set_log_path
+from utils import combine_and_save_metrics, combine_and_save_statistics
 
 
 logger = logging.getLogger(__name__)
@@ -192,11 +193,8 @@ class Pipeline:
             eval_dataset=self.test_dataset, 
             args=self.args
         )
-
-        # save model_dir
-        metrics_df = pd.DataFrame(data=[test_metrics])
-        metrics_df.to_csv(self.args.result_dir / "result_pipeline.csv", index=False)
-
+        combine_and_save_metrics(metrics=[test_metrics], args=self.args, suffix="pipeline_test")
+        combine_and_save_statistics(datasets=[self.test_dataset], args=self.args, suffix="pipeline_test")
         return test_metrics
 
     def predict(self, data_dict):
