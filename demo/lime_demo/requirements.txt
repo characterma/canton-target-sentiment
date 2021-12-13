@@ -1,0 +1,4 @@
+numpy
+lime
+streamlit
+requests
