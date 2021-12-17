@@ -2,6 +2,7 @@ import torch
 import math
 import torch.nn as nn
 from model.layer.embedding import WordEmbeddings
+from model.utils import NLPModelOutput
 
 
 class StructuredSelfAttention(nn.Module):
@@ -185,6 +186,7 @@ class TGSAN(nn.Module):
             emb_dim=args.model_config["emb_dim"],
             vocab_size=args.vocab_size,
             emb_dropout=args.model_config["emb_dropout"],
+            word_to_id=args.word_to_id
         )
         emb_dim = self.embed.emb_dim
         # Bi-LSTM encoder
@@ -290,7 +292,7 @@ class TGSAN(nn.Module):
         idx_ori = idx_sort.sort()[1]
         x = x.index_select(0, idx_sort)
         x = nn.utils.rnn.pack_padded_sequence(
-            x, lens_sort, batch_first=True, enforce_sorted=True
+            x, lens_sort.cpu(), batch_first=True, enforce_sorted=True
         )
         self.bilstm.flatten_parameters()
         x, _ = self.bilstm(x)
@@ -320,7 +322,7 @@ class TGSAN(nn.Module):
         ctx_vec, _ = self.ctx_tgt_an(tgt_vec, ctx_r, ctx_r, self.r_mask)  # [B, 1, H]
         # OUTPUT
         logits = self.fc_active(self.fc(ctx_vec.squeeze(1)))  # [B, Nc]
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
+        prediction = torch.argmax(logits, dim=1)
 
         penal_term = tgt_penal
         if ctx_penal is not None:
@@ -342,7 +344,9 @@ class TGSAN(nn.Module):
                 )
         else:
             loss = None
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits, 
+        )
         return outputs

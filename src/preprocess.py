@@ -1,6 +1,7 @@
 # coding=utf-8
 import re
 import copy
+import pickle as pkl
 from opencc import OpenCC
 
 
@@ -76,6 +77,22 @@ class Preprocessor:
         )
         add_len = len(self.data_dict["headline"]) + len(sep_token)
         self.data_dict["target_locs"] = self.data_dict['target_locs_hl'] + [[x[0] + add_len, x[1] + add_len] for x in self.data_dict['target_locs_ct']]
+
+    def concat_pub_code(self):
+        sep_token = " [SEP]"
+        self.data_dict["content"] = sep_token.join(
+            [self.data_dict["pub_code"], self.data_dict["content"]]  #  try both directions
+        )
+        add_len = len(self.data_dict["pub_code"]) + len(sep_token)
+        self.data_dict["target_locs"] = [[x[0] + add_len, x[1] + add_len] for x in self.data_dict['target_locs']]
+
+    def concat_entity_name(self):
+        sep_token = " [SEP]"
+        self.data_dict["content"] = sep_token.join(
+            [self.data_dict["entity"], self.data_dict["content"]]  #  try both directions
+        )
+        add_len = len(self.data_dict["entity"]) + len(sep_token)
+        self.data_dict["target_locs"] = [[x[0] + add_len, x[1] + add_len] for x in self.data_dict['target_locs']]
 
     def convert_java_index(self):
         assert "content" in self.data_dict
@@ -169,9 +186,9 @@ class Preprocessor:
         def get_keep_before_idx(text, keep_before_text):
             keep_before_idx = 0
             for s in keep_before_text:
-                idx = text.find(s)
-                if idx > keep_before_idx:
-                    keep_before_idx = idx 
+                for m in re.finditer(s, text):
+                    if m and m.end() > keep_before_idx:
+                        keep_before_idx = m.end() 
             return keep_before_idx
 
         def reconstruct_target_locs(reconst_sents, sents, tid_to_sid, tid_to_locs):
@@ -182,6 +199,7 @@ class Preprocessor:
                 sid_to_tid[sid].append(tid)
 
             target_locs = []
+            tids = []
             cur_len = 0
             for sid in reconst_sents:
                 for tid in sid_to_tid[sid]:
@@ -189,8 +207,17 @@ class Preprocessor:
                     target_locs.append(
                         [start_idx + cur_len, end_idx + cur_len]
                     )
+                    tids.append(tid)
                 cur_len += len(sents[sid])
-            return target_locs
+            return target_locs, tids
+
+        def validate_target_locs(reconst_content, reconst_target_locs, tids, tid_to_text):
+            reconst_target_texts = [reconst_content[t[0]:t[1]] for t in reconst_target_locs]
+            original_target_texts = [tid_to_text[tid] for tid in tids]
+            for t1, t2 in zip(reconst_target_texts, original_target_texts):
+                t1 = t1.strip()
+                t2 = t2.strip()
+                assert(t1==t2)
 
         split_text = [
             "\?", 
@@ -204,7 +231,7 @@ class Preprocessor:
 
         keep_before_text = [
             "[SEP]", 
-            "=Shared Post="
+            # "=Shared Post="
         ]
 
         split_pttn = "({0})".format("|".join(split_text))
@@ -212,9 +239,11 @@ class Preprocessor:
 
         tid_to_sid = {}
         tid_to_locs = {}
+        tid_to_text = {}
         tid_to_neighbor = {}
 
         for tid, (start_idx, end_idx) in enumerate(self.data_dict["target_locs"]):
+            tid_to_text[tid] = self.data_dict["content"][start_idx:end_idx]
             sid, start_idx, end_idx = find_idices_after_split(
                 start_idx, end_idx, sents
             )
@@ -236,5 +265,9 @@ class Preprocessor:
             reconst_sids.extend(next_sids)
 
         reconst_sids = sorted(list(set(reconst_sids)))
-        self.data_dict["content"] = "".join([sents[i] for i in reconst_sids])
-        self.data_dict["target_locs"] = reconstruct_target_locs(reconst_sids, sents, tid_to_sid, tid_to_locs)
+        reconst_content = "".join([sents[i] for i in reconst_sids])
+        reconst_target_locs, tids = reconstruct_target_locs(reconst_sids, sents, tid_to_sid, tid_to_locs)
+        # validate_target_locs(reconst_content, reconst_target_locs, tids, tid_to_text)
+
+        self.data_dict["content"] = reconst_content
+        self.data_dict["target_locs"] = reconst_target_locs

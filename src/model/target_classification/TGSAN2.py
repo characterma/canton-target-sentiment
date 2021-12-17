@@ -3,14 +3,14 @@ import torch.nn as nn
 
 from transformers.modeling_bert import BertEmbeddings
 from model.layer.fc import FCLayer
-from model.utils import load_pretrained_config
+from model.utils import load_pretrained_config, NLPModelOutput
 
 
 class TGSAN2(nn.Module):
     def __init__(self, args):
         super(TGSAN2, self).__init__()
 
-        self.bert_config = load_pretrained_config(args.model_config)
+        self.bert_config = load_pretrained_config(args)
         self.bert_config.hidden_size = args.model_config["emb_dim"]
         self.bert_config.hidden_dropout_prob = args.model_config["emb_dropout"]
         if hasattr(args, "vocab_size"):
@@ -29,7 +29,7 @@ class TGSAN2(nn.Module):
                     nhead=12,
                     dim_feedforward=360,
                     dropout=args.model_config["encoder_dropout"],
-                    activation=args.model_config.get("activation", "relu"),
+                    activation=args.model_config["encoder_activation"],
                 )
                 for i in range(args.model_config["n_encoder"])
             ]
@@ -39,7 +39,7 @@ class TGSAN2(nn.Module):
             input_dim=self.bert_config.hidden_size,
             output_dim=self.num_labels,
             dropout_rate=args.model_config["fc_dropout"],
-            activation=args.model_config.get("activation", None),
+            activation=args.model_config["fc_activation"],
         )
         self.loss_fct = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)
@@ -68,13 +68,15 @@ class TGSAN2(nn.Module):
 
         tgt = self.pool_target(x, target_mask)
         logits = self.classifier(tgt)
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
+        prediction = torch.argmax(logits, dim=1)
 
         if label is not None:
             loss = self.loss_fct(logits.view(-1, self.num_labels), label.view(-1))
         else:
             loss = None
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits, 
+        )
         return outputs

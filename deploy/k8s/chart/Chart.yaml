@@ -2,6 +2,6 @@
 
 # Below will be replaced by environment varialbes defined in env.sh
 apiVersion: v2
-description: "$CHART_DESCRIPTION"
-name: "$CHART_NAME"
-version: "$CHART_VERSION"
+description: [[[CHART_DESCRIPTION]]]
+name: [[[CHART_NAME]]]
+version: [[[CHART_VERSION]]]

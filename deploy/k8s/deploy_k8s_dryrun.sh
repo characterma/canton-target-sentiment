@@ -23,21 +23,26 @@ sh -c "$COPY_TO_CHART_CONFIG" #define in env.sh
 env | grep -E 'K8S_DEPLOY_NAMESPACE|APP_NAME|IMAGE_REPOS|IMAGE_TAG|RELEASE_NAME|CHART_NAME|CHART_VERSION|CI_REF'
 
 # Replace chart name, version and description in Chart.yaml 
-sed -i 's/^name:.*$/name: '"$CHART_NAME"'/' $CHART_NAME/Chart.yaml
-sed -i 's/^version:.*$/version: '"$CHART_VERSION"'/' $CHART_NAME/Chart.yaml
-sed -i 's/^description:.*$/description: '"$CHART_DESCRIPTION"'/' $CHART_NAME/Chart.yaml
+sed -i 's/\[\[\[CHART_DESCRIPTION\]\]\]/'"$CHART_DESCRIPTION"'/g' $CHART_NAME/Chart.yaml
+sed -i 's/\[\[\[CHART_NAME\]\]\]/'"$CHART_NAME"'/g' $CHART_NAME/Chart.yaml
+sed -i 's/\[\[\[CHART_VERSION\]\]\]/'"$CHART_VERSION"'/g' $CHART_NAME/Chart.yaml
+
+sed -i 's/\[\[\[APP_NAME\]\]\]/'"$APP_NAME"'/g' $CHART_NAME/values.yaml
+sed -i 's/\[\[\[IMAGE_REPOS\]\]\]/'"$(echo $IMAGE_REPOS | sed -e 's/[\/&]/\\&/g')"'/g' $CHART_NAME/values.yaml
+sed -i 's/\[\[\[IMAGE_TAG\]\]\]/'"$IMAGE_TAG"'/g' $CHART_NAME/values.yaml
+sed -i 's/\[\[\[CI_REF\]\]\]/'"$CI_REF"'/g' $CHART_NAME/values.yaml
 
 # update chart dependencies
 helm dep up ./$CHART_NAME
 
 if [ "$1" == "upgrade" ]; then
    echo "helm upgrade --set ciBuildRef=$CI_REF --set appName=$APP_NAME --set imageRepository=$IMAGE_REPOS --set imageTag=$IMAGE_TAG 
-   -i --debug --dry-run $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE ./$CHART_NAME"
+   -i --debug --dry-run $RELEASE_NAME ./$CHART_NAME"
    helm upgrade --set ciBuildRef=$CI_REF --set appName=$APP_NAME --set imageRepository=$IMAGE_REPOS --set imageTag=$IMAGE_TAG \
-   -i --debug --dry-run $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE ./$CHART_NAME
+   -i --debug --dry-run $RELEASE_NAME ./$CHART_NAME
 else
    echo "helm install --set ciBuildRef=$CI_REF --set appName=$APP_NAME --set imageRepository=$IMAGE_REPOS --set imageTag=$IMAGE_TAG 
-   --set    $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE --dry-run --debug ./$CHART_NAME"
+   --set  -n $RELEASE_NAME --dry-run --debug ./$CHART_NAME"
    helm install --set ciBuildRef=$CI_REF --set appName=$APP_NAME --set imageRepository=$IMAGE_REPOS --set imageTag=$IMAGE_TAG \
-      $RELEASE_NAME -n $K8S_DEPLOY_NAMESPACE --dry-run --debug ./$CHART_NAME
+    -n $RELEASE_NAME --dry-run --debug ./$CHART_NAME
 fi

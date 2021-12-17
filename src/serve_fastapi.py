@@ -15,12 +15,15 @@ from dataset import get_feature_class
 from dataset.utils import get_model_inputs
 
 
-APP_NAME = "wbi_org_sentiment"
+APP_NAME = "predict"
+TH_POS = None 
+TH_NEG = None 
 
 
 class ModelRunner(object):
     def __init__(self, args):
         self.model = get_model(args=args)
+        self.model.set_return_options(return_tensors=None)
         self.device = args.device
         self.label_to_id_inv = args.label_to_id_inv
 
@@ -30,7 +33,8 @@ class ModelRunner(object):
         for col in feature_dict:
             batch[col] = feature_dict[col].unsqueeze(0).to(self.device)
         output = self.model(**batch)
-        sentiment = self.label_to_id_inv[output["prediction"][0]]
+        prediction = output["prediction"].item()
+        sentiment = self.label_to_id_inv[prediction]
         scores = {}
         for i, s in enumerate(output["probabilities"].squeeze(0).tolist()):
             scores[self.label_to_id_inv[i]] = s
@@ -63,7 +67,7 @@ class Article(BaseModel):
     pub_code: str
     headline : str
     content : str
-    target_keywords: list
+    extended_target_keywords: list
 
 
 def format_result(data_dict, sentiment):
@@ -95,7 +99,7 @@ if __name__ == "__main__":
         target_locs_hl, target_locs_ct = find_target_locs(
             headline=data_dict['headline'], 
             content=data_dict['content'], 
-            target_keywords=data_dict['target_keywords']
+            target_keywords=data_dict['extended_target_keywords']
         )
         data_dict['target_locs_hl'] = target_locs_hl
         data_dict['target_locs_ct'] = target_locs_ct
@@ -106,6 +110,13 @@ if __name__ == "__main__":
         if feature_dict is None:
             raise HTTPException(status_code=422, detail=f"Target not found or exceeding maximum length ({args.model_config['max_length']}).")
         sentiment, scores, score = runner.predict(feature_dict=feature_dict)
-        return {"sentiment": sentiment, "scores": scores, "score": score}
+
+        if TH_NEG is not None and scores['negative'] > TH_NEG:
+            need_pr = True 
+        elif TH_POS is not None and scores['positive'] > TH_NEG:
+            need_pr = True 
+        else:
+            need_pr = False
+        return {"sentiment": sentiment, "scores": scores, "score": score, "need_pr": need_pr}
 
     uvicorn.run(app, host='0.0.0.0', port=8080)

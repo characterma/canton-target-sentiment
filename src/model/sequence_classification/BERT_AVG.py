@@ -3,18 +3,18 @@ import torch.nn as nn
 from transformers import BertPreTrainedModel
 
 from model.layer.fc import LinearLayer
-from model.utils import load_pretrained_bert, load_pretrained_config
+from model.utils import load_pretrained_bert, load_pretrained_config, NLPModelOutput
 
 
 class BERT_AVG(BertPreTrainedModel):
     def __init__(self, args):
-        super(BERT_AVG, self).__init__(load_pretrained_config(args.model_config))
+        super(BERT_AVG, self).__init__(load_pretrained_config(args))
         self.model_config = args.model_config
         self.pretrained_model = load_pretrained_bert(args)
 
         hidden_size = self.pretrained_model.config.hidden_size
-        output_hidden_dim = args.model_config.get('output_hidden_dim', None)
-        output_hidden_act_func = args.model_config.get('output_hidden_act_func', None)
+        output_hidden_dim = args.model_config['output_hidden_dim']
+        output_hidden_act_func = args.model_config['output_hidden_act_func']
 
         self.num_labels = len(args.label_to_id)
 
@@ -34,14 +34,10 @@ class BERT_AVG(BertPreTrainedModel):
         self.to(args.device)
 
     def avg_pool(sel, h, attention_mask):
-
         attention_mask = attention_mask.unsqueeze(-1)
         h = h.masked_fill(attention_mask==0, float(0))
-        return torch.mean(
-            h.float(),
-            dim=1,
-            keepdim=False,
-        )
+        h = h.sum(dim=1) / attention_mask.sum(dim=1)        
+        return h
 
     def forward(
         self,
@@ -60,8 +56,7 @@ class BERT_AVG(BertPreTrainedModel):
         h = lm["last_hidden_state"]
         h = self.avg_pool(h, attention_mask=attention_mask)
         logits = self.linear(h)
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
-
+        prediction = torch.argmax(logits, dim=1)
         if label is not None:
             loss = self.loss_func(
                 logits,  # [N, C]
@@ -69,10 +64,9 @@ class BERT_AVG(BertPreTrainedModel):
             )
         else:
             loss = None
-
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
-        outputs['attentions'] = lm['attentions']
-        # print(logits)
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits
+        )
         return outputs

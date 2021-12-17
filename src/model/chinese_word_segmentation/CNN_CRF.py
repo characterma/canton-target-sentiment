@@ -2,6 +2,7 @@ import torch.nn as nn
 from model.layer.crf import LinearChainCRF
 from model.layer.cnn import ConvLayer
 from model.layer.embedding import WordEmbeddings
+from model.utils import NLPModelOutput
 
 
 class CNN_CRF(nn.Module):
@@ -24,6 +25,7 @@ class CNN_CRF(nn.Module):
             emb_dim=args.model_config["emb_dim"],
             vocab_size=args.vocab_size,
             emb_dropout=args.model_config["emb_dropout"],
+            word_to_id=args.word_to_id
         )
         emb_dim = self.embed.emb_dim
 
@@ -45,7 +47,7 @@ class CNN_CRF(nn.Module):
         self.crf = LinearChainCRF(fc_in, len(args.label_to_id))
         self.to(args.device)
 
-    def forward(self, input_ids, label=None, attention_mask=None, **kwargs):
+    def forward(self, input_ids, attention_mask,  label=None, **kwargs):
         outputs = dict()
         x = self.embed(input_ids)
 
@@ -68,7 +70,9 @@ class CNN_CRF(nn.Module):
             loss = None
 
         prediction = [p[0] for p in prediction]
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits, 
+        )
         return outputs

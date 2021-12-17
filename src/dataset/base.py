@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class NLPDataset:
-    def __init__(self, feature_class, dataset, tokenizer, args):
+    def __init__(self, feature_class, dataset, tokenizer, args, raw_data=None):
         self.args = args
         self.dataset = dataset
         self.tokenizer = tokenizer
@@ -25,14 +25,18 @@ class NLPDataset:
         self.diagnosis_df = None
         self.skipped_indexs = []
 
-        self.load_data()
+        self.load_data(raw_data=raw_data)
         self.create_diagnosis()
 
-    def load_data(self):
+    def load_data(self, raw_data=None):
         data_path = self.args.data_dir / self.args.data_config[self.dataset]
         logger.info("***** Loading data *****")
-        logger.info("  Data path = %s", str(data_path))
-        raw_data = json.load(open(data_path, "r"))
+        
+        if raw_data is not None:
+            logger.info("  Raw data is provided.")
+        else:
+            logger.info("  Data path = %s", str(data_path))
+            raw_data = json.load(open(data_path, "r"))
 
         for idx, data_dict in tqdm(enumerate(raw_data)):
             diagnosis_dict = {"idx": idx}
@@ -101,21 +105,24 @@ class NLPFeature(abc.ABC):
     def __init__(self, data_dict, tokenizer, args, diagnosis=False, padding="max_length"):
         self.succeeded = True
         self.msg = ""
-        self.padding = padding
+        self.feature_dict = {}
+        self.diagnosis_dict = {}
+        self.tokens_encoded = None
 
         required_features = get_model_inputs(args)
         prepro_config = args.prepro_config
 
         preprocessor = Preprocessor(data_dict=data_dict, steps=prepro_config["steps"])
 
-        self.feature_dict, self.diagnosis_dict = self.get_feature(
+        self.get_feature(
             data_dict=preprocessor.data_dict,
             tokenizer=tokenizer,
             required_features=required_features,
             args=args,
             diagnosis=diagnosis,
+            padding=padding
         )
 
     @abc.abstractmethod
-    def get_feature(self, data_dict, tokenizer, required_features, args, diagnosis):
+    def get_feature(self, data_dict, tokenizer, required_features, args, diagnosis, padding):
         return NotImplemented

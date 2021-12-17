@@ -2,6 +2,7 @@ import os
 import logging
 import torch
 import importlib
+from onnxruntime import ExecutionMode, InferenceSession, SessionOptions
 
 
 logger = logging.getLogger(__name__)
@@ -19,4 +20,17 @@ def get_model(args):
     else:
         logger.info("  Model path = %s", model_path)
         model = torch.load(model_path, map_location=torch.device(args.device))
+    model.return_tensors = None
     return model
+
+
+def get_onnx_session(args):
+    logger.info("***** Initializing onnx model *****")
+    # model_class = args.train_config["model_class"]
+    # logger.info("  Task = %s", args.task)
+    # logger.info("  Model class = %s", model_class)
+    # Model = getattr(importlib.import_module(f"model.{args.task}"), model_class)
+    model_path = args.model_dir / "model.onnx"
+    print(model_path)
+    onnx_session = InferenceSession(str(model_path))
+    return onnx_session

@@ -1,0 +1,65 @@
+task: "sequence_classification"
+device: 0
+data:
+  output_dir: "../output/explainable_ai_paper/bert_cls_sst"
+  data_dir: "../data/datasets/public/sequence_classification/sst"
+  train: train.json
+  dev: test.json
+  test: test.json
+  unlabeled: unlabeled.json
+text_prepro:
+  steps: []
+eval:
+  batch_size: 16
+  model_file: "model.pt"
+train:
+  model_class: "BERT_CLS"
+  kd:
+    use_kd: False
+  seed: 42
+  log_steps: 100
+  batch_size: 16
+  final_model: "best" # "best" or "last"
+  optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
+  early_stop: null
+model_params:
+  # ================= TDBERT =================
+  max_length: 256
+  num_train_epochs: 10
+  embedding_trainable: True
+  output_hidden_act_func: "PReLU"
+  output_hidden_dim: 128
+  output_use_bn: False
+  tokenizer_name: "bert-base-cased"  # voidful/albert_chinese_tiny
+  pretrained_lm: "bert-base-cased" # voidful/albert_chinese_tiny
+explanation:
+    Random:
+      method: "Random"
+    Lime:
+      method: "Lime"
+    WordOmission: 
+      method: "WordOmission"
+    SaliencyAvg:
+      method: "Saliency"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: null
+    SaliencyL2:
+      method: "Saliency"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: l2
+#     GradientXActivationAvg:
+#       method: "GradientXActivation"
+#       layer: "pretrained_model.embeddings.word_embeddings"
+#       norm: null
+#     GradientXActivationL2:
+#       method: "GradientXActivation"
+#       layer: "pretrained_model.embeddings.word_embeddings"
+#       norm: l2
+    IntegratedGradientsAvg:
+      method: "IntegratedGradients"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: null
+    IntegratedGradientsL2:
+      method: "IntegratedGradients"
+      layer: "pretrained_model.embeddings.word_embeddings"
+      norm: l2

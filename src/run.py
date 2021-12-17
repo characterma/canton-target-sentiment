@@ -35,49 +35,74 @@ def run_kd(args):
     )
     teacher_model = get_model(args=teacher_args)
 
-    # load unlabeled data, which will be preprocessed by teacher pipeline TODO: allow label=null
-    unlabeled_dataset = get_dataset(
-        dataset="unlabeled", tokenizer=teacher_tokenizer, args=teacher_args
-    )
-    train_dataset = get_dataset(
-        dataset="train", tokenizer=teacher_tokenizer, args=teacher_args
-    )
-    # TODO: include logits from train data
-
     # load student
-    student_tokenizer = get_tokenizer(args=args, datasets=["train", "unlabeled"])
+    if args.data_config["unlabeled"] is not None:
+        student_tokenizer = get_tokenizer(args=args, datasets=["train", "unlabeled"])
+    else:
+        student_tokenizer = get_tokenizer(args=args, datasets=["train"])
+        
     args.label_to_id, args.label_to_id_inv = get_label_to_id(
         tokenizer=student_tokenizer, args=args
     )
-    student_model = get_model(args=args)
+    
+    if args.data_config["unlabeled"] is not None:
+        unlabeled_dataset = get_dataset(
+            dataset="unlabeled", 
+            tokenizer=teacher_tokenizer, 
+            args=teacher_args
+        )
+    else:
+        unlabeled_dataset = None 
 
+
+    assert(teacher_args.label_to_id==args.label_to_id)
+    assert(teacher_args.label_to_id_inv==args.label_to_id_inv)
+    
     # generate soft-labels, TODO: cache to disk
-    teacher_logits_ul = get_logits(
-        model=teacher_model,
-        dataset=unlabeled_dataset,
-        teacher_args=teacher_args,
-        student_args=args,
+    if unlabeled_dataset is not None:
+        teacher_logits_ul = get_logits(
+            model=teacher_model,
+            dataset=unlabeled_dataset,
+            teacher_args=teacher_args,
+            student_args=args,
+        )
+        del unlabeled_dataset
+    else:
+        teacher_logits_ul = None 
+
+    train_dataset = get_dataset(
+        dataset="train", 
+        tokenizer=teacher_tokenizer, 
+        args=teacher_args
     )
+    
     teacher_logits_tr = get_logits(
         model=teacher_model,
         dataset=train_dataset,
         teacher_args=teacher_args,
         student_args=args,
     )
+    del train_dataset
+    
+    del teacher_model
+    del teacher_tokenizer
 
     # Features for student model
     train_dataset = get_dataset(dataset="train", tokenizer=student_tokenizer, args=args)
     dev_dataset = get_dataset(dataset="dev", tokenizer=student_tokenizer, args=args)
     test_dataset = get_dataset(dataset="test", tokenizer=student_tokenizer, args=args)
-    unlabeled_dataset = get_dataset(
-        dataset="unlabeled", tokenizer=student_tokenizer, args=args
-    )
-
-    # merge teacher_logits into features
     train_dataset.add_feature("teacher_logit", teacher_logits_tr)
-    unlabeled_dataset.add_feature("teacher_logit", teacher_logits_ul)
+    del teacher_logits_tr
+    
+    if args.data_config["unlabeled"] is not None:
+        unlabeled_dataset = get_dataset(dataset="unlabeled", tokenizer=student_tokenizer, args=args)
+        unlabeled_dataset.add_feature("teacher_logit", teacher_logits_ul)
+        del teacher_logits_ul
+    else:
+        unlabeled_dataset = None
 
     # run kd_trainer => save model
+    student_model = get_model(args=args)
     kd_trainer = KDTrainer(
         model=student_model,
         train_dataset=train_dataset,
@@ -85,7 +110,6 @@ def run_kd(args):
         unlabeled_dataset=unlabeled_dataset,
         args=args,
     )
-
     kd_trainer.train()
 
     # evaluation
@@ -134,7 +158,18 @@ def run(args):
         dev_metrics = None
 
     if args.explain:
-        explainer = Explainer(model=model, args=args)
+        if args.faithfulness:
+            explainer = Explainer(
+                model=model, 
+                args=args, 
+                run_faithfulness=True
+            )
+        else:
+            explainer = Explainer(
+                model=model, 
+                args=args, 
+                run_faithfulness=False
+            )
         explainer.explain(dataset=test_dataset)
 
     test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
@@ -151,6 +186,7 @@ if __name__ == "__main__":
     parser.add_argument("--config_dir", type=str, default="../config/")
     parser.add_argument("--test_only", action="store_true")
     parser.add_argument("--explain", action="store_true")
+    parser.add_argument("--faithfulness", action="store_true")
     args = parser.parse_args()
 
     args = load_config(args)

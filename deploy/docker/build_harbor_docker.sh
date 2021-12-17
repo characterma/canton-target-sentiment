@@ -6,9 +6,8 @@ SRC_ROOT=../..
 # =====================
 # Copy necessary deployment files to /ailab
 
-rsync -av $SRC_ROOT/target/actuator-sample-0.0.1-SNAPSHOT.jar ailab/lib/
-
-rsync -av $SRC_ROOT/target/classes/application.properties ailab/conf/
+rsync -av $SRC_ROOT/src/ ailab/src/
+rsync -av $SRC_ROOT/model/ ailab/model/
 
 # =====================
 

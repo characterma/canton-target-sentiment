@@ -1,5 +1,5 @@
 task: "chinese_word_segmentation"
-device: 'cpu'
+device: 0
 data:
   output_dir: "../config/examples/chinese_word_segmentation/CNN_CRF"
   data_dir: "../data/datasets/sample/chinese_word_segmentation"

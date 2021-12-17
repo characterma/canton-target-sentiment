@@ -2,21 +2,23 @@ import torch.nn as nn
 from transformers import BertPreTrainedModel
 
 from model.layer.crf import LinearChainCRF
-from model.utils import load_pretrained_bert, load_pretrained_config
+from model.utils import load_pretrained_bert, load_pretrained_config, NLPModelOutput
 
 
 class BERT_CRF(BertPreTrainedModel):
     def __init__(self, args):
-        super(BERT_CRF, self).__init__(load_pretrained_config(args.model_config))
+        super(BERT_CRF, self).__init__(load_pretrained_config(args))
 
         self.model_config = args.model_config
         self.pretrained_model = load_pretrained_bert(args)
         if not args.model_config["embedding_trainable"]:
             self.freeze_emb()
-        self.pretrained_config = load_pretrained_config(args.model_config)
+        self.pretrained_config = load_pretrained_config(args)
         self.num_labels = len(args.label_to_id)
 
-        self.bert_dropout = nn.Dropout(self.model_config["bert_dropout"])
+        self.bert_dropout = nn.Dropout(
+            self.model_config["bert_dropout"]
+        )
         self.crf = LinearChainCRF(self.pretrained_config.hidden_size, self.num_labels)
 
         self.to(args.device)
@@ -34,6 +36,7 @@ class BERT_CRF(BertPreTrainedModel):
         )
         logits = lm["last_hidden_state"]
         logits = self.bert_dropout(logits)
+
         prediction, scores = self.crf.viterbi_decode(
             logits, length_index=attention_mask
         )  # [B, 1, L], [B, 1]
@@ -46,7 +49,9 @@ class BERT_CRF(BertPreTrainedModel):
             loss = None
 
         prediction = [p[0] for p in prediction]
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits, 
+        )
         return outputs

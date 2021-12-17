@@ -1,10 +1,10 @@
 ## This file declares variables to be passed into your templates ##
 
 # Below will be replaced by environment variables defined in env.sh
-appName: "$APP_NAME"
-imageRepository: "$IMAGE_REPOS"
-imageTag: "$IMAGE_TAG"
-ciBuildRef: "$CI_REF"
+appName: [[[APP_NAME]]]
+imageRepository: [[[IMAGE_REPOS]]]
+imageTag: [[[IMAGE_TAG]]]
+ciBuildRef: [[[CI_REF]]]
 
 # Below set as Always or IfNotPresent
 imagePullPolicy: Always
@@ -54,16 +54,16 @@ resources:
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   limits:
     cpu: 4000m
-    memory: 8G
+    memory: 2G
   requests:
     cpu: 4000m
-    memory: 8G
+    memory: 2G
 
 # Whether to enable Horizontal Pod Autoscaler
 hpa:
   enabled: true
   minReplicas: 1
-  maxReplicas: 3
+  maxReplicas: 1
   cpu:
     averageUtilization: 75
   memory:

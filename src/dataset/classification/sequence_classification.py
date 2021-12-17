@@ -5,13 +5,8 @@ from dataset.base import NLPFeature
 
 
 class SequenceClassificationFeature(NLPFeature):
-    def __init__(self, data_dict, tokenizer, args, diagnosis=False):
-        super(SequenceClassificationFeature, self).__init__(
-            data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=diagnosis
-        )
-
     def get_feature(
-        self, data_dict, tokenizer, required_features, args, diagnosis=False
+        self, data_dict, tokenizer, required_features, args, diagnosis=False, padding='max_length'
     ):
         diagnosis_dict = dict()
         feature_dict = dict()
@@ -28,7 +23,7 @@ class SequenceClassificationFeature(NLPFeature):
             content,
             max_length=max_length,
             truncation=True,
-            padding="max_length",
+            padding=padding,
             add_special_tokens=True,
             return_offsets_mapping=True,
         )
@@ -44,6 +39,7 @@ class SequenceClassificationFeature(NLPFeature):
             diagnosis_dict["tokens"] = tokens
             diagnosis_dict["label"] = label
             diagnosis_dict["label_id"] = label_to_id.get(str(label), None)
+            diagnosis_dict["length"] = np.sum(attention_mask)
 
         if np.sum(attention_mask) == 0:
             return None, diagnosis_dict
@@ -60,4 +56,7 @@ class SequenceClassificationFeature(NLPFeature):
             if label is not None and label_to_id is not None:
                 label = label_to_id[str(label)]
                 feature_dict["label"] = torch.tensor(label).long()
-            return feature_dict, diagnosis_dict
+
+        self.feature_dict = feature_dict
+        self.diagnosis_dict = diagnosis_dict
+        self.tokens_encoded = tokens_encoded

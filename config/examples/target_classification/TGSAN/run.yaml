@@ -1,19 +1,16 @@
 task: "target_classification"
-device: 'cpu'
+device: 0
 data:
   output_dir: "../config/examples/target_classification/TGSAN"
   data_dir: "../data/datasets/sample/target_classification"
   train: sample.json
   dev: sample.json
   test: sample.json
-  labels: 3_ways  # 2_ways
 text_prepro:
   steps:
     - simplified_chinese
     - lower_case
     - convert_java_index
-    # - extract_post_context_1
-    # - extract_post_context_2
 eval:
   batch_size: 64
   model_file: "model.pt" # under output_dir / "model"
@@ -27,7 +24,6 @@ train:
 eval:
   batch_size: 64
   model_file: "model.pt" # under output_dir / "model"
-  # ================= TDBERT =================
 model_params:
   num_train_epochs: 1
   embedding_trainable: False

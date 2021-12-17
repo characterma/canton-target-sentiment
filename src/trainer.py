@@ -28,20 +28,25 @@ def prediction_step(model, batch, args):
 
     results["prediction_id"] = []
     results["prediction"] = []
-    for x1 in x['prediction']:
-        if isinstance(x1, list):
-            results["prediction_id"].append(x1)
+
+    if isinstance(x['prediction'], torch.Tensor):
+        predictions = x['prediction'].tolist()
+    else:
+        predictions = x['prediction'] 
+
+    for p in predictions:
+        if isinstance(p, list):
+            results["prediction_id"].append(p)
             results["prediction"].append(
-                list(map(lambda y: args.label_to_id_inv[y], x1))
+                list(map(lambda y: args.label_to_id_inv[y], p))
             )
         else:
-            results["prediction_id"].append(x1)
-            results["prediction"].append(args.label_to_id_inv[x1])
-    # check
+            results["prediction_id"].append(p)
+            results["prediction"].append(args.label_to_id_inv[p])
 
-    results["probabilities"] = F.softmax(x["logits"]).cpu().tolist()
-    if x["loss"] is not None:
-        results["loss"] = x["loss"].cpu().tolist()
+    results["probabilities"] = F.softmax(x["logits"], dim=-1).cpu().tolist()
+    if x.loss is not None:
+        results["loss"] = x.loss.cpu().tolist()
     else:
         results["loss"] = None
     return results

@@ -4,14 +4,15 @@ from preprocess import Preprocessor
 from dataset.tagging.utils import get_token_level_tags
 
 
-def get_label_to_id(tokenizer, args):
+def get_label_to_id(tokenizer, args, raw_data=None):
+    print(os.listdir(args.model_dir))
     label_to_id_path = args.model_dir / "label_to_id.json"
 
     if os.path.exists(label_to_id_path):
         label_to_id = json.load(open(label_to_id_path, "r"))
     else:
         label_to_id = load_label_to_id_from_datasets(
-            datasets=["train"], tokenizer=tokenizer, args=args
+            datasets=["train"], tokenizer=tokenizer, args=args, raw_data=raw_data
         )
         json.dump(label_to_id, open(label_to_id_path, "w"))
 
@@ -19,7 +20,7 @@ def get_label_to_id(tokenizer, args):
     return label_to_id, label_to_id_inv
 
 
-def load_label_to_id_from_datasets(datasets, tokenizer, args):
+def load_label_to_id_from_datasets(datasets, tokenizer, args, raw_data=None):
 
     if args.task == "target_classification":
         label_to_id = {}
@@ -29,7 +30,8 @@ def load_label_to_id_from_datasets(datasets, tokenizer, args):
         files = list(set(files))
         for filename in files:
             data_path = args.data_dir / filename
-            raw_data = json.load(open(data_path, "r"))
+            if raw_data is None:
+                raw_data = json.load(open(data_path, "r"))
             # text preprocessing
             for data_dict in raw_data:
                 label = str(data_dict["label"])
@@ -49,7 +51,8 @@ def load_label_to_id_from_datasets(datasets, tokenizer, args):
 
         for filename in files:
             data_path = args.data_dir / filename
-            raw_data = json.load(open(data_path, "r"))
+            if raw_data is None:
+                raw_data = json.load(open(data_path, "r"))
 
             # text preprocessing
             for data_dict in raw_data:
@@ -86,7 +89,8 @@ def load_label_to_id_from_datasets(datasets, tokenizer, args):
         files = list(set(files))
         for filename in files:
             data_path = args.data_dir / filename
-            raw_data = json.load(open(data_path, "r"))
+            if raw_data is None:
+                raw_data = json.load(open(data_path, "r"))
             # text preprocessing
             for data_dict in raw_data:
                 label = str(data_dict["label"])

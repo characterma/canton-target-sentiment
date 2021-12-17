@@ -7,7 +7,7 @@ GROUP_NAME=senti
 
 # This will be used for image and K8S module / ingress name
 # If GIT Lab project name is different from deployed module on K8S, please use K8S module name instead
-APP_NAME=wbi-org-sentiment
+APP_NAME=wbi-target-sentiment
 
 # Update Image Tag if different from any deployed version
 IMAGE_TAG=1.1
@@ -15,6 +15,7 @@ IMAGE_TAG=1.1
 # Update Chart Tag if different from any deployed version
 CHART_VERSION=0.1.1
 CHART_DESCRIPTION="Target sentiment for WBI."
+MODEL_DIR="org_per_bert_avg_20210925_all_ext2/model"
 
 # Optional, for running deployment script manually
 K8S_DEPLOY_NAMESPACE=playground

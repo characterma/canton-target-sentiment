@@ -3,6 +3,7 @@ import torch.nn as nn
 from model.layer.fc import LinearLayer
 from model.layer.cnn import ConvLayer
 from model.layer.embedding import WordEmbeddings
+from model.utils import NLPModelOutput
 
 
 class TEXT_CNN(nn.Module):
@@ -27,6 +28,7 @@ class TEXT_CNN(nn.Module):
             emb_dim=args.model_config["emb_dim"],
             vocab_size=args.vocab_size,
             emb_dropout=args.model_config["emb_dropout"],
+            word_to_id=args.word_to_id
         )
         emb_dim = self.emb.emb_dim
         self.num_labels = len(args.label_to_id)
@@ -46,7 +48,7 @@ class TEXT_CNN(nn.Module):
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
         self.to(args.device)
 
-    def forward(self, input_ids, attention_mask, label=None):
+    def forward(self, input_ids, attention_mask, label=None, **kwargs):
         outputs = dict()
         x = self.emb(input_ids.long())  # [B, L, E]
         x = self.conv(x, attention_mask.long())  # [B, Kn*#ks]
@@ -55,14 +57,16 @@ class TEXT_CNN(nn.Module):
             x = self.cnn_dp(x)
         logits = self.linear(x)  # [B, Nc]
 
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
+        prediction = torch.argmax(logits, dim=1)
         if label is not None:
             loss = self.loss_func(
                 logits.view(-1, self.num_labels), label.view(-1)  # [N, C]  # [N]
             )
         else:
             loss = None
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
+        outputs = NLPModelOutput(
+            loss=loss, 
+            prediction=prediction, 
+            logits=logits
+        )
         return outputs

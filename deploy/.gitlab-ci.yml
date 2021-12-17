@@ -1,0 +1,269 @@
+# Define environment variables in executor container
+variables:
+  # RELEASE_NAME_CI will be formated as <groupnames>-<projectname>-<branch>, i.e. sample-cicd-python-project-master
+  RELEASE_NAME_CI: "$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG" 
+  
+  
+before_script:
+  - id
+  - pwd
+  - find deploy -name '*.sh' -type f | xargs chmod +x
+  - source deploy/env.sh       # make sure env.sh has been excuted
+  - env
+
+stages:
+  - package
+  - deploy
+  - test
+  - upload
+  - undeploy
+
+
+
+# ================ Stage: Package =================
+# Purpose: Packaging all necessary program files into docker image 
+
+
+# --- Triggered By: Commit / Tag ---
+# Remark: Collect necessary program files to build docker image, and store to Research Internal Image Repository
+package:docker:
+  stage: package
+  script:
+  - cd deploy/docker
+  - echo "/BigFiles/Models/$APP_NAME/$MODEL_DIR"
+  - rsync -av "/BigFiles/Models/$APP_NAME/$MODEL_DIR" ailab/
+  - set -x
+  - sh build_docker.sh
+  tags:
+  - bigfiles            # to use bigfiles runner, path /BigFiles accessible
+  artifacts:
+    name: package-docker-deploy
+    expire_in: 1 hrs    # will be auto deleted after 1 hour
+    paths:
+    - deploy/
+
+# --- Triggered By: Commit / Tag ---
+# Remark: Collect necessary program files to build docker image, and store to Research Internal Image Repository
+package:harbor_docker:
+  stage: package
+  script:
+  - cd deploy/docker
+  - echo "/BigFiles/Models/$APP_NAME/$MODEL_DIR"
+  - rsync -av "/BigFiles/Models/$APP_NAME/$MODEL_DIR" ailab/
+  - set -x
+  - sh build_harbor_docker.sh
+  when: manual
+  tags:
+  - bigfiles            # default enable access to /BigFiles
+  artifacts:
+    name: package-harbor-docker-deploy
+    expire_in: 1 hrs    # will be auto deleted after 1 hour
+    paths:
+    - deploy/
+
+# ================= Stage: Deploy ==================
+# Purpose: Deploy container to docker servers / K8S environment (mostly playground), OR deploying the helm chart to internal museum    
+
+
+# --- Triggered By: Commit ---
+# Remark: Deploy to one of the dev docker server (ess37,38,39)
+# Override Environment Variables (in env.sh):
+#   DOCKER_DEPLOY_SERVER - Set container deployment server
+#   DOCKER_DEPLOY_CONTAINER_NAME - Set docker container name, naming standard: (project|<user_name>)-<app name>
+#   DOCKER_DEPLOY_CONTAINER_PORT_PARAMS - Define docker port mappings. multiple mappings can be defined like: "-p 9090:8080 -p 80:80 -p 20000~20005:10000~10005"
+#   DOCKER_ENV_VARS - Optional, set environment variables inside container, i.e. "-e TZ=Asia/Hong_Kong"
+#   DOCKER_VOLUMES_MOUNT - Optional, set volume mount from host to container, i.e. "-v /tmp/dummyfile:/ailab/dummyfile"
+#   DOCKER_CMD - Optional, set container start command
+
+deploy:dev-docker:
+  stage: deploy
+  script:
+  - cd deploy/docker
+  - sh remove_docker.sh
+  - sh run_docker.sh
+  when: manual
+  dependencies:
+  - package:docker 
+  except:
+  - tags
+
+
+# --- Triggered By: Commit ---
+# Remark: Deploy the program to K8S (playground namespace) via Helm chart
+deploy:playground-k8s:
+  stage: deploy
+  script:
+  # define environment variables:
+  - export RELEASE_NAME="$RELEASE_NAME_CI"       # override RELEASE_NAME for CI flow
+  - export K8S_DEPLOY_NAMESPACE="playground"     # reset namespace to playground no matter what's in env.sh
+
+  # execute scripts:
+  - cd deploy/k8s
+  - sh undeploy_k8s.sh
+  - sh deploy_k8s.sh
+  dependencies:
+  - package:docker
+  #when: manual
+  except:
+  - tags
+  environment:
+    name: playground-k8s
+    url: http://ess-vm01.wisers.com:18080/r/projects/1a71/kubernetes-dashboard:9090/#!/overview?namespace=$K8S_DEPLOY_NAMESPACE
+
+
+# --- Triggered By: Tag ---
+# Remark: Save the helm chart to Research Internal Chart Museum for further deployment
+deploy:helm-museum:
+  stage: deploy
+  script:
+  - cd deploy/k8s
+  - sh package_n_upload_2_res_museum.sh
+  dependencies:
+  - package:docker
+  only:
+  - tags  
+  environment:
+    name: chart_museum
+    url: http://ess-deploy.wisers.com:8585/api/charts
+    
+
+# --- Triggered By: Tag ---
+# Remark: Save the helm chart to Research Internal Chart Museum for further deployment
+deploy:harbor-helm:
+  stage: deploy
+  script:
+  - cd deploy/k8s
+  - sh package_n_upload_2_harbor_helm.sh
+  dependencies:
+  - package:harbor_docker
+  when: manual
+  only:
+  - tags  
+  environment:
+    name: chart_museum
+
+
+# ================== Stage: Test ===================
+# Purpose: Test the deployed APIs on Single Docker / K8S
+
+
+# --- Triggered By: Commit ---
+# Remark: Test program exposed API (in dev docker server) via Newman utility
+# Override Environment Variables (in env.sh):
+#   POSTMAN_VAR_FILE - to override collection's variables from file inside test/collections/variables/ (i.e. playground.json)
+test:dev-docker:
+  stage: test
+  script: 
+  - cd deploy/test
+  - sh run_newman.sh
+  dependencies:
+  - deploy:dev-docker
+  when: manual
+  except:
+  - tags  
+  artifacts:
+    name: test-dev-docker-result
+    expire_in: 30 min
+    paths:
+    - deploy/test/result/
+
+
+# --- Triggered By: Commit ---
+# Remark: Test program exposed API (in playground namespace) via Newman utility
+# Override Environment Variables (in env.sh):
+#   POSTMAN_VAR_FILE - to override collection's variables from file inside test/collections/variables/ (i.e. playground.json)
+test:playground-k8s:
+  stage: test
+  script:
+  # define environment variables:
+  - export POSTMAN_VAR_FILE="playground.json"
+  
+  # execute scripts:
+  - cd deploy/test
+  - sleep 300                   # sleep 3 min waiting for k8s deployment to complete
+  - sh run_newman.sh
+  dependencies:
+  - deploy:playground-k8s
+  #when: manual
+  except:
+  - tags
+  artifacts:
+    name: test-playground-k8s-result
+    expire_in: 30 min
+    paths:
+    - deploy/test/result/
+
+
+
+# ================= Stage: Upload ==================
+# Purpose: Upload the "specs" to internal OwnCloud file store
+
+
+# --- Triggered By: Tag ---
+# Remark: Upload deploy-k8s.yaml, README.md, postman_collection.json and version.txt to OwnCloud 
+upload:owncloud:
+  stage: upload
+  script: 
+  - cd deploy/upload
+  - sh upload_files.sh
+  dependencies:
+  - package:docker
+  when: manual
+  only:
+  - tags
+
+
+
+# ================= Stage: Undeploy ==================
+# Purpose: Undeploy the short-lived deploymennt (i.e. on dev server or k8s playground) 
+
+
+# --- Triggered By: Commit ---
+# Remark: Remove the deployed container on one of the dev docker server (ess37,38,39)
+# Override Environment Variables (in env.sh):
+#   DOCKER_DEPLOY_SERVER - Set container deployment server
+#   DOCKER_DEPLOY_CONTAINER_NAME - Set docker container name, naming standard: (project|<user_name>)-<app name>
+undeploy:dev-docker:
+  stage: undeploy
+  script:
+  - cd deploy/docker
+  - sh remove_docker.sh
+  when: manual
+  dependencies: []
+  except:
+  - tags
+
+
+# --- Triggered By: Commit ---
+# Cleanup the program in K8S (playground namespace)
+undeploy:playground-k8s:
+  stage: undeploy
+  script:
+  - export RELEASE_NAME="$RELEASE_NAME_CI"     # override RELEASE_NAME for CI flow
+  - export K8S_DEPLOY_NAMESPACE="playground"   # reset namespace to playground no matter what's in env.sh
+  - cd deploy/k8s
+  - sh undeploy_k8s.sh
+  when: manual
+  except:
+  - tags
+  dependencies: []
+  environment:
+    name: playground-k8s
+#     url: http://ess-vm01.wisers.com:18080/r/projects/1a71/kubernetes-dashboard:9090/#!/overview?namespace=$K8S_DEPLOY_NAMESPACE
+
+
+
+# --- Triggered By: Tag ---
+# Remark: Remove the helm chart from museum
+undeploy:helm-museum:
+  stage: undeploy
+  script:
+  - cd deploy/k8s
+  - sh delete_chart_in_res_museum.sh
+  dependencies: []
+  when: manual
+  only:
+  - tags
+  environment:
+    name: chart_museum
+    url: http://ess-deploy.wisers.com:8585/api/charts

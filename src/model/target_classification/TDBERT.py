@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 from transformers import BertPreTrainedModel
 import torch.nn.functional as F
-from model.utils import load_pretrained_bert, load_pretrained_config
+from model.utils import load_pretrained_bert, load_pretrained_config, NLPModelOutput
 from model.layer.fc import LinearLayer
 
 
 class TDBERT(BertPreTrainedModel):
     def __init__(self, args):
-        pretrained_config = load_pretrained_config(args.model_config)
+        pretrained_config = load_pretrained_config(args)
         super(TDBERT, self).__init__(pretrained_config)
 
         # assert target_pooling in ["mean", "max"]
@@ -34,7 +34,6 @@ class TDBERT(BertPreTrainedModel):
             activation=output_hidden_act_func,
             use_bn=False,
         )
-
         self.loss_func = nn.CrossEntropyLoss(reduction="none")
         self.to(args.device)
 
@@ -62,7 +61,6 @@ class TDBERT(BertPreTrainedModel):
         label=None,
         **kwargs
     ):
-        outputs = dict()
         lm = self.pretrained_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -71,24 +69,28 @@ class TDBERT(BertPreTrainedModel):
         )
 
         h = lm["last_hidden_state"]
-        # Average or max
         tgt_h = self.pool_target(
             h, target_mask
         )  # outputs: [B, S, Dim], target_mask: [B, S]
 
         logits = self.linear(tgt_h)
+        prediction = torch.argmax(logits, dim=1)
+        probabilities = F.softmax(logits, -1)
 
         if label is not None:
             loss = self.loss_func(logits.view(-1, self.num_labels), label.view(-1))
             loss = loss.mean()
+            outputs = NLPModelOutput(
+                loss=loss, 
+                prediction=prediction, 
+                logits=logits, 
+                probabilities=probabilities
+            )            
         else:
             loss = None
-
-
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
-        outputs['loss'] = loss
-        outputs['prediction'] = prediction
-        outputs['logits'] = logits
-        outputs['probabilities'] = F.softmax(logits, -1)
-
+            outputs = NLPModelOutput(
+                prediction=prediction, 
+                logits=logits, 
+                probabilities=probabilities
+            )
         return outputs

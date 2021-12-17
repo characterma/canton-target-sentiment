@@ -1,12 +1,11 @@
 task: "target_classification"
-device: 'cpu'
+device: 0
 data:
   output_dir: "../config/examples/target_classification/TGSAN2"
   data_dir: "../data/datasets/sample/target_classification"
   train: sample.json
   dev: sample.json
   test: sample.json
-  labels: 3_ways # or 2_ways
 text_prepro:
   steps:
     - simplified_chinese
@@ -22,12 +21,5 @@ train:
 eval:
   batch_size: 64
   model_file: "model.pt" # under output_dir / "model"
-  # ================= TDBERT =================
 model_params:
   num_train_epochs: 2
-  # tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
-  # pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
-  # ================= TGSAN =================
-  # num_train_epochs: 50
-  # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"
-  # embedding_trainable: False

@@ -32,13 +32,8 @@ def get_token_level_tags(tokens_encoded, sent_indexs, postags, scheme="BI"):
 
 
 class ChineseWordSegmentationFeature(NLPFeature):
-    def __init__(self, data_dict, tokenizer, args, diagnosis=False):
-        super(ChineseWordSegmentationFeature, self).__init__(
-            data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=diagnosis
-        )
-
     def get_feature(
-        self, data_dict, tokenizer, required_features, args, diagnosis=False
+        self, data_dict, tokenizer, required_features, args, diagnosis=False, padding='max_length'
     ):
         feature_dict = dict()
         diagnosis_dict = dict()
@@ -85,4 +80,7 @@ class ChineseWordSegmentationFeature(NLPFeature):
             diagnosis_dict["label"] = label
             diagnosis_dict["label_id"] = label_id
 
-        return feature_dict, diagnosis_dict
+        self.feature_dict = feature_dict
+        self.diagnosis_dict = diagnosis_dict
+        self.tokens_encoded = tokens_encoded
+

@@ -41,9 +41,9 @@ class BERT_ATTN(BertPreTrainedModel):
         self.pretrained_model = load_pretrained_bert(args)
 
         hidden_size = self.pretrained_model.config.hidden_size
-        output_hidden_dim = args.model_config.get("output_hidden_dim", None)
-        output_hidden_act_func = args.model_config.get("output_hidden_act_func", None)
-        attention_type = args.model_config.get("attention_type", None)
+        output_hidden_dim = args.model_config["output_hidden_dim"]
+        output_hidden_act_func = args.model_config["output_hidden_act_func"]
+        attention_type = args.model_config["attention_type"]
 
         # reference to http://ess-repos01.wisers.com:9980/UAP/AI/common-dl-model/blob/master/net/layers/attention_layers.py
         # attention params
@@ -86,7 +86,7 @@ class BERT_ATTN(BertPreTrainedModel):
         h = h.squeeze(1)
 
         logits = self.linear(h)
-        prediction = torch.argmax(logits, dim=1).cpu().tolist()
+        prediction = torch.argmax(logits, dim=1)
 
         if label is not None:
             loss = self.loss_func(

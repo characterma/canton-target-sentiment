@@ -1,5 +1,5 @@
 task: "chinese_word_segmentation"
-device: 'cpu'
+device: 0
 data:
   output_dir: "../config/examples/chinese_word_segmentation/BERT_CRF"
   data_dir: "../data/datasets/sample/chinese_word_segmentation"
@@ -23,5 +23,5 @@ model_params:
   # ================= TDBERT =================
   num_train_epochs: 2
   embedding_trainable: True
-  tokenizer_name: "clue/albert_chinese_tiny"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
-  pretrained_lm: "clue/albert_chinese_tiny" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
+  tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
+  pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"

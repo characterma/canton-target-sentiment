@@ -5,13 +5,8 @@ from dataset.base import NLPFeature
 
 
 class TargetClassificationFeature(NLPFeature):
-    def __init__(self, data_dict, tokenizer, args, diagnosis=False, padding="max_length"):
-        super(TargetClassificationFeature, self).__init__(
-            data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=diagnosis, padding=padding
-        )
-
     def get_feature(
-        self, data_dict, tokenizer, required_features, args, diagnosis=False
+        self, data_dict, tokenizer, required_features, args, diagnosis=False, padding='max_length'
     ):
         diagnosis_dict = dict()
         feature_dict = dict()
@@ -28,7 +23,7 @@ class TargetClassificationFeature(NLPFeature):
             content,
             max_length=max_length,
             truncation=True,
-            padding=self.padding,
+            padding=padding,
             add_special_tokens=True,
             return_offsets_mapping=True,
         )
@@ -80,7 +75,7 @@ class TargetClassificationFeature(NLPFeature):
             )
 
         if sum(target_mask) == 0:
-            return None, diagnosis_dict
+            feature_dict = None
         else:
 
             if "input_ids" in required_features:
@@ -99,4 +94,6 @@ class TargetClassificationFeature(NLPFeature):
                 label = label_to_id[label]
                 feature_dict["label"] = torch.tensor(label).long()
 
-            return feature_dict, diagnosis_dict
+        self.feature_dict = feature_dict
+        self.diagnosis_dict = diagnosis_dict
+        self.tokens_encoded = tokens_encoded

@@ -1,0 +1,68 @@
+task: "sequence_classification"
+device: 0
+data:
+  output_dir: "../output/knowledge_distillation/student_model/"
+  data_dir: "../data/datasets/internal/sequence_classification/post_sentiment"
+  train: train.json
+  dev: test.json
+  test: test.json
+  unlabeled: unlabeled.json
+  extra_tokens: nan.json
+text_prepro:
+  steps:
+    - utf8_replace
+    - simplified_chinese
+    - lower_case
+    - full_to_half
+eval:
+  batch_size: 64
+  model_file: "model.pt"
+train:
+  model_class: "TEXT_CNN"
+  kd:
+    use_kd: True
+    teacher_dir: "../output/knowledge_distillation/teacher_model_cls"
+    loss_type: 'mse'
+    soft_lambda: 0.5
+    kl_T: 5
+  seed: 42
+  log_steps: 100
+  batch_size: 32
+  final_model: "best" # "best" or "last"
+  optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
+  early_stop: null
+model_params:
+  tokenizer_source: "char_split"
+  num_train_epochs: 20
+  embedding_trainable: True
+  pretrained_emb_path: null
+  emb_dim: 80
+  emb_dropout: 0.1
+  kernel_num: 80
+  kernel_size: 3
+  cnn_use_bn: False
+  cnn_dropout: 0
+  pool_method: "max"
+  output_hidden_act_func: "PReLU"
+# explanation:
+#     Random:
+#       method: "Random" # Random LayerIntegratedGradients Custom
+#       batch_size: 1
+#       exclude_cls_sep: True
+#     AttnSum:
+#       method: "Custom" # Random LayerIntegratedGradients Custom
+#       model_output: "attentions"
+#       attn_agg_method: "ATTN_SUM"
+#       batch_size: 1
+#       exclude_cls_sep: True
+#     AttnBackprop: 
+#       method: "Custom" # Random LayerIntegratedGradients Custom
+#       model_output: "attentions"
+#       attn_agg_method: "ATTN_BACKPROP"
+#       batch_size: 1
+#       exclude_cls_sep: True
+#     IntegratedGradients:
+#       method: "LayerIntegratedGradients" # Random LayerIntegratedGradients Custom
+#       layer: "pretrained_model.embeddings.word_embeddings"
+#       batch_size: 1
+#       exclude_cls_sep: True
