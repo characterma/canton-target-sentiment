@@ -3,12 +3,48 @@ import logging
 import os
 
 import numpy as np
-from model.utils import load_pretrained_bert, MODEL_CLASS_MAP
+from model.utils import load_pretrained_bert
 from pathlib import Path
 from sklearn.decomposition import PCA
 from tokenizer import get_tokenizer
 
 logger = logging.getLogger(__name__)
+
+def get_local_emb(local_path: str):
+    vocabs = []
+    vectors = []
+    with open(local_path, encoding="utf-8", errors="ignore") as f:
+        for _ in f:
+            break
+        for line in f:
+            split_result = line.rstrip().split(" ")
+            vocabs.append(split_result[0])
+            vectors.append(split_result[1:])
+    vectors = np.array(vectors, dtype=float)
+    vocabs = np.array([vocabs])
+    logger.info("  Embeddings size = '%s'", str(vectors.shape)) 
+    return vocabs, vectors
+
+def get_pretrain_emb(pretrain_model: str):
+    logger.info("***** Loading pretrained embeddings from HuggingFace *****")
+    class arg():
+        def __init__(self, ppath: str):
+            self.model_config = {
+                "pretrained_lm": None if os.path.exists(Path(ppath)) else ppath,
+                "pretrained_lm_from_prev": Path(ppath) if os.path.exists(Path(ppath)) else None,
+                "tokenizer_source": "transformers",
+                "tokenizer_name": pretrain_model
+            }
+    args = arg(pretrain_model)
+    model = load_pretrained_bert(args)
+    param_dict = dict(model.named_parameters())
+    # embedding key name in model (huggingface: embeddings.word_embeddings.weight)
+    emb_key = 'embeddings.word_embeddings.weight'
+    vectors = param_dict[emb_key].cpu().detach().numpy()
+    tokenizer = get_tokenizer(args)
+    vocab_dict = {k: v for k, v in sorted(tokenizer.get_vocab().items(), key=lambda item: item[1])}
+    vocabs = np.array([list(vocab_dict.keys())])
+    return vocabs, vectors
 
 def load_embedding(pretrain_path: str):
     '''
@@ -27,46 +63,11 @@ def load_embedding(pretrain_path: str):
         output:
         - numpy.array (fit output of _load_pretrained_emb)
     '''
-    model_class = list(MODEL_CLASS_MAP.keys())
     if pretrain_path[-4:] == '.txt':
         # similar as _load_pretrained_emb but vocab list is required
-        logger.info("***** Loading pretrained embeddings from local file *****")
-        vocabs = []
-        vectors = []
-        with open(pretrain_path, encoding="utf-8", errors="ignore") as f:
-            for _ in f:
-                break
-            for line in f:
-                split_result = line.rstrip().split(" ")
-                vocabs.append(split_result[0])
-                vectors.append(split_result[1:])
-        vectors = np.array(vectors, dtype=float)
-        vocabs = np.array([vocabs])
-        logger.info("  Embeddings size = '%s'", str(vectors.shape))
-        return vocabs, vectors
-    elif pretrain_path in model_class:
-        logger.info("***** Loading pretrained embeddings from HuggingFace *****")
-        class arg():
-            def __init__(self, ppath: str):
-                self.model_config = {
-                    "pretrained_lm": None if os.path.exists(Path(ppath)) else ppath,
-                    "pretrained_lm_from_prev": Path(ppath) if os.path.exists(Path(ppath)) else None,
-                    "tokenizer_source": "transformers",
-                    "tokenizer_name": pretrain_path
-                }
-        args = arg(pretrain_path)
-        model = load_pretrained_bert(args)
-        param_dict = dict(model.named_parameters())
-        # embedding key name in model (huggingface: embeddings.word_embeddings.weight)
-        emb_key = 'embeddings.word_embeddings.weight'
-        vectors = param_dict[emb_key].cpu().detach().numpy()
-        tokenizer = get_tokenizer(args)
-        vocab_dict = {k: v for k, v in sorted(tokenizer.get_vocab().items(), key=lambda item: item[1])}
-        vocabs = np.array([list(vocab_dict.keys())])
-        return vocabs, vectors
+        return get_local_emb(local_path = pretrain_path)
     else:
-        logging.error('pretrain path does not exist in local directory or huggingface selected models.')
-        return
+        return get_pretrain_emb(pretrain_model = pretrain_path)
 
 def post_processing_algorithm(embedding: np.array, output_dim: int, remove_dim: int, seed: int):
     logger.info("***** PPA : Removing Projections on Top "+str(remove_dim)+" Components *****")
@@ -87,7 +88,7 @@ def post_processing_algorithm(embedding: np.array, output_dim: int, remove_dim: 
     z = np.asarray(z)
     return z
 
-def principal_components_analysis(embedding: np.array, output_dim: int, seed: int):
+def principal_components_analysis(embedding: np.array, output_dim: int, remove_dim: int, seed: int):
     logger.info("***** PCA: Dimension Reduction *****")
     pca =  PCA(n_components = output_dim, random_state = seed)
     embedding = embedding - np.mean(embedding)
@@ -106,25 +107,25 @@ def dimension_reduction(embedding: np.array, output_dim: int, mode: str, remove_
         - numpy.array
     '''
     if embedding.ndim != 2:
-        logging.error('Embedding tensor must be 2 dimensions')
+        logger.error('Embedding tensor must be 2 dimensions')
         return
     if embedding.shape[1] < 2 * output_dim:
-        logging.error('Two times of Reduced dimension must be equal or less than embedding dimensions')
+        logger.error('Two times of Reduced dimension must be equal or less than embedding dimensions')
         return
     if embedding.shape[1] < remove_dim:
-        logging.error('Embedding dimension must be equal or more than '+remove_dim)
+        logger.error('Embedding dimension must be equal or more than '+remove_dim)
         return
     if embedding.shape[0] < 2 * output_dim:
-        logging.error('Two times of reduced dimension must be equal or less than no. of vocab')
+        logger.error('Two times of reduced dimension must be equal or less than no. of vocab')
         return
 
-    seed = 42
+    # TODO: mode list -> for loop steps
+    mode_func_dict = {'PPA': post_processing_algorithm, 'PCA': principal_components_analysis}
+    mode_func_ls = [mode_func_dict[mod] for mod in mode.split('-')]
+    
+    for mode_func in mode_func_ls:
+        embedding = mode_func(embedding, output_dim, remove_dim, seed)     
 
-    if mode.split('-')[0] == 'PPA':
-        embedding = post_processing_algorithm(embedding, output_dim*2, remove_dim, seed)
-    embedding = principal_components_analysis(embedding, output_dim, seed)
-    if mode.split('-')[-1] == 'PPA':   
-        embedding = post_processing_algorithm(embedding, output_dim, remove_dim, seed)
     return embedding
 
 def save_embedding(embedding: np.array, vocab: np.array, save_path: str):
