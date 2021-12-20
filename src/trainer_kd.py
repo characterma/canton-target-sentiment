@@ -46,34 +46,27 @@ class KDTrainer(Trainer):
         self.kd_config = args.kd_config
 
     @staticmethod
-    def get_dynamic_temperature(student_logits, teacher_logits, kd_config):
-        '''
-        input:
-        - soft_student_logits: torch.tensor
-        - soft_teacher_logits: torch.tensor
-        - kd_config: dict
+    def get_static_temperature(student_logits, kd_config):
+        initial_temp = kd_config['kl_T']
+        return torch.tensor(
+                [[initial_temp for i in range(student_logits.shape[0])]]
+            ).T.to(student_logits.device)
 
-        output:
-        - torch.tensor (1 dimension)
-        '''
-        types = kd_config['dtd_type']
+    @staticmethod
+    def get_dynamic_temperature(student_logits, teacher_logits, kd_config):
+        dtd_type = kd_config['dtd_type']
         dtd_bias = kd_config['dtd_bias']
         dtd_flsw_pow = kd_config['dtd_flsw_pow']
         initial_temp = kd_config['kl_T']
-
-        if types == 'NA':
-            return torch.tensor(
-                [[initial_temp for i in range(teacher_logits.shape[0])]]
-            ).T.to(student_logits.device)
-
+        
         wx = []
         soft_student_logits = softmax(student_logits, dim=-1)
         soft_teacher_logits = softmax(teacher_logits, dim=-1)
         for i in range(soft_teacher_logits.shape[0]):
-            if types == 'flsw':
+            if dtd_type == 'flsw':
                 # cos = nn.CosineSimilarity(dim = 0, eps=1e-6)
                 wx.append((1- torch.dot(soft_student_logits[i], soft_teacher_logits[i]))**dtd_flsw_pow)
-            elif types == 'cwsm':
+            elif dtd_type == 'cwsm':
                 wx.append(1/torch.max(soft_student_logits[i]))
             else:
                 raise ValueError(f"Expected knowledge distillation loss type 'NA' or 'flsw' or 'cwsm'")
@@ -84,6 +77,24 @@ class KDTrainer(Trainer):
             dy_temp = dy_temp if dy_temp >= 1 else 1
             kl_temp.append(dy_temp)
         return torch.tensor([kl_temp]).T.to(student_logits.device)
+    
+    @staticmethod
+    def get_temperature(student_logits, teacher_logits, kd_config):
+        '''
+        input:
+        - soft_student_logits: torch.tensor
+        - soft_teacher_logits: torch.tensor
+        - kd_config: dict
+
+        output:
+        - torch.tensor (1 dimension)
+        '''
+        dtd_type = kd_config['dtd_type']
+        if dtd_type == 'NA':
+            return KDTrainer.get_static_temperature(teacher_logits, kd_config)
+        else:
+            return KDTrainer.get_dynamic_temperature(teacher_logits, student_logits, kd_config)
+        
 
 
     @staticmethod
@@ -102,7 +113,7 @@ class KDTrainer(Trainer):
                 input=student_logits, target=teacher_logits, reduction="mean"
             )
         elif loss_type == "kl":
-            kl_T = KDTrainer.get_dynamic_temperature(student_logits, teacher_logits, kd_config)
+            kl_T = KDTrainer.get_temperature(student_logits, teacher_logits, kd_config)
             soft_student = log_softmax(student_logits / kl_T, dim=-1)
             soft_teacher = softmax(teacher_logits / kl_T, dim=-1)
             # sum of classes KL -> soften logit -> batchmean

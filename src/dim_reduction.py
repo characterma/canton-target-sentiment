@@ -62,13 +62,10 @@ def load_embedding(pretrain_path: str):
                     introduction line          
                     vocab1 0.2154 0.5796 0.5844 -0.5544 0.5462 ...
                     vocab2 ... 
-            # TODO: ask nlp team if it it is required
-            3. local model path: "../config/examples/sequence_classification/BERT_AVG/model/" (Only available for huggingface model structure)
-
         output:
         - numpy.array (fit output of _load_pretrained_emb)
     '''
-    if pretrain_path[-4:] == '.txt':
+    if pretrain_path.endswith('txt'):
         # similar as _load_pretrained_emb but vocab list is required
         return get_local_emb(local_path = pretrain_path)
     else:
