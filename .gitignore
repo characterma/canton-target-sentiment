@@ -132,22 +132,3 @@ log
 patch_202101/*
 etl/*
 
-# specialize for common_kdnew
-
-## time folder
-config/examples/sequence_classification/BERT_AVG/2021*/**
-config/examples/sequence_classification/BERT_AVG_kd/2021*/**
-config/examples/sequence_classification/BERT_CLS/2021*/**
-config/examples/sequence_classification/TEXT_CNN/2021*/**
-config/examples/sequence_classification/TEXT_CNN_kd/2021*/**
-
-## logs folder
-config/examples/sequence_classification/**/logs/**
-
-## wandb
-src/wandb/**
-
-## src core files
-src/core*
-
-
