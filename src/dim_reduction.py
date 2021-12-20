@@ -6,7 +6,8 @@ import numpy as np
 from model.utils import load_pretrained_bert
 from pathlib import Path
 from sklearn.decomposition import PCA
-from tokenizer import get_tokenizer
+from tokenizer import TOKENIZER_CLASS_MAP
+from transformers import AutoTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -31,19 +32,23 @@ def get_pretrain_emb(pretrain_model: str):
         def __init__(self, ppath: str):
             self.model_config = {
                 "pretrained_lm": None if os.path.exists(Path(ppath)) else ppath,
-                "pretrained_lm_from_prev": Path(ppath) if os.path.exists(Path(ppath)) else None,
-                "tokenizer_source": "transformers",
-                "tokenizer_name": pretrain_model
+                "pretrained_lm_from_prev": None, #Path(ppath) if os.path.exists(Path(ppath)) else None,
             }
-    args = arg(pretrain_model)
+    args = arg(pretrain_model)        
+    tokenizer = TOKENIZER_CLASS_MAP.get(pretrain_model, AutoTokenizer).from_pretrained(
+        pretrain_model,
+        use_fast = True,
+        add_special_tokens = True
+    )
+    args.tokenizer_len = len(tokenizer)
+    vocab_dict = {k: v for k, v in sorted(tokenizer.get_vocab().items(), key=lambda item: item[1])}
+    vocabs = np.array([list(vocab_dict.keys())])        
+    
     model = load_pretrained_bert(args)
     param_dict = dict(model.named_parameters())
     # embedding key name in model (huggingface: embeddings.word_embeddings.weight)
     emb_key = 'embeddings.word_embeddings.weight'
     vectors = param_dict[emb_key].cpu().detach().numpy()
-    tokenizer = get_tokenizer(args)
-    vocab_dict = {k: v for k, v in sorted(tokenizer.get_vocab().items(), key=lambda item: item[1])}
-    vocabs = np.array([list(vocab_dict.keys())])
     return vocabs, vectors
 
 def load_embedding(pretrain_path: str):
