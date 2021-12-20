@@ -89,8 +89,8 @@ class KDTrainer(Trainer):
         output:
         - torch.tensor (1 dimension)
         '''
-        dtd_type = kd_config['dtd_type']
-        if dtd_type == 'NA':
+        dtd_type = kd_config.get('dtd_type', None)
+        if dtd_type is None:
             return KDTrainer.get_static_temperature(teacher_logits, kd_config)
         else:
             return KDTrainer.get_dynamic_temperature(teacher_logits, student_logits, kd_config)
