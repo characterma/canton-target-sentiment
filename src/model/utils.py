@@ -24,7 +24,6 @@ from transformers import (
     AlbertModel,
     AutoModel
 )
-
 from transformers.file_utils import ModelOutput
 
 logger = logging.getLogger(__name__)
@@ -75,6 +74,7 @@ MODEL_CLASS_MAP = {
     "hfl/chinese-roberta-wwm-ext-large": BertModel,
 }
 
+
 def load_pretrained_bert(args):
     logger.info("***** Loading pretrained language model *****")
     model_config = args.model_config
@@ -104,12 +104,13 @@ def load_pretrained_config(args):
         config = CONFIG_CLASS_MAP.get(model_name, AutoConfig).from_pretrained(model_dir)
         tokenizer_dir = args.model_dir / "tokenizer"
         config.save_pretrained(str(tokenizer_dir))
-        return config
+        return config 
     else:
         prev_args = get_args(prev_model_dir)
         prev_args = load_config(prev_args)
         model_name = prev_args.model_config["pretrained_lm"]
         return CONFIG_CLASS_MAP.get(model_name, AutoConfig).from_pretrained(model_name)
+    
     
 @dataclass
 class NLPModelOutput(ModelOutput):
