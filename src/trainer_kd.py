@@ -69,7 +69,7 @@ class KDTrainer(Trainer):
             elif dtd_type == 'cwsm':
                 wx.append(1/torch.max(soft_student_logits[i]))
             else:
-                raise ValueError(f"Expected knowledge distillation loss type 'NA' or 'flsw' or 'cwsm'")
+                raise ValueError(f"Expected knowledge distillation loss type 'flsw' or 'cwsm'")
 
         kl_temp = []
         for i in range(soft_teacher_logits.shape[0]):
