@@ -84,7 +84,11 @@ def load_pretrained_bert(args):
         model_name = model_config["pretrained_lm"]
         model_dir = model_config.get("pretrained_lm_dir", model_name)
         logger.info("  Pretrained BERT = '%s'", str(model_dir))
-        model = MODEL_CLASS_MAP.get(model_name, AutoModel).from_pretrained(model_dir)
+        try: 
+            model = MODEL_CLASS_MAP.get(model_name, AutoModel).from_pretrained(model_dir)
+        except:
+            logging.error('Pretrained model requires specific huggingface model class, please add it into MODEL_CLASS_MAP.')
+            raise
         model.resize_token_embeddings(args.tokenizer_len)
         return model
     else:
@@ -101,7 +105,11 @@ def load_pretrained_config(args):
     if prev_model_dir is None:
         model_name = model_config["pretrained_lm"]
         model_dir = model_config.get("pretrained_lm_dir", model_name)
-        config = CONFIG_CLASS_MAP.get(model_name, AutoConfig).from_pretrained(model_dir)
+        try: 
+            config = CONFIG_CLASS_MAP.get(model_name, AutoConfig).from_pretrained(model_dir)
+        except:
+            logging.error('Pretrained model requires specific huggingface config class, please add it into CONFIG_CLASS_MAP.')
+            raise
         tokenizer_dir = args.model_dir / "tokenizer"
         config.save_pretrained(str(tokenizer_dir))
         return config 
@@ -109,8 +117,11 @@ def load_pretrained_config(args):
         prev_args = get_args(prev_model_dir)
         prev_args = load_config(prev_args)
         model_name = prev_args.model_config["pretrained_lm"]
-        return CONFIG_CLASS_MAP.get(model_name, AutoConfig).from_pretrained(model_name)
-    
+        try: 
+            return CONFIG_CLASS_MAP.get(model_name, AutoConfig).from_pretrained(model_name)
+        except:
+            logging.error('Pretrained model requires specific huggingface config class, please add it into CONFIG_CLASS_MAP.')
+            raise
     
 @dataclass
 class NLPModelOutput(ModelOutput):
