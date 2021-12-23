@@ -19,7 +19,7 @@ def get_local_emb(local_path: str):
             break
         for line in f:
             split_result = line.rstrip().split(" ")
-            vocabs.append(split_result[0])
+            vocabs.append(split_result[0].replace('\u2028', ''))
             vectors.append(split_result[1:])
     vectors = np.array(vectors, dtype=float)
     vocabs = np.array([vocabs])
@@ -41,7 +41,7 @@ def get_pretrain_emb(pretrain_model: str):
         add_special_tokens = True
     )
     args.tokenizer_len = len(tokenizer)
-    vocab_dict = {k: v for k, v in sorted(tokenizer.get_vocab().items(), key=lambda item: item[1])}
+    vocab_dict = {k.replace('\u2028', '') : v for k, v in sorted(tokenizer.get_vocab().items(), key=lambda item: item[1])}
     vocabs = np.array([list(vocab_dict.keys())])        
     
     model = load_pretrained_bert(args)
