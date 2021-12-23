@@ -1,7 +1,6 @@
 import unittest
 import sys
 import numpy as np
-from numpy import loadtxt
 from transformers import AutoTokenizer, AutoModel
 
 sys.path.append("../src/")
@@ -75,7 +74,7 @@ class TestDimReduction(unittest.TestCase):
         pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
         _, embedding = load_embedding(pretrain_path)
         embedding_num_vocab_target = embedding.shape[0]
-        embedding_num_dimension_target = 16
+        embedding_num_dimension_target = 128
         mode = 'PPA-PCA'
         remove_dim = 7
         seed = 42
@@ -90,8 +89,12 @@ class TestDimReduction(unittest.TestCase):
         embedding_num_vocab_result = reduced_tensor.shape[0]
         embedding_num_dimension_result = reduced_tensor.shape[1]
         
+        self.assertLogs('Test shape of dimension reduction result')
         self.assertTrue(embedding_num_vocab_result == embedding_num_vocab_target)
         self.assertTrue(embedding_num_dimension_result == embedding_num_dimension_target)
+        
+        
+        
         
     def test_save_embedding(self):
         pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
