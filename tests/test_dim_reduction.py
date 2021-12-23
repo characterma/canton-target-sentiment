@@ -1,6 +1,8 @@
 import unittest
 import sys
 import numpy as np
+from numpy import dot
+from numpy.linalg import norm
 from transformers import AutoTokenizer, AutoModel
 
 sys.path.append("../src/")
@@ -12,20 +14,23 @@ from tokenizer import TOKENIZER_CLASS_MAP
 
 class TestDimReduction(unittest.TestCase):
     def test_load_local_emb(self):
-        pretrain_path = "../data/word_embeddings/sample_word_emb.txt"
-        vocab_result, embedding_result = load_embedding(pretrain_path)
+        embedding_path = "../tests/test_dim_reduction_samples/sample_word_emb.txt"
+        vocab_result, embedding_result = load_embedding(embedding_path)
         
+        # load target files
+        vocab_target_path = "../tests/test_dim_reduction_samples/sample_word_emb_vocab.txt"
+        embedding_target_path = "../tests/test_dim_reduction_samples/sample_word_emb_embedding.txt"
         vocabs = []
+        with open(vocab_target_path, encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                vocabs.append(line.rstrip())
         embedding = []
-        with open(pretrain_path, encoding="utf-8", errors="ignore") as f:
-            for _ in f:
-                break
+        with open(embedding_target_path, encoding="utf-8", errors="ignore") as f:
             for line in f:
                 split_result = line.rstrip().split(" ")
-                vocabs.append(split_result[0])
-                embedding.append(split_result[1:])
-        embedding_target = np.array(embedding, dtype=float)
+                embedding.append(split_result)
         vocab_target = np.array([vocabs])
+        embedding_target = np.array(embedding, dtype=float)
         
         self.assertTrue(np.array_equal(vocab_result, vocab_target))
         self.assertTrue(np.array_equal(embedding_result, embedding_target))
@@ -36,16 +41,20 @@ class TestDimReduction(unittest.TestCase):
         self.assertTrue(pretrain_path in TOKENIZER_CLASS_MAP)
         
         vocab_result, embedding_result = load_embedding(pretrain_path)
-        tokenizer = TOKENIZER_CLASS_MAP[pretrain_path].from_pretrained(
-            pretrain_path,
-            use_fast=True,
-            add_special_tokens=True
-        )
-        vocab_dict = {k: v for k, v in sorted(tokenizer.get_vocab().items(), key=lambda item: item[1])}
-        vocab_target = np.array([list(vocab_dict.keys())])
-        model = MODEL_CLASS_MAP[pretrain_path].from_pretrained(pretrain_path)
-        model.resize_token_embeddings(len(tokenizer))
-        embedding_target = dict(model.named_parameters())['embeddings.word_embeddings.weight'].cpu().detach().numpy()
+        # load target files
+        vocab_target_path = "../tests/test_dim_reduction_samples/roberta_wwm_large_vocab.txt"
+        embedding_target_path = "../tests/test_dim_reduction_samples/roberta_wwm_large_embedding_1024d.txt"
+        vocabs = []
+        with open(vocab_target_path, encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                vocabs.append(line.rstrip())
+        embedding = []
+        with open(embedding_target_path, encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                split_result = line.rstrip().split(" ")
+                embedding.append(split_result)
+        vocab_target = np.array([vocabs])
+        embedding_target = np.array(embedding, dtype=np.float32)
         
         self.assertTrue(np.array_equal(vocab_result, vocab_target))
         self.assertTrue(np.array_equal(embedding_result, embedding_target))
@@ -56,16 +65,20 @@ class TestDimReduction(unittest.TestCase):
         self.assertTrue(pretrain_path not in TOKENIZER_CLASS_MAP)
          
         vocab_result, embedding_result = load_embedding(pretrain_path)
-        tokenizer = AutoTokenizer.from_pretrained(
-            pretrain_path,
-            use_fast=True,
-            add_special_tokens=True
-        )
-        vocab_dict = {k: v for k, v in sorted(tokenizer.get_vocab().items(), key=lambda item: item[1])}
-        vocab_target = np.array([list(vocab_dict.keys())])
-        model = AutoModel.from_pretrained(pretrain_path)
-        model.resize_token_embeddings(len(tokenizer))
-        embedding_target = dict(model.named_parameters())['embeddings.word_embeddings.weight'].cpu().detach().numpy()
+        # load target files
+        vocab_target_path = "../tests/test_dim_reduction_samples/chinese_bert_wwm_vocab.txt"
+        embedding_target_path = "../tests/test_dim_reduction_samples/chinese_bert_wwm_embedding_768d.txt"
+        vocabs = []
+        with open(vocab_target_path, encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                vocabs.append(line.rstrip())
+        embedding = []
+        with open(embedding_target_path, encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                split_result = line.rstrip().split(" ")
+                embedding.append(split_result)
+        vocab_target = np.array([vocabs])
+        embedding_target = np.array(embedding, dtype=np.float32)
         
         self.assertTrue(np.array_equal(vocab_result, vocab_target))
         self.assertTrue(np.array_equal(embedding_result, embedding_target))
@@ -93,16 +106,29 @@ class TestDimReduction(unittest.TestCase):
         self.assertTrue(embedding_num_vocab_result == embedding_num_vocab_target)
         self.assertTrue(embedding_num_dimension_result == embedding_num_dimension_target)
         
-        
-        
-        
+        test_words = ['紅', '王', '你', '好', '嗎']
+        for word in test_words:
+            word_idx = np.where(_[0] == word)[0][0]
+            word_emb = embedding[word_idx]
+            cos_similarities = dot(word_emb, embedding.T) / (norm(word_emb)*norm(embedding, axis=1)) 
+            cos_sorted_idx = np.argsort(cos_similarities)
+            
+            for i in range(5):
+                similar_word_idx = cos_sorted_idx[-2-i]
+                dissimilar_word_idx = cos_sorted_idx[i]
+                # similar_word = _[0][similar_word_idx]
+                # dissimilar_word = _[0][dissimilar_word_idx]
+                
+                cos_similarities_reduced = dot(reduced_tensor[word_idx], reduced_tensor.T) / (norm(reduced_tensor[word_idx])*norm(reduced_tensor, axis=1)) 
+                self.assertGreater(cos_similarities_reduced[similar_word_idx], cos_similarities_reduced[dissimilar_word_idx])
+            
     def test_save_embedding(self):
         pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
         vocab_result, embedding_result = load_embedding(pretrain_path)   
         embedding_num_vocab_target = embedding_result.shape[0]
         embedding_num_dimension_target = embedding_result.shape[1]
         
-        save_path = "../data/word_embeddings/roberta_{dim:n}D.txt".format(dim=embedding_num_dimension_target)
+        save_path = "../tests/test_dim_reduction_samples/roberta_wwm_large_embedding{dim:n}d.txt".format(dim=embedding_num_dimension_target)
         save_embedding(embedding = embedding_result, vocab = vocab_result, save_path = save_path)
         
         with open(save_path, 'rb') as f:
