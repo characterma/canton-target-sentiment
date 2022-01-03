@@ -3,7 +3,6 @@ import sys
 import numpy as np
 from numpy import dot
 from numpy.linalg import norm
-from transformers import AutoTokenizer, AutoModel
 
 sys.path.append("../src/")
 from dim_reduction import load_embedding
@@ -36,16 +35,16 @@ class TestDimReduction(unittest.TestCase):
         self.assertTrue(np.array_equal(embedding_result, embedding_target))
         
     def test_load_pretrain_model_in_classmap(self):
-        pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
+        pretrain_path = 'bert-base-chinese'
         self.assertTrue(pretrain_path in MODEL_CLASS_MAP)
         self.assertTrue(pretrain_path in TOKENIZER_CLASS_MAP)
         
         vocab_result, embedding_result = load_embedding(pretrain_path)
         # load target files
-        vocab_target_path = "../tests/test_dim_reduction_samples/roberta_wwm_large_vocab.txt"
-        embedding_target_path = "../tests/test_dim_reduction_samples/roberta_wwm_large_embedding_1024d.txt"
+        vocab_path = "../tests/test_dim_reduction_samples/sample_vocab.txt"
+        embedding_target_path = "../tests/test_dim_reduction_samples/sample_bert_base_chinese_embedding_768d.txt"
         vocabs = []
-        with open(vocab_target_path, encoding="utf-8", errors="ignore") as f:
+        with open(vocab_path, encoding="utf-8", errors="ignore") as f:
             for line in f:
                 vocabs.append(line.rstrip())
         embedding = []
@@ -53,11 +52,10 @@ class TestDimReduction(unittest.TestCase):
             for line in f:
                 split_result = line.rstrip().split(" ")
                 embedding.append(split_result)
-        vocab_target = np.array([vocabs])
         embedding_target = np.array(embedding, dtype=np.float32)
         
-        self.assertTrue(np.array_equal(vocab_result, vocab_target))
-        self.assertTrue(np.array_equal(embedding_result, embedding_target))
+        vocab_idx = [np.where(vocab_result[0] == word)[0][0] for word in vocabs]
+        self.assertTrue(np.array_equal(embedding_result[vocab_idx], embedding_target))
         
     def test_load_pretrain_model_notin_classmap(self):
         pretrain_path = 'hfl/chinese-bert-wwm'
@@ -66,10 +64,10 @@ class TestDimReduction(unittest.TestCase):
          
         vocab_result, embedding_result = load_embedding(pretrain_path)
         # load target files
-        vocab_target_path = "../tests/test_dim_reduction_samples/chinese_bert_wwm_vocab.txt"
-        embedding_target_path = "../tests/test_dim_reduction_samples/chinese_bert_wwm_embedding_768d.txt"
+        vocab_path = "../tests/test_dim_reduction_samples/sample_vocab.txt"
+        embedding_target_path = "../tests/test_dim_reduction_samples/sample_chinese_bert_wwm_embedding_768d.txt"
         vocabs = []
-        with open(vocab_target_path, encoding="utf-8", errors="ignore") as f:
+        with open(vocab_path, encoding="utf-8", errors="ignore") as f:
             for line in f:
                 vocabs.append(line.rstrip())
         embedding = []
@@ -77,19 +75,18 @@ class TestDimReduction(unittest.TestCase):
             for line in f:
                 split_result = line.rstrip().split(" ")
                 embedding.append(split_result)
-        vocab_target = np.array([vocabs])
         embedding_target = np.array(embedding, dtype=np.float32)
         
-        self.assertTrue(np.array_equal(vocab_result, vocab_target))
-        self.assertTrue(np.array_equal(embedding_result, embedding_target))
+        vocab_idx = [np.where(vocab_result[0] == word)[0][0] for word in vocabs]
+        self.assertTrue(np.array_equal(embedding_result[vocab_idx], embedding_target))
         
     def test_dimension_reduction(self):
-        pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
+        pretrain_path = 'bert-base-chinese'
         _, embedding = load_embedding(pretrain_path)
         embedding_num_vocab_target = embedding.shape[0]
-        embedding_num_dimension_target = 128
+        embedding_num_dimension_target = 24
         mode = 'PPA-PCA'
-        remove_dim = 7
+        remove_dim = 3
         seed = 42
         
         reduced_tensor = dimension_reduction(
@@ -113,7 +110,7 @@ class TestDimReduction(unittest.TestCase):
             cos_similarities = dot(word_emb, embedding.T) / (norm(word_emb)*norm(embedding, axis=1)) 
             cos_sorted_idx = np.argsort(cos_similarities)
             
-            for i in range(5):
+            for i in range(2):
                 similar_word_idx = cos_sorted_idx[-2-i]
                 dissimilar_word_idx = cos_sorted_idx[i]
                 # similar_word = _[0][similar_word_idx]
@@ -125,11 +122,15 @@ class TestDimReduction(unittest.TestCase):
     def test_save_embedding(self):
         pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
         vocab_result, embedding_result = load_embedding(pretrain_path)   
-        embedding_num_vocab_target = embedding_result.shape[0]
-        embedding_num_dimension_target = embedding_result.shape[1]
+        embedding_num_vocab_target = 25
+        embedding_num_dimension_target = 24
         
-        save_path = "../tests/test_dim_reduction_samples/roberta_wwm_large_embedding{dim:n}d.txt".format(dim=embedding_num_dimension_target)
-        save_embedding(embedding = embedding_result, vocab = vocab_result, save_path = save_path)
+        save_path = "../tests/test_dim_reduction_samples/sample_roberta_wwm_large_embedding_{dim:n}d.txt".format(dim=embedding_num_dimension_target)
+        save_embedding(
+            embedding = embedding_result[:embedding_num_vocab_target, :embedding_num_dimension_target], 
+            vocab = vocab_result[:,:embedding_num_vocab_target], 
+            save_path = save_path
+        )
         
         with open(save_path, 'rb') as f:
             for i, line in enumerate(f):
@@ -137,11 +138,12 @@ class TestDimReduction(unittest.TestCase):
                 if i == 0:
                     self.assertEqual(int(inner_list[0]), embedding_num_vocab_target)
                     self.assertEqual(int(inner_list[1]), embedding_num_dimension_target)
-                    self.assertEqual(inner_list[2], '')
+                    self.assertEqual(inner_list[-2], '')
                 else:
                     self.assertEqual(len(inner_list), 1 + embedding_num_dimension_target)
                     self.assertTrue(type(inner_list[0]) is str)
                     self.assertTrue(type(float(inner_list[1])) is float)
+                    self.assertTrue(type(float(inner_list[-2])) is float)
                     
                     
                     

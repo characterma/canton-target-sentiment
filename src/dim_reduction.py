@@ -111,14 +111,14 @@ def dimension_reduction(embedding: np.array, output_dim: int, mode: str, remove_
     if embedding.ndim != 2:
         logger.error('Embedding tensor must be 2 dimensions')
         return
-    if embedding.shape[1] < 2 * output_dim:
-        logger.error('Two times of Reduced dimension must be equal or less than embedding dimensions')
+    if embedding.shape[1] < output_dim:
+        logger.error('Reduced dimension must be equal or less than embedding dimensions')
         return
     if embedding.shape[1] < remove_dim:
         logger.error('Embedding dimension must be equal or more than '+remove_dim)
         return
-    if embedding.shape[0] < 2 * output_dim:
-        logger.error('Two times of reduced dimension must be equal or less than no. of vocab')
+    if embedding.shape[0] < output_dim:
+        logger.error('Reduced dimension must be equal or less than no. of vocab')
         return
 
     # TODO: mode list -> for loop steps
