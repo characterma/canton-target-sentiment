@@ -6,6 +6,13 @@ sys.path.append("../src/")
 from torch.nn.functional import mse_loss, kl_div, log_softmax, softmax
 from trainer_kd import KDTrainer
 
+def compute_kd_old_loss(student_logits, teacher_logits, kd_config):
+        soft_student = log_softmax(student_logits / kd_config["kl_T"], dim=-1)
+        soft_teacher = softmax(teacher_logits / kd_config["kl_T"], dim=-1)
+        return kd_config["kl_T"] ** 2 * kl_div(
+                soft_student, soft_teacher, reduction="batchmean"
+        )
+
 class TestComputeKD(unittest.TestCase):
     def test_vanilla_KD_kl(self):
         hard_loss = 0
@@ -24,12 +31,7 @@ class TestComputeKD(unittest.TestCase):
         }
         
         loss_new = KDTrainer.compute_kd_loss(hard_loss, student_logits, teacher_logits, kd_config)
-        
-        soft_student = log_softmax(student_logits / kd_config["kl_T"], dim=-1)
-        soft_teacher = softmax(teacher_logits / kd_config["kl_T"], dim=-1)
-        loss_old = kd_config["kl_T"] ** 2 * kl_div(
-            soft_student, soft_teacher, reduction="batchmean"
-        )
+        loss_old = compute_kd_old_loss(student_logits, teacher_logits, kd_config)
         # KL loss is torch tensor format scalar
         self.assertTrue(torch.isclose(loss_new, loss_old))
         

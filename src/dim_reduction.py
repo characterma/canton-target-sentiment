@@ -21,7 +21,7 @@ def get_local_emb(local_path: str):
             split_result = line.rstrip().split(" ")
             vocabs.append(split_result[0].replace('\u2028', ''))
             vectors.append(split_result[1:])
-    vectors = np.array(vectors, dtype=float)
+    vectors = np.array(vectors, dtype=np.float32)
     vocabs = np.array([vocabs])
     logger.info("  Embeddings size = '%s'", str(vectors.shape)) 
     return vocabs, vectors

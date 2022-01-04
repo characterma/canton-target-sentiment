@@ -1,4 +1,5 @@
 import unittest
+import os
 import sys
 import numpy as np
 from numpy import dot
@@ -7,29 +8,34 @@ from numpy.linalg import norm
 sys.path.append("../src/")
 from dim_reduction import load_embedding
 from dim_reduction import dimension_reduction
-from dim_reduction import save_embedding
 from model.utils import MODEL_CLASS_MAP
 from tokenizer import TOKENIZER_CLASS_MAP
 
+def load_local_vocab(vocab_path):
+    vocabs = []
+    with open(vocab_path, encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            vocabs.append(line.rstrip())
+    return np.array([vocabs])
+
+def load_local_embedding(embedding_path):
+    embedding = []
+    with open(embedding_path, encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            split_result = line.rstrip().split(" ")
+            embedding.append(split_result)
+    return np.array(embedding, dtype=np.float32)
+
 class TestDimReduction(unittest.TestCase):
     def test_load_local_emb(self):
-        embedding_path = "../tests/test_dim_reduction_samples/sample_word_emb.txt"
+        embedding_path = "../data/word_embeddings/sample_word_emb.txt"
         vocab_result, embedding_result = load_embedding(embedding_path)
         
         # load target files
-        vocab_target_path = "../tests/test_dim_reduction_samples/sample_word_emb_vocab.txt"
-        embedding_target_path = "../tests/test_dim_reduction_samples/sample_word_emb_embedding.txt"
-        vocabs = []
-        with open(vocab_target_path, encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                vocabs.append(line.rstrip())
-        embedding = []
-        with open(embedding_target_path, encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                split_result = line.rstrip().split(" ")
-                embedding.append(split_result)
-        vocab_target = np.array([vocabs])
-        embedding_target = np.array(embedding, dtype=float)
+        vocab_target_path = "../data/word_embeddings/sample_word_emb_vocab.txt"
+        embedding_target_path = "../data/word_embeddings/sample_word_emb_embedding.txt"
+        vocab_target = load_local_vocab(vocab_target_path)
+        embedding_target = load_local_embedding(embedding_target_path)
         
         self.assertTrue(np.array_equal(vocab_result, vocab_target))
         self.assertTrue(np.array_equal(embedding_result, embedding_target))
@@ -41,20 +47,13 @@ class TestDimReduction(unittest.TestCase):
         
         vocab_result, embedding_result = load_embedding(pretrain_path)
         # load target files
-        vocab_path = "../tests/test_dim_reduction_samples/sample_vocab.txt"
-        embedding_target_path = "../tests/test_dim_reduction_samples/sample_bert_base_chinese_embedding_768d.txt"
-        vocabs = []
-        with open(vocab_path, encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                vocabs.append(line.rstrip())
-        embedding = []
-        with open(embedding_target_path, encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                split_result = line.rstrip().split(" ")
-                embedding.append(split_result)
-        embedding_target = np.array(embedding, dtype=np.float32)
+        vocab_target_path = "../data/word_embeddings/sample_vocab.txt"
+        embedding_target_path = "../data/word_embeddings/sample_bert_base_chinese_embedding_768d.txt"
         
-        vocab_idx = [np.where(vocab_result[0] == word)[0][0] for word in vocabs]
+        vocab_target = load_local_vocab(vocab_target_path)
+        embedding_target = load_local_embedding(embedding_target_path)
+        
+        vocab_idx = [np.where(vocab_result[0] == word)[0][0] for word in vocab_target[0]]
         self.assertTrue(np.array_equal(embedding_result[vocab_idx], embedding_target))
         
     def test_load_pretrain_model_notin_classmap(self):
@@ -64,20 +63,13 @@ class TestDimReduction(unittest.TestCase):
          
         vocab_result, embedding_result = load_embedding(pretrain_path)
         # load target files
-        vocab_path = "../tests/test_dim_reduction_samples/sample_vocab.txt"
-        embedding_target_path = "../tests/test_dim_reduction_samples/sample_chinese_bert_wwm_embedding_768d.txt"
-        vocabs = []
-        with open(vocab_path, encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                vocabs.append(line.rstrip())
-        embedding = []
-        with open(embedding_target_path, encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                split_result = line.rstrip().split(" ")
-                embedding.append(split_result)
-        embedding_target = np.array(embedding, dtype=np.float32)
+        vocab_target_path = "../data/word_embeddings/sample_vocab.txt"
+        embedding_target_path = "../data/word_embeddings/sample_chinese_bert_wwm_embedding_768d.txt"
         
-        vocab_idx = [np.where(vocab_result[0] == word)[0][0] for word in vocabs]
+        vocab_target = load_local_vocab(vocab_target_path)
+        embedding_target = load_local_embedding(embedding_target_path)
+        
+        vocab_idx = [np.where(vocab_result[0] == word)[0][0] for word in vocab_target[0]]
         self.assertTrue(np.array_equal(embedding_result[vocab_idx], embedding_target))
         
     def test_dimension_reduction(self):
@@ -121,17 +113,18 @@ class TestDimReduction(unittest.TestCase):
             
     def test_save_embedding(self):
         pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
-        vocab_result, embedding_result = load_embedding(pretrain_path)   
-        embedding_num_vocab_target = 25
+        embedding_num_vocab_target = 21128
         embedding_num_dimension_target = 24
-        
-        save_path = "../tests/test_dim_reduction_samples/sample_roberta_wwm_large_embedding_{dim:n}d.txt".format(dim=embedding_num_dimension_target)
-        save_embedding(
-            embedding = embedding_result[:embedding_num_vocab_target, :embedding_num_dimension_target], 
-            vocab = vocab_result[:,:embedding_num_vocab_target], 
-            save_path = save_path
-        )
-        
+        save_path = f"../data/word_embeddings/roberta_wwm_large_embedding_{embedding_num_dimension_target}d.txt"
+
+        os.chdir("../src/")
+        code = os.system(f"python dim_reduction.py \
+                    --pretrain_path '{pretrain_path}'\
+                    --output_dim '{embedding_num_dimension_target}' \
+                    --save_path '{save_path}'"
+                    )
+        self.assertEqual(code, 0)
+
         with open(save_path, 'rb') as f:
             for i, line in enumerate(f):
                 inner_list = [val for val in line.decode("utf-8").split(' ')]
@@ -145,5 +138,7 @@ class TestDimReduction(unittest.TestCase):
                     self.assertTrue(type(float(inner_list[1])) is float)
                     self.assertTrue(type(float(inner_list[-2])) is float)
                     
-                    
+    def tearDown(self): 
+        save_path = "../data/word_embeddings/roberta_wwm_large_embedding_24d.txt"
+        os.system(f"rm {save_path}")                  
                     
