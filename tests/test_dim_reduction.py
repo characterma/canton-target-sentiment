@@ -74,20 +74,22 @@ class TestDimReduction(unittest.TestCase):
         
     def test_dimension_reduction(self):
         pretrain_path = 'bert-base-chinese'
-        _, embedding = load_embedding(pretrain_path)
-        embedding_num_vocab_target = embedding.shape[0]
+        embedding_num_vocab_target = 21128
         embedding_num_dimension_target = 24
-        mode = 'PPA-PCA'
-        remove_dim = 3
-        seed = 42
         
-        reduced_tensor = dimension_reduction(
-            embedding = embedding,
-            output_dim = embedding_num_dimension_target,
-            mode = mode,
-            remove_dim = remove_dim,
-            seed = seed
-        )
+        save_path = f"../data/word_embeddings/roberta_wwm_large_embedding_{embedding_num_dimension_target}d.txt"
+        
+        os.chdir("../src/")
+        code = os.system(f"python dim_reduction.py \
+                    --pretrain_path '{pretrain_path}'\
+                    --output_dim '{embedding_num_dimension_target}' \
+                    --save_path '{save_path}'"
+                    )
+        self.assertEqual(code, 0)
+
+        _, reduced_tensor = load_embedding(save_path)
+        _, embedding = load_embedding(pretrain_path)
+
         embedding_num_vocab_result = reduced_tensor.shape[0]
         embedding_num_dimension_result = reduced_tensor.shape[1]
         
