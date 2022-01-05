@@ -1,0 +1,37 @@
+task: "sequence_classification"
+device: 0
+data:
+  output_dir: "../config/examples/sequence_classification/TEXT_CNN_kd_dtd"
+  data_dir: "../data/datasets/sample/sequence_classification"
+  train: train_sample.json
+  dev: train_sample.json
+  test: train_sample.json
+  unlabeled: unlabeled_sample.json
+text_prepro:
+  steps:
+    - utf8_replace
+    - simplified_chinese
+    - lower_case
+    - full_to_half
+eval:
+  batch_size: 64
+  model_file: "model.pt"
+train:
+  model_class: "TEXT_CNN"
+  kd:
+    use_kd: True
+    teacher_dir: "../config/examples/sequence_classification/BERT_AVG/model/"
+    loss_type: 'mse'
+    soft_lambda: 0.5
+    kl_T: 5
+    dtd_type: "flsw"
+    dtd_bias: 10
+    dtd_flsw_pow: 2
+  seed: 42
+  batch_size: 32
+  final_model: "best" # "best" or "last"
+  optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
+  early_stop: null
+model_params:
+  num_train_epochs: 20
+  embedding_trainable: True
