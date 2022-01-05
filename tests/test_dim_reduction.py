@@ -131,6 +131,5 @@ class TestDimReduction(unittest.TestCase):
                     self.assertTrue(type(float(inner_list[-2])) is float)
                     
     def tearDown(self): 
-        save_path = "../data/word_embeddings/roberta_wwm_large_embedding_64d.txt"
-        os.system(f"rm {save_path}")                  
+        os.system(f"rm {self.save_path}")                  
                     
