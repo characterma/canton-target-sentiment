@@ -2,6 +2,7 @@
 import re
 import copy
 import pickle as pkl
+from copy import deepcopy
 from opencc import OpenCC
 
 
@@ -10,10 +11,18 @@ FULL2HALF[0x3000] = 0x20
 
 
 class Preprocessor:
-    def __init__(self, data_dict, steps):
+    def __init__(
+        self, 
+        data_dict, 
+        steps, 
+        special_text_to_rm=None
+    ):
         self.cc = OpenCC("t2s")
         self.data_dict = copy.deepcopy(data_dict)
         self.data_dict["raw"] = copy.deepcopy(data_dict)
+        self.special_text_to_rm = special_text_to_rm
+        if "rm_special_text" in steps:
+            assert(special_text_to_rm is not None)
 
         for s in steps:
             getattr(self, s)()
@@ -50,6 +59,28 @@ class Preprocessor:
     def rm_non_chinese_char(self):
         filtrate = re.compile(u"[^\u4E00-\u9FA5]")
         self.data_dict["content"] = filtrate.sub(r"", self.data_dict["content"])
+
+    def rm_special_text(self):
+        updated_idx = []
+        to_remove = sorted(self.special_text_to_rm, key=lambda x: len(x), reverse=True)  
+        to_remove = [r.replace('[', '\[').replace(']', '\]') for r in to_remove]
+        if 'target_locs' in self.data_dict:
+            target_locs = deepcopy(self.data_dict['target_locs'])
+        pattern = "|".join(to_remove)
+        for match in re.finditer(pattern, self.data_dict['content']):
+            text = self.data_dict['content']
+            e = match.end()
+            s = match.start()
+            if 'target_locs' in self.data_dict:
+                for t0, t1 in zip(self.data_dict['target_locs'], target_locs):
+                    if t0[0] >= e:
+                        t1[0] -= (e - s)
+                        t1[1] -= (e - s)
+                    elif t0[1] <= s:
+                        pass
+            self.data_dict['content'] = self.data_dict['content'].replace(match.group(), "")     
+        if 'target_locs' in self.data_dict:
+            self.data_dict['target_locs'] = target_locs
 
     def full_to_half(self):
         self.data_dict["content"] = self.data_dict["content"].translate(FULL2HALF)

@@ -142,13 +142,13 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
                 )
 
                 # load extra tokens
-                if args.data_config.get("extra_tokens"):
-                    extra_tokens_path = args.data_dir / args.data_config.get("extra_tokens")
-                    if extra_tokens_path and os.path.isfile(extra_tokens_path):
-                        extra_tokens = json.load(open(extra_tokens_path, 'r'))
-                        tokenizer.add_tokens(extra_tokens)
-                        logger.info("***** Added extra tokens *****")
-                        logger.info("  Extra tokens = '%s'", extra_tokens)
+                if args.data_config.get("extra_special_tokens"):
+                    extra_special_tokens_path = args.data_dir / args.data_config.get("extra_special_tokens")
+                    if extra_special_tokens_path and os.path.isfile(extra_special_tokens_path):
+                        extra_special_tokens = json.load(open(extra_special_tokens_path, 'r'))
+                        tokenizer.add_tokens(extra_special_tokens, special_tokens=True)
+                        logger.info("***** Added extra special tokens *****")
+                        logger.info("  Extra special tokens = '%s'", extra_special_tokens)
                         
                 tokenizer.save_pretrained(str(tokenizer_dir))
             args.tokenizer_len = len(tokenizer)
@@ -266,6 +266,7 @@ class MultiLingualTokenizer:
     def __call__(
         self,
         raw_text,
+        raw_text2=None, 
         max_length=None,
         truncation=True,
         padding="max_lenght",

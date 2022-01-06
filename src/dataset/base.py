@@ -4,6 +4,7 @@ import torch
 import json
 import abc
 import logging
+import os
 from tqdm import tqdm
 import pandas as pd
 
@@ -30,6 +31,13 @@ class NLPDataset:
 
     def load_data(self, raw_data=None):
         data_path = self.args.data_dir / self.args.data_config[self.dataset]
+
+        special_text_to_rm = None
+        if self.args.data_config.get("special_text_to_rm"):
+            special_text_to_rm_path = self.args.data_dir / self.args.data_config["special_text_to_rm"]
+            if os.path.isfile(special_text_to_rm_path):
+                special_text_to_rm = json.load(open(special_text_to_rm_path, "r"))
+            
         logger.info("***** Loading data *****")
         
         if raw_data is not None:
@@ -44,7 +52,8 @@ class NLPDataset:
                 data_dict=data_dict,
                 tokenizer=self.tokenizer,
                 args=self.args,
-                diagnosis=True,
+                diagnosis=True, 
+                special_text_to_rm=special_text_to_rm
             )
 
             if fea.feature_dict is not None:
@@ -102,7 +111,7 @@ class NLPDataset:
 
 
 class NLPFeature(abc.ABC):
-    def __init__(self, data_dict, tokenizer, args, diagnosis=False, padding="max_length"):
+    def __init__(self, data_dict, tokenizer, args, diagnosis=False, padding="max_length", special_text_to_rm=None):
         self.succeeded = True
         self.msg = ""
         self.feature_dict = {}
@@ -112,7 +121,12 @@ class NLPFeature(abc.ABC):
         required_features = get_model_inputs(args)
         prepro_config = args.prepro_config
 
-        preprocessor = Preprocessor(data_dict=data_dict, steps=prepro_config["steps"])
+        # print(data_dict)
+        preprocessor = Preprocessor(
+            data_dict=data_dict, 
+            steps=prepro_config["steps"], 
+            special_text_to_rm=special_text_to_rm
+        )
 
         self.get_feature(
             data_dict=preprocessor.data_dict,
