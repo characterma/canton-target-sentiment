@@ -4,6 +4,7 @@ import copy
 import pickle as pkl
 from copy import deepcopy
 from opencc import OpenCC
+from constants.sina_emojis import sina_emojis
 
 
 FULL2HALF = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
@@ -15,14 +16,10 @@ class Preprocessor:
         self, 
         data_dict, 
         steps, 
-        special_text_to_rm=None
     ):
         self.cc = OpenCC("t2s")
         self.data_dict = copy.deepcopy(data_dict)
         self.data_dict["raw"] = copy.deepcopy(data_dict)
-        self.special_text_to_rm = special_text_to_rm
-        if "rm_special_text" in steps:
-            assert(special_text_to_rm is not None)
 
         for s in steps:
             getattr(self, s)()
@@ -60,9 +57,9 @@ class Preprocessor:
         filtrate = re.compile(u"[^\u4E00-\u9FA5]")
         self.data_dict["content"] = filtrate.sub(r"", self.data_dict["content"])
 
-    def rm_special_text(self):
+    def rm_emojis(self):
         updated_idx = []
-        to_remove = sorted(self.special_text_to_rm, key=lambda x: len(x), reverse=True)  
+        to_remove = sorted(sina_emojis, key=lambda x: len(x), reverse=True)  
         to_remove = [r.replace('[', '\[').replace(']', '\]') for r in to_remove]
         if 'target_locs' in self.data_dict:
             target_locs = deepcopy(self.data_dict['target_locs'])
@@ -81,6 +78,44 @@ class Preprocessor:
             self.data_dict['content'] = self.data_dict['content'].replace(match.group(), "")     
         if 'target_locs' in self.data_dict:
             self.data_dict['target_locs'] = target_locs
+
+    def normalize_target(self):
+        target_locs = sorted(self.data_dict['target_locs'], key=lambda x: x[0])
+        content = self.data_dict['content']
+        replacement = "[unused1]"
+        
+        shift = 0
+        for t in target_locs:
+            t[0] += shift
+            t[1] += shift
+            content = content[:t[0]] + replacement + content[t[1]:]
+            shift += len(replacement) - (t[1] - t[0])
+            t[1] = t[0] + len(replacement)
+            
+        self.data_dict['target_locs'] = target_locs
+        self.data_dict['content'] = content
+
+    # def enclose_target(self):
+    #     content = self.data_dict['content']
+    #     left_token = "[E]"
+    #     right_token = "[/E]"
+
+    #     target_locs = []
+    #     shift = 0
+    #     for t in sorted(self.data_dict['target_locs'], key=lambda x: x[0]):
+    #         t[0] += shift
+    #         t[1] += shift
+    #         content = content[:t[0]] + left_token + content[t[0]:t[1]] + right_token + content[t[1]:]
+    #         shift += len(left_token) + len(right_token)
+    #         target_locs.append(
+    #             [t[0], t[0] + len(left_token)]
+    #         )
+    #         target_locs.append(
+    #             [t[1]  + len(left_token), t[1]  + len(left_token) + len(right_token)]
+    #         )
+            
+    #     self.data_dict['content'] = content
+    #     self.data_dict['target_locs'] = target_locs
 
     def full_to_half(self):
         self.data_dict["content"] = self.data_dict["content"].translate(FULL2HALF)

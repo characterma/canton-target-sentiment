@@ -132,13 +132,13 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
                 tokenizer = Tokenizer.from_pretrained(
                     str(tokenizer_dir),
                     use_fast=True,
-                    add_special_tokens=args.model_config.get("add_special_tokens", True),
+                    add_special_tokens=True
                 )
             else:
                 tokenizer = Tokenizer.from_pretrained(
                     name,
                     use_fast=True,
-                    add_special_tokens=args.model_config.get("add_special_tokens", True),
+                    add_special_tokens=True
                 )
 
                 # load extra tokens
@@ -160,7 +160,7 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
             tokenizer = Tokenizer.from_pretrained(
                 name,
                 use_fast=True,
-                add_special_tokens=args.model_config.get("add_special_tokens", True),
+                add_special_tokens=True
             )
         
         return tokenizer

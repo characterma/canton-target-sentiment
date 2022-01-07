@@ -31,13 +31,6 @@ class NLPDataset:
 
     def load_data(self, raw_data=None):
         data_path = self.args.data_dir / self.args.data_config[self.dataset]
-
-        special_text_to_rm = None
-        if self.args.data_config.get("special_text_to_rm"):
-            special_text_to_rm_path = self.args.data_dir / self.args.data_config["special_text_to_rm"]
-            if os.path.isfile(special_text_to_rm_path):
-                special_text_to_rm = json.load(open(special_text_to_rm_path, "r"))
-            
         logger.info("***** Loading data *****")
         
         if raw_data is not None:
@@ -53,7 +46,6 @@ class NLPDataset:
                 tokenizer=self.tokenizer,
                 args=self.args,
                 diagnosis=True, 
-                special_text_to_rm=special_text_to_rm
             )
 
             if fea.feature_dict is not None:
@@ -111,7 +103,7 @@ class NLPDataset:
 
 
 class NLPFeature(abc.ABC):
-    def __init__(self, data_dict, tokenizer, args, diagnosis=False, padding="max_length", special_text_to_rm=None):
+    def __init__(self, data_dict, tokenizer, args, diagnosis=False, padding="max_length"):
         self.succeeded = True
         self.msg = ""
         self.feature_dict = {}
@@ -125,7 +117,6 @@ class NLPFeature(abc.ABC):
         preprocessor = Preprocessor(
             data_dict=data_dict, 
             steps=prepro_config["steps"], 
-            special_text_to_rm=special_text_to_rm
         )
 
         self.get_feature(
