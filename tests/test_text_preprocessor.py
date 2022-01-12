@@ -38,6 +38,7 @@ class TestPreprocessor(unittest.TestCase):
         )
 
         self.assertTrue(pp.data_dict['content'] == data_dict_2['content'])
+        self.assertTrue(pp.data_dict['target_locs'] == data_dict_2['target_locs'])
 
 
     def test_enclose_target(self):
@@ -54,6 +55,7 @@ class TestPreprocessor(unittest.TestCase):
         )
 
         self.assertTrue(pp.data_dict['content'] == data_dict_2['content'])
+        self.assertTrue(pp.data_dict['target_locs'] == data_dict_2['target_locs'])
 
     def test_normalize_target(self):
         data_dict_1 = {
@@ -69,6 +71,7 @@ class TestPreprocessor(unittest.TestCase):
         )
 
         self.assertTrue(pp.data_dict['content'] == data_dict_2['content'])
+        self.assertTrue(pp.data_dict['target_locs'] == data_dict_2['target_locs'])
 
 
     def test_lower_case(self):

@@ -110,9 +110,6 @@ class Preprocessor:
             target_locs.append(
                 [t[0], t[0] + len(left_token)]
             )
-            target_locs.append(
-                [t[1]  + len(left_token), t[1]  + len(left_token) + len(right_token)]
-            )
             
         self.data_dict['content'] = content
         self.data_dict['target_locs'] = target_locs
