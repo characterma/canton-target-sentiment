@@ -1,18 +1,18 @@
 task: "target_classification"
-device: 1
+device: 0
 data:
   output_dir: "../output/mc_target_sentiment/emoji_as_special_tokens"
   data_dir: "../data/datasets/internal/target_sentiment/mc"
   train: train.json
   dev: dev.json
-  test: test_da_2.json
+  test: test.json
   unlabeled: unlabeled.json
-  extra_special_tokens: sina_emoji.json
+  extra_special_tokens: 
+    - sina_emojis
 text_prepro:
   steps:
     - simplified_chinese
     - full_to_half
-    # - enclose_target
 eval:
   batch_size: 16
   model_file: "model.pt"
