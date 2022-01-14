@@ -7,7 +7,7 @@ data:
   dev: dev.json
   test: test.json
   unlabeled: unlabeled.json
-  extra_tokens: nan.json
+  extra_special_tokens: null
 text_prepro:
   steps:
 #     - concat_headline_content_with_sep

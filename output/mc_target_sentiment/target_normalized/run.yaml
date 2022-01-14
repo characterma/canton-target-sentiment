@@ -7,7 +7,7 @@ data:
   dev: dev.json
   test: test.json
   unlabeled: unlabeled.json
-  extra_special_tokens: special_tokens.json
+  extra_special_tokens: null
   special_text_to_rm: nan.json
 text_prepro:
   steps:

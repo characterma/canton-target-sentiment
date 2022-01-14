@@ -1,19 +1,16 @@
 task: "target_classification"
-device: 1
+device: 0
 data:
-  output_dir: "../output/wbi/org_per_bert_avg_20211108"
-  data_dir: "../data/datasets/internal/wbi_comb"
-  train: test_non_ext.json
-  dev: test_non_ext.json
-  test: test_non_ext.json
+  output_dir: "../output/mc/20220113_baseline"
+  data_dir: "../data/datasets/internal/target_sentiment/mc"
+  train: train.json
+  dev: dev.json
+  test: test.json
   unlabeled: unlabeled.json
-  extra_tokens: nan.json
+  extra_special_tokens: 
+    - unused5
 text_prepro:
   steps:
-    - concat_headline_content_with_sep
-#     - concat_pub_code
-#     - concat_entity_name
-    - extract_post_context_1
     - simplified_chinese
     - full_to_half
 eval:
@@ -41,8 +38,9 @@ model_params:
   output_hidden_act_func: "PReLU"
   output_hidden_dim: 128
   output_use_bn: False
-  tokenizer_name: "hfl/chinese-macbert-base"  # voidful/albert_chinese_tiny
-  pretrained_lm: "hfl/chinese-macbert-base" # voidful/albert_chinese_tiny
+  tokenizer_name: "bert-base-chinese"  # voidful/albert_chinese_tiny
+  pretrained_lm: "bert-base-chinese" # voidful/albert_chinese_tiny
+  special_token_path: null
 explanation:
     Random:
       method: "Random"
