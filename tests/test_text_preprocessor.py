@@ -74,6 +74,24 @@ class TestPreprocessor(unittest.TestCase):
         self.assertTrue(pp.data_dict['target_locs'] == data_dict_2['target_locs'])
 
 
+    def test_mask_other_targets(self):
+        data_dict_1 = {
+            'content': '2020年底以来,默沙东、、阿斯利康和罗氏均爆出在国外撤销PD-1L1产品适应症的消息', 
+            'target_locs': [[19, 21]], 
+            'other_target_locs': [[0, 6], [9, 12], [14, 18], [19, 21]], 
+        }
+        data_dict_2 = {
+            'content': '[unused2]以来,[unused2]、、[unused2]和罗氏均爆出在国外撤销PD-1L1产品适应症的消息', 
+            'target_locs': [[33, 35]]
+        }
+        pp = Preprocessor(
+            data_dict=data_dict_1, steps=["mask_other_targets"]
+        )
+
+        self.assertTrue(pp.data_dict['content'] == data_dict_2['content'])
+        self.assertTrue(pp.data_dict['target_locs'] == data_dict_2['target_locs'])
+
+
     def test_lower_case(self):
         data_dict_1 = {
             'content': "Filled with jealousy, Omega made their thoughts known on social media."
