@@ -1,16 +1,18 @@
 task: "target_classification"
 device: 0
 data:
-  output_dir: "../output/mc/20220113_baseline"
+  output_dir: "../output/mc_target_sentiment/mask_other_targets"
   data_dir: "../data/datasets/internal/target_sentiment/mc"
-  train: train.json
-  dev: dev.json
-  test: test.json
+  train: train_with_ent.json
+  dev: dev_with_ent.json
+  test: test_with_ent.json
   unlabeled: unlabeled.json
   extra_special_tokens: 
     - unused5
 text_prepro:
   steps:
+    - mask_other_targets
+    - normalize_target
     - simplified_chinese
     - full_to_half
 eval:

@@ -9,6 +9,7 @@ from pathlib import Path
 from transformers import AutoTokenizer, BertTokenizerFast
 from preprocess import Preprocessor
 from utils import get_args, load_config
+from constants import get_constant
 
 
 logger = logging.getLogger(__name__)
@@ -143,12 +144,18 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
 
                 # load extra tokens
                 if args.data_config.get("extra_special_tokens"):
-                    extra_special_tokens_path = args.data_dir / args.data_config.get("extra_special_tokens")
-                    if extra_special_tokens_path and os.path.isfile(extra_special_tokens_path):
-                        extra_special_tokens = json.load(open(extra_special_tokens_path, 'r'))
+                    try:
+                        extra_special_tokens = []
+                        for st in args.data_config.get("extra_special_tokens"):
+                            extra_special_tokens.extend(get_constant(st))
+                        extra_special_tokens = list(set(extra_special_tokens))
                         tokenizer.add_tokens(extra_special_tokens, special_tokens=True)
                         logger.info("***** Added extra special tokens *****")
                         logger.info("  Extra special tokens = '%s'", extra_special_tokens)
+                    except Exception as e:
+                        logger.info("***** Failed adding extra special tokens *****")
+                        logger.info("  Error = '%s'", e)
+
                         
                 tokenizer.save_pretrained(str(tokenizer_dir))
             args.tokenizer_len = len(tokenizer)

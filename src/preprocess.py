@@ -95,27 +95,51 @@ class Preprocessor:
         self.data_dict['target_locs'] = target_locs
         self.data_dict['content'] = content
 
-    # def enclose_target(self):
-    #     content = self.data_dict['content']
-    #     left_token = "[E]"
-    #     right_token = "[/E]"
+    def enclose_target(self):
+        content = self.data_dict['content']
+        left_token = "[E]"
+        right_token = "[/E]"
 
-    #     target_locs = []
-    #     shift = 0
-    #     for t in sorted(self.data_dict['target_locs'], key=lambda x: x[0]):
-    #         t[0] += shift
-    #         t[1] += shift
-    #         content = content[:t[0]] + left_token + content[t[0]:t[1]] + right_token + content[t[1]:]
-    #         shift += len(left_token) + len(right_token)
-    #         target_locs.append(
-    #             [t[0], t[0] + len(left_token)]
-    #         )
-    #         target_locs.append(
-    #             [t[1]  + len(left_token), t[1]  + len(left_token) + len(right_token)]
-    #         )
+        target_locs = []
+        shift = 0
+        for t in sorted(self.data_dict['target_locs'], key=lambda x: x[0]):
+            t[0] += shift
+            t[1] += shift
+            content = content[:t[0]] + left_token + content[t[0]:t[1]] + right_token + content[t[1]:]
+            shift += len(left_token) + len(right_token)
+            target_locs.append(
+                [t[0], t[0] + len(left_token)]
+            )
             
-    #     self.data_dict['content'] = content
-    #     self.data_dict['target_locs'] = target_locs
+        self.data_dict['content'] = content
+        self.data_dict['target_locs'] = target_locs
+
+    def mask_other_targets(self):
+        content = self.data_dict['content']
+        mask_token = "[unused2]"
+
+        for i, t1 in enumerate(self.data_dict.get('other_target_locs', [])):
+            to_mask = True
+            for t0 in self.data_dict['target_locs']:
+                x0 = range(t0[0], t0[1])
+                x1 = range(t1[0], t1[1])
+                if len(set(x0).intersection(x1)) > 0:
+                    to_mask = False
+                    
+            if to_mask:
+                content = content[:t1[0]] + mask_token + content[t1[1]:]
+                shift = len(mask_token) - (t1[1] - t1[0])
+                for t0 in self.data_dict['target_locs']:
+                    if t0[0] > t1[0]:
+                        t0[0] += shift
+                        t0[1] += shift
+
+                for t2 in self.data_dict['other_target_locs'][i + 1:]:
+                    if t2[0] > t1[0]:
+                        t2[0] += shift
+                        t2[1] += shift   
+
+        self.data_dict['content'] = content
 
     def full_to_half(self):
         self.data_dict["content"] = self.data_dict["content"].translate(FULL2HALF)
