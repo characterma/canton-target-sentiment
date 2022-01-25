@@ -18,9 +18,11 @@ class CNN(nn.Module):
         output_hidden_dim = args.model_config["output_hidden_dim"]
         output_hidden_act_func = args.model_config["output_hidden_act_func"]
         output_use_bn = args.model_config["output_use_bn"]
-        
-        self.max_length = args.model_config["max_length"]
 
+        self.max_length = args.model_config["max_length"]
+        if type(kernel_size) == int:
+            kernel_size = [kernel_size]
+            
         self.emb = WordEmbeddings(
             pretrained_emb_path=args.pretrained_emb_path,
             embedding_trainable=args.model_config["embedding_trainable"],
