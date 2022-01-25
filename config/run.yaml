@@ -1,10 +1,10 @@
-task: "target_classification"
+task: "sequence_classification"
 device: 0
 data:
-  output_dir: "../output/mc/20220113_baseline"
-  data_dir: "../data/datasets/internal/target_sentiment/mc"
+  output_dir: "../output/mc/20220124_cnn_sst3"
+  data_dir: "../data/datasets/public/sequence_classification/sst"
   train: train.json
-  dev: dev.json
+  dev: test.json
   test: test.json
   unlabeled: unlabeled.json
   extra_special_tokens: 
@@ -17,7 +17,7 @@ eval:
   batch_size: 16
   model_file: "model.pt"
 train:
-  model_class: "TDBERT"
+  model_class: "TEXT_CNN"
   kd:
     use_kd: False
     teacher_dir: "../output/post_sentiment_20210707_bert_avg/model"
@@ -33,13 +33,13 @@ train:
 model_params:
   # ================= TDBERT =================
   max_length: 256
-  num_train_epochs: 10
+  num_train_epochs: 25
   embedding_trainable: True
   output_hidden_act_func: "PReLU"
   output_hidden_dim: 128
   output_use_bn: False
-  tokenizer_name: "bert-base-chinese"  # voidful/albert_chinese_tiny
-  pretrained_lm: "bert-base-chinese" # voidful/albert_chinese_tiny
+  tokenizer_name: "bert-base-cased"  # voidful/albert_chinese_tiny
+  pretrained_lm: "bert-base-cased" # voidful/albert_chinese_tiny
   special_token_path: null
 explanation:
     Random:
