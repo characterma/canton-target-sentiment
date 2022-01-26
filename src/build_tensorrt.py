@@ -49,6 +49,7 @@ def build_jit_trace(args):
 
     feature_dict = feature.feature_dict
     model = get_model(args=args)
+    model.set_return_logits()
 
     batch = dict()
     for col in feature_dict:
@@ -59,6 +60,9 @@ def build_jit_trace(args):
 
     x = tuple([batch[col].squeeze(-1) for col in batch])
     traced_model = torch.jit.trace(model, x)
+    traced_model.save(
+        args.model_dir / "traced_model.ts"
+    )
     logger.info("***** Build traced model succeeded. *****")
     return traced_model
 
@@ -111,6 +115,10 @@ def build_tensorrt(args, traced_model, fp=16):
         })
 
         logger.info("***** Build tensorrt fp16 succeeded. *****")
+
+    trt_model.save(
+        args.model_dir / f"trt_model_fp{args.fp}.ts"
+    )
     return trt_model
 
 
