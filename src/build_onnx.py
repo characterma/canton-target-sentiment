@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
     
 def build_onnx(args):  
     logger.info("***** Build onnx started. *****")
-    args.device = "cpu"
+    args.device = args.onnx_device
     tokenizer = get_tokenizer(args=args)
     feature_class = get_feature_class(args)
 
@@ -66,7 +66,9 @@ def build_onnx(args):
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", type=str, default="../output/wbi/org_per_bert_avg_20210925_all_ext2/model")
+    parser.add_argument("--onnx_device", type=str, default="cpu")
     args = parser.parse_args()
+    
     args = load_config(args=args)
     set_log_path(args.output_dir)
     build_onnx(args=args)
