@@ -27,23 +27,7 @@ def load_local_embedding(embedding_path):
     return np.array(embedding, dtype=np.float32)
 
 class TestDimReduction(unittest.TestCase):
-    # def __init__(self, *args, **kwargs):
-    #     super(TestDimReduction, self).__init__(*args, **kwargs)
-    #     self.pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
-    #     self.embedding_num_vocab_target = 21128
-    #     self.embedding_num_dimension_target = 64
-    #     self.reduction_mode = 'PPA-PCA'
-    #     self.save_path = f"../data/word_embeddings/roberta_wwm_large_embedding_{self.embedding_num_dimension_target}d.txt"
-        
-    #     os.chdir("../src/")
-    #     code = os.system(f"python dim_reduction.py \
-    #                 --pretrain_path '{self.pretrain_path}'\
-    #                 --output_dim '{self.embedding_num_dimension_target}' \
-    #                 --save_path '{self.save_path}' \
-    #                 --reduction_mode '{self.reduction_mode}'"
-    #                 )
-    #     self.assertEqual(code, 0)
-
+    
     @classmethod
     def setUpClass(cls):
         cls.pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
