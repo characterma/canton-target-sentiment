@@ -33,7 +33,6 @@ logger = logging.getLogger(__name__)
 
 def build_jit_trace(args):
     args = load_config(args=args)
-    args.device = "cuda"
     set_log_path(args.output_dir)
     tokenizer = get_tokenizer(args=args)
     feature_class = get_feature_class(args)
@@ -68,7 +67,6 @@ def build_jit_trace(args):
 
 def build_tensorrt(args, traced_model, fp=16):
     args = load_config(args=args)
-    args.device = "cuda"
     set_log_path(args.output_dir)
     tokenizer = get_tokenizer(args=args)
     feature_class = get_feature_class(args)
@@ -125,9 +123,12 @@ def build_tensorrt(args, traced_model, fp=16):
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", type=str, default="../output/wbi/org_per_bert_avg_20210925_all_ext2/model")
+    parser.add_argument("--device", type=str, default='cuda')
     parser.add_argument("--fp", type=int, default=16)
+    device = args.device
     args = parser.parse_args()
     args = load_config(args=args)
     set_log_path(args.output_dir)
+    args.device = device
     traced_model = build_jit_trace(args=args)
     build_tensorrt(args=args, traced_model=traced_model, fp=args.fp)

@@ -38,8 +38,6 @@ class CNN(nn.Module):
         self.num_labels = len(args.label_to_id)
         self.dropout = nn.Dropout(cnn_dropout)
 
-        self.feat2label = nn.Linear(kernel_num * len(kernel_size), len(args.label_to_id))
-        
         fc_in = kernel_num * len(kernel_size)
         self.linear = LinearLayer(
             in_dim=fc_in,
@@ -66,7 +64,7 @@ class CNN(nn.Module):
         out = self.emb(input_ids).unsqueeze(1)        
         out = torch.cat([self.conv_block(out, conv) for conv in self.convs], 1)
         out = self.dropout(out)
-        logits = self.feat2label(out)
+        logits = self.linear(out)
 
         if self.return_logits:
             return logits 

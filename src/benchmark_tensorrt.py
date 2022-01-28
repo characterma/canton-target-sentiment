@@ -96,8 +96,11 @@ def benchmark_model(model_type, args):
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", type=str, default="")
+    parser.add_argument("--device", type=str, default="cuda")
+    device = args.device
     args = parser.parse_args()
     args = load_config(args=args)
+    args.device = device
     set_log_path(args.output_dir)
     time_statistics = OrderedDict()
     
