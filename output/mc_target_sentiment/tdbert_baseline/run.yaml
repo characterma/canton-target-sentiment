@@ -1,16 +1,17 @@
 task: "target_classification"
 device: 0
 data:
-  output_dir: "../output/mc/20220113_baseline"
+  output_dir: "../output/mc_target_sentiment/tdbert_baseline"
   data_dir: "../data/datasets/internal/target_sentiment/mc"
   train: train.json
   dev: dev.json
   test: test.json
   unlabeled: unlabeled.json
-  extra_special_tokens: 
-    - unused5
+  extra_special_tokens: null
 text_prepro:
   steps:
+#     - concat_headline_content_with_sep
+#     - extract_post_context_1
     - simplified_chinese
     - full_to_half
 eval:
@@ -40,7 +41,6 @@ model_params:
   output_use_bn: False
   tokenizer_name: "bert-base-chinese"  # voidful/albert_chinese_tiny
   pretrained_lm: "bert-base-chinese" # voidful/albert_chinese_tiny
-  special_token_path: null
 explanation:
     Random:
       method: "Random"

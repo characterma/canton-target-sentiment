@@ -91,7 +91,7 @@ class TargetClassificationFeature(NLPFeature):
                 feature_dict["token_type_ids"] = torch.tensor(target_mask).long()
 
             if label is not None and label_to_id is not None:
-                label = label_to_id[label]
+                label = label_to_id[str(label)]
                 feature_dict["label"] = torch.tensor(label).long()
 
         self.feature_dict = feature_dict

@@ -9,6 +9,7 @@ from pathlib import Path
 from transformers import AutoTokenizer, BertTokenizerFast
 from preprocess import Preprocessor
 from utils import get_args, load_config
+from constants import get_constant
 
 
 logger = logging.getLogger(__name__)
@@ -132,23 +133,29 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
                 tokenizer = Tokenizer.from_pretrained(
                     str(tokenizer_dir),
                     use_fast=True,
-                    add_special_tokens=args.model_config.get("add_special_tokens", True),
+                    add_special_tokens=True
                 )
             else:
                 tokenizer = Tokenizer.from_pretrained(
                     name,
                     use_fast=True,
-                    add_special_tokens=args.model_config.get("add_special_tokens", True),
+                    add_special_tokens=True
                 )
 
                 # load extra tokens
-                if args.data_config.get("extra_tokens"):
-                    extra_tokens_path = args.data_dir / args.data_config.get("extra_tokens")
-                    if extra_tokens_path and os.path.isfile(extra_tokens_path):
-                        extra_tokens = json.load(open(extra_tokens_path, 'r'))
-                        tokenizer.add_tokens(extra_tokens)
-                        logger.info("***** Added extra tokens *****")
-                        logger.info("  Extra tokens = '%s'", extra_tokens)
+                if args.data_config.get("extra_special_tokens"):
+                    try:
+                        extra_special_tokens = []
+                        for st in args.data_config.get("extra_special_tokens"):
+                            extra_special_tokens.extend(get_constant(st))
+                        extra_special_tokens = list(set(extra_special_tokens))
+                        tokenizer.add_tokens(extra_special_tokens, special_tokens=True)
+                        logger.info("***** Added extra special tokens *****")
+                        logger.info("  Extra special tokens = '%s'", extra_special_tokens)
+                    except Exception as e:
+                        logger.info("***** Failed adding extra special tokens *****")
+                        logger.info("  Error = '%s'", e)
+
                         
                 tokenizer.save_pretrained(str(tokenizer_dir))
             args.tokenizer_len = len(tokenizer)
@@ -160,7 +167,7 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
             tokenizer = Tokenizer.from_pretrained(
                 name,
                 use_fast=True,
-                add_special_tokens=args.model_config.get("add_special_tokens", True),
+                add_special_tokens=True
             )
         
         return tokenizer
@@ -266,6 +273,7 @@ class MultiLingualTokenizer:
     def __call__(
         self,
         raw_text,
+        raw_text2=None, 
         max_length=None,
         truncation=True,
         padding="max_lenght",

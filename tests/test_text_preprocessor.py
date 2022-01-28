@@ -22,6 +22,76 @@ class TestPreprocessor(unittest.TestCase):
 
         self.assertTrue(pp.data_dict['content'] == data_dict_2['content'])
 
+    def rm_emojis(self):
+        data_dict_1 = {
+            'content': "#[鼓掌]仪式感不能少没有卡地亚，没有浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！[太开心]", 
+            'target_locs': [[19, 21]]
+        }
+
+        data_dict_2 = {
+            'content': "#仪式感不能少没有卡地亚，没有浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！", 
+            'target_locs': [[15, 17]]
+        }
+
+        pp = Preprocessor(
+            data_dict=data_dict_1, steps=["rm_emojis"]
+        )
+
+        self.assertTrue(pp.data_dict['content'] == data_dict_2['content'])
+        self.assertTrue(pp.data_dict['target_locs'] == data_dict_2['target_locs'])
+
+
+    def test_enclose_target(self):
+        data_dict_1 = {
+            'content': "#仪式感不能少没有卡地亚，没有浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！", 
+            'target_locs': [[15, 17]]
+        }
+        data_dict_2 = {
+            'content': "#仪式感不能少没有卡地亚，没有[E]浪琴[/E]，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！", 
+            'target_locs': [[15, 18]]
+        }
+        pp = Preprocessor(
+            data_dict=data_dict_1, steps=["enclose_target"]
+        )
+
+        self.assertTrue(pp.data_dict['content'] == data_dict_2['content'])
+        self.assertTrue(pp.data_dict['target_locs'] == data_dict_2['target_locs'])
+
+    def test_normalize_target(self):
+        data_dict_1 = {
+            'content': "#仪式感不能少没有卡地亚，没有浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！", 
+            'target_locs': [[15, 17]]
+        }
+        data_dict_2 = {
+            'content': "#仪式感不能少没有卡地亚，没有[unused1]，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！", 
+            'target_locs': [[15, 24]]
+        }
+        pp = Preprocessor(
+            data_dict=data_dict_1, steps=["normalize_target"]
+        )
+
+        self.assertTrue(pp.data_dict['content'] == data_dict_2['content'])
+        self.assertTrue(pp.data_dict['target_locs'] == data_dict_2['target_locs'])
+
+
+    def test_mask_other_targets(self):
+        data_dict_1 = {
+            'content': '2020年底以来,默沙东、、阿斯利康和罗氏均爆出在国外撤销PD-1L1产品适应症的消息', 
+            'target_locs': [[19, 21]], 
+            'other_target_locs': [[0, 6], [9, 12], [14, 18], [19, 21]], 
+        }
+        data_dict_2 = {
+            'content': '[unused2]以来,[unused2]、、[unused2]和罗氏均爆出在国外撤销PD-1L1产品适应症的消息', 
+            'target_locs': [[33, 35]]
+        }
+        pp = Preprocessor(
+            data_dict=data_dict_1, steps=["mask_other_targets"]
+        )
+
+        self.assertTrue(pp.data_dict['content'] == data_dict_2['content'])
+        self.assertTrue(pp.data_dict['target_locs'] == data_dict_2['target_locs'])
+
+
     def test_lower_case(self):
         data_dict_1 = {
             'content': "Filled with jealousy, Omega made their thoughts known on social media."
@@ -62,7 +132,6 @@ class TestPreprocessor(unittest.TestCase):
         pp = Preprocessor(
             data_dict=data_dict_1, steps=["convert_java_index"]
         )
-        print(pp.data_dict.keys())
         self.assertTrue(pp.data_dict["content"] == data_dict_2["content"])
         self.assertTrue(pp.data_dict["target_locs"] == data_dict_2["target_locs"])
 

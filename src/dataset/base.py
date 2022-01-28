@@ -4,6 +4,7 @@ import torch
 import json
 import abc
 import logging
+import os
 from tqdm import tqdm
 import pandas as pd
 
@@ -44,7 +45,7 @@ class NLPDataset:
                 data_dict=data_dict,
                 tokenizer=self.tokenizer,
                 args=self.args,
-                diagnosis=True,
+                diagnosis=True, 
             )
 
             if fea.feature_dict is not None:
@@ -112,7 +113,11 @@ class NLPFeature(abc.ABC):
         required_features = get_model_inputs(args)
         prepro_config = args.prepro_config
 
-        preprocessor = Preprocessor(data_dict=data_dict, steps=prepro_config["steps"])
+        # print(data_dict)
+        preprocessor = Preprocessor(
+            data_dict=data_dict, 
+            steps=prepro_config["steps"], 
+        )
 
         self.get_feature(
             data_dict=preprocessor.data_dict,

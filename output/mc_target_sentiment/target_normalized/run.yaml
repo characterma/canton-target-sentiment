@@ -1,18 +1,21 @@
 task: "target_classification"
 device: 0
 data:
-  output_dir: "../output/mc/20220113_baseline"
+  output_dir: "../output/mc_target_sentiment/target_normalized"
   data_dir: "../data/datasets/internal/target_sentiment/mc"
   train: train.json
   dev: dev.json
   test: test.json
   unlabeled: unlabeled.json
-  extra_special_tokens: 
-    - unused5
+  extra_special_tokens: null
+  special_text_to_rm: nan.json
 text_prepro:
   steps:
+#     - concat_headline_content_with_sep
+#     - extract_post_context_1
     - simplified_chinese
     - full_to_half
+    - normalize_target
 eval:
   batch_size: 16
   model_file: "model.pt"

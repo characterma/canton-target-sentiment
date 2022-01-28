@@ -1,14 +1,14 @@
 task: "target_classification"
 device: 0
 data:
-  output_dir: "../output/mc/20220113_baseline"
+  output_dir: "../output/mc_target_sentiment/emoji_as_special_tokens"
   data_dir: "../data/datasets/internal/target_sentiment/mc"
   train: train.json
   dev: dev.json
   test: test.json
   unlabeled: unlabeled.json
   extra_special_tokens: 
-    - unused5
+    - sina_emojis
 text_prepro:
   steps:
     - simplified_chinese

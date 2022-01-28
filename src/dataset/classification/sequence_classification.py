@@ -13,6 +13,7 @@ class SequenceClassificationFeature(NLPFeature):
 
         # data fields
         content = data_dict["content"]
+        content2 = data_dict.get("content2", None)
         label = data_dict.get("label", None)
 
         # params
@@ -21,6 +22,7 @@ class SequenceClassificationFeature(NLPFeature):
 
         tokens_encoded = tokenizer(
             content,
+            content2, 
             max_length=max_length,
             truncation=True,
             padding=padding,
@@ -35,6 +37,7 @@ class SequenceClassificationFeature(NLPFeature):
         if diagnosis:
             tokens = tokenizer.convert_ids_to_tokens(input_ids)
             diagnosis_dict["content"] = content
+            diagnosis_dict["content2"] = content2
             diagnosis_dict["input_ids"] = input_ids
             diagnosis_dict["tokens"] = tokens
             diagnosis_dict["label"] = label
