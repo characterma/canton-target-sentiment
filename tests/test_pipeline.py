@@ -78,6 +78,16 @@ output_notebook = "../notebooks/pipeline/train_new_model_with_specific_config_tm
 
 
 class TestPipeline(unittest.TestCase):
+
+    @classmethod
+    def tearDownClass(cls):
+        os.system(f"rm {output_notebook}")
+        for output_folder in [
+            '../output/test_pipeline_with_default_model_tmp',
+            '../output/test_pipeline_with_specific_model_tmp'
+        ]:
+            os.system(f"rm -rf {output_folder}")
+            
     def test_pipeline_with_specific_model(self):
         model_dir = "../output/test_pipeline_with_specific_model_tmp" 
         for task, model_to_config in task_to_config.items():
@@ -105,11 +115,3 @@ class TestPipeline(unittest.TestCase):
                     delta=tolerance, 
                     msg=model
                 )
-
-    def tearDown(self):
-        os.system(f"rm {output_notebook}")
-        for output_folder in [
-            '../output/test_pipeline_with_default_model_tmp',
-            '../output/test_pipeline_with_specific_model_tmp'
-        ]:
-            os.system(f"rm -rf {output_folder}")

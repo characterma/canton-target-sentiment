@@ -14,6 +14,14 @@ from label import get_label_to_id
 
 
 class TestGetFeatures(unittest.TestCase):
+
+    @classmethod
+    def tearDownClass(cls):
+        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/result")
+        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/model")
+        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/logs")
+        os.system(f"rm ../tests/test_end_to_end_samples/8/log")
+
     def test_get_feature(self):
         args = namedtuple('args', 'config_dir')
         args.config_dir = Path(f"../tests/test_end_to_end_samples/8")
@@ -58,9 +66,3 @@ class TestGetFeatures(unittest.TestCase):
         self.assertTrue(feature_dict["token_type_ids"].tolist()==token_type_ids)
         self.assertTrue(feature_dict["label"].tolist()==label)
         
-    def tearDown(self):
-
-        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/result")
-        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/model")
-        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/logs")
-        os.system(f"rm ../tests/test_end_to_end_samples/8/log")
