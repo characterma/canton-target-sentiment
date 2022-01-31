@@ -1,7 +1,7 @@
 task: "sequence_classification"
 device: 0
 data:
-  output_dir: "../output/mc/20220124_cnn_sst3"
+  output_dir: "../output/mc/20220128_cnn_sst2"
   data_dir: "../data/datasets/public/sequence_classification/sst"
   train: train.json
   dev: test.json
@@ -17,7 +17,7 @@ eval:
   batch_size: 16
   model_file: "model.pt"
 train:
-  model_class: "TEXT_CNN"
+  model_class: "CNN"
   kd:
     use_kd: False
     teacher_dir: "../output/post_sentiment_20210707_bert_avg/model"
@@ -33,9 +33,9 @@ train:
 model_params:
   # ================= TDBERT =================
   max_length: 256
-  num_train_epochs: 25
+  num_train_epochs: 1
   embedding_trainable: True
-  output_hidden_act_func: "PReLU"
+  # output_hidden_act_func: "PReLU"
   output_hidden_dim: 128
   output_use_bn: False
   tokenizer_name: "bert-base-cased"  # voidful/albert_chinese_tiny

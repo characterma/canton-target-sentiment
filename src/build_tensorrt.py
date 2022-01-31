@@ -125,8 +125,8 @@ if __name__=="__main__":
     parser.add_argument("--config_dir", type=str, default="../output/wbi/org_per_bert_avg_20210925_all_ext2/model")
     parser.add_argument("--device", type=str, default='cuda')
     parser.add_argument("--fp", type=int, default=16)
-    device = args.device
     args = parser.parse_args()
+    device = args.device
     args = load_config(args=args)
     set_log_path(args.output_dir)
     args.device = device

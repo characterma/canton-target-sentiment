@@ -35,6 +35,7 @@ def build_onnx(args):
         batch[col] = torch.stack([feature_dict[col]], dim=0).to(args.device)
     if 'label' in batch:
         del batch['label']
+
     output = model(**batch)
     x = tuple([batch[col].squeeze(-1) for col in batch])
     model_inputs = batch.keys()
@@ -57,6 +58,7 @@ def build_onnx(args):
         batch[col] = feature_dict[col].unsqueeze(0).numpy()
     if 'label' in batch:
         del batch['label']
+
     output = session.run(None, input_feed=batch)
     logger.info("***** Build onnx succeeded. *****")
     logger.info("  Output = %s", output)
@@ -66,8 +68,8 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", type=str, default="../output/wbi/org_per_bert_avg_20210925_all_ext2/model")
     parser.add_argument("--device", type=str, default="cuda")
-    device = args.device
     args = parser.parse_args()
+    device = args.device
     args = load_config(args=args)
     set_log_path(args.output_dir)
     args.device = device

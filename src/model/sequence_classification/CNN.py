@@ -60,8 +60,9 @@ class CNN(nn.Module):
         x = F.max_pool1d(x, self.max_length - 2).squeeze(2)
         return x
     
-    def forward(self, input_ids, attention_mask, label=None, **kwargs):
-        out = self.emb(input_ids).unsqueeze(1)        
+    def forward(self, input_ids, label=None, **kwargs):
+        out = self.emb(input_ids).unsqueeze(1)
+
         out = torch.cat([self.conv_block(out, conv) for conv in self.convs], 1)
         out = self.dropout(out)
         logits = self.linear(out)
