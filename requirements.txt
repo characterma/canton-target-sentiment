@@ -19,3 +19,5 @@ papermill
 transformers==3.4.0
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch==1.6.0+cu101
+onnxruntime-gpu==1.4
+onnxconverter_common==1.8.1

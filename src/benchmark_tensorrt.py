@@ -4,7 +4,7 @@ import json
 import torch
 import sys
 import time
-import torch_tensorrt
+# import torch_tensorrt
 from tqdm import tqdm, trange
 
 from model import get_model, get_onnx_session
@@ -41,8 +41,8 @@ def benchmark_model(model_type, args):
     )
 
     feature_dict = feature.feature_dict
-    model = get_model(args=args)
-    model.set_return_logits()
+    # model = get_model(args=args)
+    # model.set_return_logits()
 
     batch = dict()
     for col in feature_dict:
@@ -59,7 +59,11 @@ def benchmark_model(model_type, args):
         model = trt_ts_module = torch.jit.load(args.model_dir / "trt_model_fp16.ts")
     elif model_type=="fp_32":
         model = trt_ts_module = torch.jit.load(args.model_dir / "trt_model_fp32.ts")  
+    elif model_type=="onnx":
+        onnx_session = get_onnx_session(args=args)
     
+    if model_type != "onnx":
+        model.eval()
         
     logger.info(f"***** Load {model_type} model succeeded. *****")
     dataset = get_dataset(
@@ -69,11 +73,10 @@ def benchmark_model(model_type, args):
         args=args
     )
     
-    model.eval()
     dataloader = DataLoader(
         dataset,
         shuffle=False,
-        batch_size=args.eval_config["batch_size"],
+        batch_size=args.batch_size,
     )
 
     num_samples = len(dataset)
@@ -85,7 +88,13 @@ def benchmark_model(model_type, args):
             for col in batch:
                 if torch.is_tensor(batch[col]):
                     inputs[col] = batch[col].to(args.device).long()
-            _ = model(inputs['input_ids'], inputs['attention_mask'])
+            if model_type != "onnx":
+                _ = model(**inputs)
+            else:
+                b = dict()
+                for col in batch:
+                    b[col] = batch[col].numpy()
+                _ = onnx_session.run(None, input_feed=b)
             
     t1 = time.time()
     
@@ -97,8 +106,9 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", type=str, default="")
     parser.add_argument("--device", type=str, default="cuda")
-    device = args.device
+    parser.add_argument("--batch_size", type=int, default=16)
     args = parser.parse_args()
+    device = args.device
     args = load_config(args=args)
     args.device = device
     set_log_path(args.output_dir)
@@ -108,14 +118,18 @@ if __name__=="__main__":
         'original', 
         'trace', 
         'fp16', 
-        'fp32'
+        'fp32', 
+        'onnx'
     ]:
-        total_time, num_samples = benchmark_model(
-            model_type=model_type, 
-            args=args
-        )
-        
-        time_statistics[model_type] = dict(total_time=total_time, num_samples=num_samples)
+        try:
+            total_time, num_samples = benchmark_model(
+                model_type=model_type, 
+                args=args
+            )
+            
+            time_statistics[model_type] = dict(total_time=total_time, num_samples=num_samples)
+        except Exception as e:
+            print(e)
         
     pp = pprint.PrettyPrinter(width=41, compact=True)
     print("Results:") 
