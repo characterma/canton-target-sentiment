@@ -45,7 +45,7 @@ class WordEmbeddings(nn.Module):
         emb_dim=None,
         vocab_size=None,
         emb_dropout=0,
-        word_to_id=None
+        word_to_id=None,
     ):
         super(WordEmbeddings, self).__init__()
         if pretrained_emb_path is not None:
@@ -56,7 +56,8 @@ class WordEmbeddings(nn.Module):
                 embeddings, freeze=(not embedding_trainable)
             )
         else:
-            self.embed = nn.Embedding(num_embeddings=vocab_size, embedding_dim=emb_dim)
+            padding_id = 0
+            self.embed = nn.Embedding(num_embeddings=vocab_size, embedding_dim=emb_dim, padding_idx=padding_id)
         self.emb_dim = emb_dim
         self.emb_dropout = nn.Dropout(emb_dropout)
 

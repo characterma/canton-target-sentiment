@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
     
 def build_onnx(args):  
     logger.info("***** Build onnx started. *****")
-    args.device = "cpu"
     tokenizer = get_tokenizer(args=args)
     feature_class = get_feature_class(args)
 
@@ -25,6 +24,9 @@ def build_onnx(args):
     args.label_to_id_inv = label_to_id_inv
 
     data_dict = json.load(open(args.data_dir / args.data_config['test'], "r"))[0]
+    if 'label' in data_dict:
+        del data_dict['label']
+
     feature = feature_class(
         data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=False
     )
@@ -34,20 +36,25 @@ def build_onnx(args):
     batch = dict()
     for col in feature_dict:
         batch[col] = torch.stack([feature_dict[col]], dim=0).to(args.device)
-    if 'label' in batch:
-        del batch['label']
+
     output = model(**batch)
     x = tuple([batch[col].squeeze(-1) for col in batch])
     model_inputs = batch.keys()
 
     logger.info("***** Exporting onnx model. *****")
+    dynamic_axes = dict()
+
+    for col in feature_dict:
+        dynamic_axes[col] = [0]
+
     torch.onnx.export(
         model, 
         args=x, 
+        dynamic_axes=dynamic_axes,
         f=args.model_dir / "model.onnx", 
         do_constant_folding=True, 
         opset_version=12, 
-        input_names=model_inputs, 
+        input_names=list(model_inputs), 
         output_names=['outputs']
     )
 
@@ -58,6 +65,7 @@ def build_onnx(args):
         batch[col] = feature_dict[col].unsqueeze(0).numpy()
     if 'label' in batch:
         del batch['label']
+
     output = session.run(None, input_feed=batch)
     logger.info("***** Build onnx succeeded. *****")
     logger.info("  Output = %s", output)
@@ -66,9 +74,12 @@ def build_onnx(args):
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", type=str, default="../output/wbi/org_per_bert_avg_20210925_all_ext2/model")
+    parser.add_argument("--device", type=str, default="cuda")
     args = parser.parse_args()
+    device = args.device
     args = load_config(args=args)
     set_log_path(args.output_dir)
+    args.device = device
     build_onnx(args=args)
 
 

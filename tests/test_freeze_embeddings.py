@@ -6,6 +6,14 @@ sys.path.append("../src/")
 
 
 class TestFreezeEmbeddings(unittest.TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        for i in range(1, 5):
+            os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/model")
+            os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/result")
+            os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/logs")
+            os.system(f"rm ../tests/test_end_to_end_samples/{i}/log")
+
     def test_freeze_bert_embeddings(self):
         os.chdir("../src/")
         os.system("python run.py --config_dir='../tests/test_end_to_end_samples/1/'")
@@ -35,10 +43,3 @@ class TestFreezeEmbeddings(unittest.TestCase):
                 self.assertTrue(torch.equal(state_dict1[param_name], state_dict2[param_name]), param_name)
 
         self.assertTrue(not torch.equal(state_dict1['fc.weight'], state_dict2['fc.weight']))
-
-    def tearDown(self):
-        for i in range(1, 5):
-            os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/model")
-            os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/result")
-            os.system(f"rm -rf ../tests/test_end_to_end_samples/{i}/logs")
-            os.system(f"rm ../tests/test_end_to_end_samples/{i}/log")

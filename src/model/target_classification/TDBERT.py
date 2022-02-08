@@ -35,6 +35,7 @@ class TDBERT(BertPreTrainedModel):
             use_bn=False,
         )
         self.loss_func = nn.CrossEntropyLoss(reduction="none")
+        self.return_logits = False
         self.to(args.device)
 
     def pool_target(self, hidden_output, t_mask):
@@ -52,6 +53,9 @@ class TDBERT(BertPreTrainedModel):
             if "embeddings" in param_name:
                 param.requires_grad = False
 
+    def set_return_logits(self):
+        self.return_logits = True
+
     def forward(
         self,
         input_ids,
@@ -62,9 +66,9 @@ class TDBERT(BertPreTrainedModel):
         **kwargs
     ):
         lm = self.pretrained_model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
+            input_ids=input_ids.long(),
+            attention_mask=attention_mask.long(),
+            token_type_ids=token_type_ids.long(),
             return_dict=True,
         )
 
@@ -74,23 +78,28 @@ class TDBERT(BertPreTrainedModel):
         )  # outputs: [B, S, Dim], target_mask: [B, S]
 
         logits = self.linear(tgt_h)
-        prediction = torch.argmax(logits, dim=1)
-        probabilities = F.softmax(logits, -1)
-
-        if label is not None:
-            loss = self.loss_func(logits.view(-1, self.num_labels), label.view(-1))
-            loss = loss.mean()
-            outputs = NLPModelOutput(
-                loss=loss, 
-                prediction=prediction, 
-                logits=logits, 
-                probabilities=probabilities
-            )            
+        if self.return_logits:
+            return logits 
         else:
-            loss = None
-            outputs = NLPModelOutput(
-                prediction=prediction, 
-                logits=logits, 
-                probabilities=probabilities
-            )
-        return outputs
+
+            prediction = torch.argmax(logits, dim=1)
+            probabilities = F.softmax(logits, -1)
+            if label is not None:
+                loss = self.loss_func(logits.view(-1, self.num_labels), label.view(-1))
+                loss = loss.mean()
+                outputs = NLPModelOutput(
+                    loss=loss, 
+                    prediction=prediction, 
+                    logits=logits, 
+                    probabilities=probabilities
+                )            
+            else:
+                loss = None
+                outputs = NLPModelOutput(
+                    prediction=prediction, 
+                    logits=logits, 
+                    probabilities=probabilities
+                )
+            return outputs
+
+

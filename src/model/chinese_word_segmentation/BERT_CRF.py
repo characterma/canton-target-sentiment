@@ -20,7 +20,7 @@ class BERT_CRF(BertPreTrainedModel):
             self.model_config["bert_dropout"]
         )
         self.crf = LinearChainCRF(self.pretrained_config.hidden_size, self.num_labels)
-
+        self.return_logits = False
         self.to(args.device)
 
     def freeze_emb(self):
@@ -29,29 +29,35 @@ class BERT_CRF(BertPreTrainedModel):
             if "embeddings" in param_name:
                 param.requires_grad = False
 
+    def set_return_logits(self):
+        self.return_logits = True
+
     def forward(self, input_ids, attention_mask, label=None):
         outputs = dict()
         lm = self.pretrained_model(
-            input_ids=input_ids, attention_mask=attention_mask, return_dict=True
+            input_ids=input_ids.long(), attention_mask=attention_mask.long(), return_dict=True
         )
         logits = lm["last_hidden_state"]
         logits = self.bert_dropout(logits)
 
-        prediction, scores = self.crf.viterbi_decode(
-            logits, length_index=attention_mask
-        )  # [B, 1, L], [B, 1]
-
-        if label is not None:
-            loss = self.crf.nll_loss(
-                x=logits, y=label, length_index=attention_mask, reduce="mean"
-            )
+        if self.return_logits:
+            return logits 
         else:
-            loss = None
+            prediction, scores = self.crf.viterbi_decode(
+                logits, length_index=attention_mask
+            )  # [B, 1, L], [B, 1]
+            
+            if label is not None:
+                loss = self.crf.nll_loss(
+                    x=logits, y=label, length_index=attention_mask, reduce="mean"
+                )
+            else:
+                loss = None
 
-        prediction = [p[0] for p in prediction]
-        outputs = NLPModelOutput(
-            loss=loss, 
-            prediction=prediction, 
-            logits=logits, 
-        )
-        return outputs
+            prediction = [p[0] for p in prediction]
+            outputs = NLPModelOutput(
+                loss=loss, 
+                prediction=prediction, 
+                logits=logits, 
+            )
+            return outputs

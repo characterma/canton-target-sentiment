@@ -22,7 +22,16 @@ class TestEndToEnd(unittest.TestCase):
                    'chinese_word_segmentation/CNN_CRF',
                    'chinese_word_segmentation/BERT_CRF', 
                    ]
+    skip_jit = []
     os.chdir("../src/")
+
+    @classmethod
+    def tearDownClass(cls):
+        for task_model in cls.task_models:
+            os.system(f"rm -rf ../config/examples/{task_model}/result")
+            os.system(f"rm -rf ../config/examples/{task_model}/model")
+            os.system(f"rm -rf ../config/examples/{task_model}/logs")
+            os.system(f"rm ../config/examples/{task_model}/log")
 
     def test_models(self):
         for task_model in self.task_models:
@@ -42,9 +51,10 @@ class TestEndToEnd(unittest.TestCase):
                 code = os.system(f"python optimize_onnx.py --config_dir='../config/examples/{task_model}'")
                 self.assertEqual(code, 0, task_model)
 
-    def tearDown(self):
+
+    def test_jit_trace(self):
         for task_model in self.task_models:
-            os.system(f"rm -rf ../config/examples/{task_model}/result")
-            os.system(f"rm -rf ../config/examples/{task_model}/model")
-            os.system(f"rm -rf ../config/examples/{task_model}/logs")
-            os.system(f"rm ../config/examples/{task_model}/log")
+            if task_model not in self.skip_jit:
+                code = os.system(f"python build_jit_trace.py --config_dir='../config/examples/{task_model}'")
+                self.assertEqual(code, 0, task_model)
+

@@ -24,12 +24,16 @@ class BERT_CLS(BertPreTrainedModel):
             out_features=self.num_labels
         )
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
+        self.return_logits = False
         self.to(args.device)
 
+    def set_return_logits(self):
+        self.return_logits = True
+        
     def forward(self, input_ids, attention_mask, label=None):
         outputs = dict()
         bert_outputs = self.pretrained_model(
-            input_ids=input_ids,
+            input_ids=input_ids.long(),
             attention_mask=attention_mask,
             token_type_ids=None,
             output_attentions=True,
@@ -38,16 +42,20 @@ class BERT_CLS(BertPreTrainedModel):
         pooler_output = bert_outputs["pooler_output"]
         pooler_output = self.dropout(pooler_output)
         logits = self.classifier(pooler_output)
-        if label is not None:
-            loss = self.loss_func(
-                logits.view(-1, self.num_labels), label.view(-1)  # [N, C]  # [N]
-            )
+        
+        if self.return_logits:
+            return logits 
         else:
-            loss = None
-        prediction = torch.argmax(logits, dim=1)
-        outputs = NLPModelOutput(
-            loss=loss, 
-            prediction=prediction, 
-            logits=logits
-        )
-        return outputs
+            if label is not None:
+                loss = self.loss_func(
+                    logits.view(-1, self.num_labels), label.view(-1)  # [N, C]  # [N]
+                )
+            else:
+                loss = None
+            prediction = torch.argmax(logits, dim=1)
+            outputs = NLPModelOutput(
+                loss=loss, 
+                prediction=prediction, 
+                logits=logits
+            )
+            return outputs
