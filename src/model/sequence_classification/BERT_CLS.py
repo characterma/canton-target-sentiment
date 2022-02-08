@@ -33,7 +33,7 @@ class BERT_CLS(BertPreTrainedModel):
     def forward(self, input_ids, attention_mask, label=None):
         outputs = dict()
         bert_outputs = self.pretrained_model(
-            input_ids=input_ids,
+            input_ids=input_ids.long(),
             attention_mask=attention_mask,
             token_type_ids=None,
             output_attentions=True,

@@ -42,6 +42,7 @@ class TGSAN2(nn.Module):
             activation=args.model_config["fc_activation"],
         )
         self.loss_fct = nn.CrossEntropyLoss(reduction="mean")
+        self.return_logits = False
         self.to(args.device)
 
     def pool_target(self, hidden_output, t_mask):
@@ -52,11 +53,14 @@ class TGSAN2(nn.Module):
         )
         return t_h.values
 
+    def set_return_logits(self):
+        self.return_logits = True
+
     def forward(self, input_ids, attention_mask, target_mask, label=None, **kwargs):
         outputs = dict()
         x = self.embedding(
-            input_ids=input_ids,
-            token_type_ids=target_mask,
+            input_ids=input_ids.long(),
+            token_type_ids=target_mask.long(),
             position_ids=None,
             inputs_embeds=None,
         )
@@ -68,15 +72,19 @@ class TGSAN2(nn.Module):
 
         tgt = self.pool_target(x, target_mask)
         logits = self.classifier(tgt)
-        prediction = torch.argmax(logits, dim=1)
 
-        if label is not None:
-            loss = self.loss_fct(logits.view(-1, self.num_labels), label.view(-1))
+        if self.return_logits:
+            return logits 
         else:
-            loss = None
-        outputs = NLPModelOutput(
-            loss=loss, 
-            prediction=prediction, 
-            logits=logits, 
-        )
-        return outputs
+
+            prediction = torch.argmax(logits, dim=1)
+            if label is not None:
+                loss = self.loss_fct(logits.view(-1, self.num_labels), label.view(-1))
+            else:
+                loss = None
+            outputs = NLPModelOutput(
+                loss=loss, 
+                prediction=prediction, 
+                logits=logits, 
+            )
+            return outputs

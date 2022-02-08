@@ -61,7 +61,7 @@ class CNN(nn.Module):
         return x
     
     def forward(self, input_ids, label=None, **kwargs):
-        out = self.emb(input_ids).unsqueeze(1)
+        out = self.emb(input_ids.long()).unsqueeze(1)
 
         out = torch.cat([self.conv_block(out, conv) for conv in self.convs], 1)
         out = self.dropout(out)

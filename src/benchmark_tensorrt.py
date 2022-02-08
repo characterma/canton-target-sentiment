@@ -54,11 +54,11 @@ def benchmark_model(model_type, args):
     if model_type=="original":
         model = get_model(args=args)
     elif model_type=="trace":
-        model = trt_ts_module = torch.jit.load(args.model_dir / "traced_model.ts")
+        model = torch.jit.load(args.model_dir / "traced_model.ts")
     elif model_type=="fp_16":
-        model = trt_ts_module = torch.jit.load(args.model_dir / "trt_model_fp16.ts")
+        model = torch.jit.load(args.model_dir / "trt_model_fp16.ts")
     elif model_type=="fp_32":
-        model = trt_ts_module = torch.jit.load(args.model_dir / "trt_model_fp32.ts")  
+        model = torch.jit.load(args.model_dir / "trt_model_fp32.ts")  
     elif model_type=="onnx":
         onnx_session = get_onnx_session(args=args)
     

@@ -22,6 +22,7 @@ class TestEndToEnd(unittest.TestCase):
                    'chinese_word_segmentation/CNN_CRF',
                    'chinese_word_segmentation/BERT_CRF', 
                    ]
+    skip_jit = []
     os.chdir("../src/")
 
     @classmethod
@@ -49,3 +50,11 @@ class TestEndToEnd(unittest.TestCase):
 
                 code = os.system(f"python optimize_onnx.py --config_dir='../config/examples/{task_model}'")
                 self.assertEqual(code, 0, task_model)
+
+
+    def test_jit_trace(self):
+        for task_model in self.task_models:
+            if task_model not in self.skip_jit:
+                code = os.system(f"python build_jit_trace.py --config_dir='../config/examples/{task_model}'")
+                self.assertEqual(code, 0, task_model)
+

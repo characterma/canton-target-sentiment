@@ -250,6 +250,7 @@ class TGSAN(nn.Module):
         # initialize weights
         self.init_weight()
         self.device = args.device
+        self.return_logits = False
         self.to(args.device)
 
     def init_weight(self):
@@ -273,6 +274,9 @@ class TGSAN(nn.Module):
             elif "weight" in name:
                 nn.init.xavier_uniform_(param, gain=1.0)
 
+    def set_return_logits(self):
+        self.return_logits = True
+
     def forward(
         self,
         input_ids,
@@ -283,7 +287,7 @@ class TGSAN(nn.Module):
         **kwargs
     ):
         outputs = dict()
-        x = self.embed(input_ids).to(torch.float32)  # [B, L, E]
+        x = self.embed(input_ids.long()).to(torch.float32)  # [B, L, E]
         len_max = x.size(1)  # embedding dimension
         lens = attention_mask.sum(
             -1
@@ -322,7 +326,6 @@ class TGSAN(nn.Module):
         ctx_vec, _ = self.ctx_tgt_an(tgt_vec, ctx_r, ctx_r, self.r_mask)  # [B, 1, H]
         # OUTPUT
         logits = self.fc_active(self.fc(ctx_vec.squeeze(1)))  # [B, Nc]
-        prediction = torch.argmax(logits, dim=1)
 
         penal_term = tgt_penal
         if ctx_penal is not None:
@@ -330,23 +333,28 @@ class TGSAN(nn.Module):
                 penal_term + ctx_penal if (penal_term is not None) else ctx_penal
             )
 
-        if soft_label is not None:
-            loss_fct = nn.MSELoss()
-            loss = loss_fct(logits.view(-1), soft_label.view(-1)) + penal_term
-        elif label is not None:
-            if self.num_labels == 1:
-                loss_fct = nn.MSELoss()
-                loss = loss_fct(logits.view(-1), label.view(-1)) + penal_term
-            else:
-                loss_fct = nn.CrossEntropyLoss()
-                loss = (
-                    loss_fct(logits.view(-1, self.num_labels), label.view(-1)) + penal_term
-                )
+        if self.return_logits:
+            return logits 
         else:
-            loss = None
-        outputs = NLPModelOutput(
-            loss=loss, 
-            prediction=prediction, 
-            logits=logits, 
-        )
-        return outputs
+            prediction = torch.argmax(logits, dim=1)
+            if soft_label is not None:
+                loss_fct = nn.MSELoss()
+                loss = loss_fct(logits.view(-1), soft_label.view(-1)) + penal_term
+            elif label is not None:
+                if self.num_labels == 1:
+                    loss_fct = nn.MSELoss()
+                    loss = loss_fct(logits.view(-1), label.view(-1)) + penal_term
+                else:
+                    loss_fct = nn.CrossEntropyLoss()
+                    loss = (
+                        loss_fct(logits.view(-1, self.num_labels), label.view(-1)) + penal_term
+                    )
+            else:
+                loss = None
+
+            outputs = NLPModelOutput(
+                loss=loss, 
+                prediction=prediction, 
+                logits=logits, 
+            )
+            return outputs

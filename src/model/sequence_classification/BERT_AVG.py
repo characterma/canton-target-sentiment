@@ -31,6 +31,7 @@ class BERT_AVG(BertPreTrainedModel):
         )
 
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
+        self.return_logits = False
         self.to(args.device)
 
     def avg_pool(sel, h, attention_mask):
@@ -38,6 +39,9 @@ class BERT_AVG(BertPreTrainedModel):
         h = h.masked_fill(attention_mask==0, float(0))
         h = h.sum(dim=1) / attention_mask.sum(dim=1)        
         return h
+
+    def set_return_logits(self):
+        self.return_logits = True
 
     def forward(
         self,
@@ -47,8 +51,8 @@ class BERT_AVG(BertPreTrainedModel):
     ):
         outputs = dict()
         lm = self.pretrained_model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
+            input_ids=input_ids.long(),
+            attention_mask=attention_mask.long(),
             token_type_ids=None,
             output_attentions=True,
             return_dict=True,
@@ -56,17 +60,20 @@ class BERT_AVG(BertPreTrainedModel):
         h = lm["last_hidden_state"]
         h = self.avg_pool(h, attention_mask=attention_mask)
         logits = self.linear(h)
-        prediction = torch.argmax(logits, dim=1)
-        if label is not None:
-            loss = self.loss_func(
-                logits,  # [N, C]
-                label  # [N]
-            )
+
+        if self.return_logits:
+            return logits 
         else:
-            loss = None
-        outputs = NLPModelOutput(
-            loss=loss, 
-            prediction=prediction, 
-            logits=logits
-        )
-        return outputs
+            if label is not None:
+                loss = self.loss_func(
+                    logits.view(-1, self.num_labels), label.view(-1)  # [N, C]  # [N]
+                )
+            else:
+                loss = None
+            prediction = torch.argmax(logits, dim=1)
+            outputs = NLPModelOutput(
+                loss=loss, 
+                prediction=prediction, 
+                logits=logits
+            )
+            return outputs

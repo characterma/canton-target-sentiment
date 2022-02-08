@@ -46,7 +46,11 @@ class TEXT_CNN(nn.Module):
         )
 
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
+        self.return_logits = False
         self.to(args.device)
+
+    def set_return_logits(self):
+        self.return_logits = True
 
     def forward(self, input_ids, attention_mask, label=None, **kwargs):
         outputs = dict()
@@ -57,16 +61,20 @@ class TEXT_CNN(nn.Module):
             x = self.cnn_dp(x)
         logits = self.linear(x)  # [B, Nc]
 
-        prediction = torch.argmax(logits, dim=1)
-        if label is not None:
-            loss = self.loss_func(
-                logits.view(-1, self.num_labels), label.view(-1)  # [N, C]  # [N]
-            )
+        if self.return_logits:
+            return logits 
         else:
-            loss = None
-        outputs = NLPModelOutput(
-            loss=loss, 
-            prediction=prediction, 
-            logits=logits
-        )
-        return outputs
+            prediction = torch.argmax(logits, dim=1)
+            if label is not None:
+                loss = self.loss_func(
+                    logits.view(-1, self.num_labels), label.view(-1)  # [N, C]  # [N]
+                )
+            else:
+                loss = None
+
+            outputs = NLPModelOutput(
+                loss=loss, 
+                prediction=prediction, 
+                logits=logits
+            )
+            return outputs

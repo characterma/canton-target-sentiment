@@ -26,11 +26,13 @@ def get_model(args):
 
 def get_onnx_session(args):
     logger.info("***** Initializing onnx model *****")
-    # model_class = args.train_config["model_class"]
-    # logger.info("  Task = %s", args.task)
-    # logger.info("  Model class = %s", model_class)
-    # Model = getattr(importlib.import_module(f"model.{args.task}"), model_class)
     model_path = args.model_dir / "model.onnx"
-    print(model_path)
     onnx_session = InferenceSession(str(model_path))
     return onnx_session
+
+
+def get_jit_traced_model(args):
+    logger.info("***** Initializing jit traced model *****")
+    model_path = args.model_dir / "traced_model.ts"
+    model = torch.jit.load(model_path)  
+    return model

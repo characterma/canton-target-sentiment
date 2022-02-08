@@ -45,11 +45,15 @@ class CNN_CRF(nn.Module):
         )
         self.cnn_dp = nn.Dropout(cnn_dropout) if cnn_dropout > 0.0 else None
         self.crf = LinearChainCRF(fc_in, len(args.label_to_id))
+        self.return_logits = False
         self.to(args.device)
+
+    def set_return_logits(self):
+        self.return_logits = True
 
     def forward(self, input_ids, attention_mask,  label=None, **kwargs):
         outputs = dict()
-        x = self.embed(input_ids)
+        x = self.embed(input_ids.long())
 
         for cnn in self.cnns:
             x = cnn(x, length_index=attention_mask)
@@ -59,20 +63,24 @@ class CNN_CRF(nn.Module):
         else:
             logits = x
 
-        prediction, scores = self.crf.viterbi_decode(
-            logits, length_index=attention_mask, top_k=1
-        )  # [B, k, L], [B,K]
-        if label is not None:
-            loss = self.crf.nll_loss(
-                x=logits, y=label, length_index=attention_mask, reduce="mean"
-            )
-        else:
-            loss = None
 
-        prediction = [p[0] for p in prediction]
-        outputs = NLPModelOutput(
-            loss=loss, 
-            prediction=prediction, 
-            logits=logits, 
-        )
-        return outputs
+        if self.return_logits:
+            return logits 
+        else:
+            prediction, scores = self.crf.viterbi_decode(
+                logits, length_index=attention_mask, top_k=1
+            )  # [B, k, L], [B,K]
+            if label is not None:
+                loss = self.crf.nll_loss(
+                    x=logits, y=label, length_index=attention_mask, reduce="mean"
+                )
+            else:
+                loss = None
+
+            prediction = [p[0] for p in prediction]
+            outputs = NLPModelOutput(
+                loss=loss, 
+                prediction=prediction, 
+                logits=logits, 
+            )
+            return outputs
