@@ -7,7 +7,6 @@ from numpy.linalg import norm
 
 sys.path.append("../src/")
 from dim_reduction import load_embedding
-from dim_reduction import dimension_reduction
 from model.utils import MODEL_CLASS_MAP
 from tokenizer import TOKENIZER_CLASS_MAP
 
