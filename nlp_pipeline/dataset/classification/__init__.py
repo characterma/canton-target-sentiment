@@ -1,0 +1,3 @@
+from nlp_pipeline.dataset.classification.sequence_classification import SequenceClassificationFeature
+from nlp_pipeline.dataset.classification.bisequence_classification import BiSequenceClassificationFeature
+from nlp_pipeline.dataset.classification.target_classification import TargetClassificationFeature

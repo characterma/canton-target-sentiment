@@ -1,7 +1,7 @@
 import unittest
 import os
 import sys
-sys.path.append("../src/")
+sys.path.append("../nlp_pipeline/")
 
 
 class TestEndToEnd(unittest.TestCase):
@@ -23,7 +23,7 @@ class TestEndToEnd(unittest.TestCase):
                    'chinese_word_segmentation/BERT_CRF', 
                    ]
     skip_jit = []
-    os.chdir("../src/")
+    os.chdir("../nlp_pipeline/")
 
     @classmethod
     def tearDownClass(cls):
@@ -42,14 +42,14 @@ class TestEndToEnd(unittest.TestCase):
             code = os.system(f"python run.py --config_dir='../config/examples/{task_model}' --test_only")
             self.assertEqual(code, 0, task_model)
 
-    def test_onnx(self):
-        for task_model in self.task_models:
-            if task_model not in self.skip_onnx:
-                code = os.system(f"python build_onnx.py --config_dir='../config/examples/{task_model}'")
-                self.assertEqual(code, 0, task_model)
+    # def test_onnx(self):
+    #     for task_model in self.task_models:
+    #         if task_model not in self.skip_onnx:
+    #             code = os.system(f"python build_onnx.py --config_dir='../config/examples/{task_model}'")
+    #             self.assertEqual(code, 0, task_model)
 
-                code = os.system(f"python optimize_onnx.py --config_dir='../config/examples/{task_model}'")
-                self.assertEqual(code, 0, task_model)
+    #             code = os.system(f"python optimize_onnx.py --config_dir='../config/examples/{task_model}'")
+    #             self.assertEqual(code, 0, task_model)
 
 
     def test_jit_trace(self):

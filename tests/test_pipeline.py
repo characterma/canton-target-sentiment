@@ -69,7 +69,7 @@ task_to_config = {
     }, 
 }
 
-src_dir = "../src"
+src_dir = "../nlp_pipeline"
 tolerance = 0.05
 device = 0
 kernel_name = "python3"

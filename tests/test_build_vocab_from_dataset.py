@@ -5,8 +5,8 @@ import json
 import os
 from pathlib import Path
 from collections import namedtuple
-sys.path.append("../src/")
-from tokenizer import MultiLingualTokenizer, build_vocab_from_dataset
+
+from nlp_pipeline.tokenizer import MultiLingualTokenizer, build_vocab_from_dataset
 
 
 class TestBuildVocabFromDataset(unittest.TestCase):

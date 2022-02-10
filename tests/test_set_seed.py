@@ -2,12 +2,11 @@ import unittest
 import os
 import sys
 import torch
-sys.path.append("../src/")
 
 
 class TestSetSeed(unittest.TestCase):
     def test_set_seed(self):
-        os.chdir("../src/")
+        os.chdir("../nlp_pipeline/")
 
         # Test same seed
         os.system("python run.py --config_dir='../tests/test_end_to_end_samples/5/'")

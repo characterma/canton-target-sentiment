@@ -1,0 +1,2 @@
+from nlp_pipeline.dataset.clue.csl_keyword_recognition import CslKeywordRecognitionFeature
+from nlp_pipeline.dataset.clue.winograd_schema_challenge import WinogradSchemaChallengeFeature
