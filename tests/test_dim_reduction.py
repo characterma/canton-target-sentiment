@@ -27,22 +27,22 @@ def load_local_embedding(embedding_path):
     return np.array(embedding, dtype=np.float32)
 
 class TestDimReduction(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(TestDimReduction, self).__init__(*args, **kwargs)
-        self.pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
-        self.embedding_num_vocab_target = 21128
-        self.embedding_num_dimension_target = 64
-        self.reduction_mode = 'PPA-PCA'
-        self.save_path = f"../data/word_embeddings/roberta_wwm_large_embedding_{self.embedding_num_dimension_target}d.txt"
+    
+    @classmethod
+    def setUpClass(cls):
+        cls.pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
+        cls.embedding_num_vocab_target = 21128
+        cls.embedding_num_dimension_target = 64
+        cls.reduction_mode = 'PPA-PCA'
+        cls.save_path = f"../data/word_embeddings/roberta_wwm_large_embedding_{cls.embedding_num_dimension_target}d.txt"
         
         os.chdir("../nlp_pipeline/")
         code = os.system(f"python dim_reduction.py \
-                    --pretrain_path '{self.pretrain_path}'\
-                    --output_dim '{self.embedding_num_dimension_target}' \
-                    --save_path '{self.save_path}' \
-                    --reduction_mode '{self.reduction_mode}'"
+                    --pretrain_path '{cls.pretrain_path}'\
+                    --output_dim '{cls.embedding_num_dimension_target}' \
+                    --save_path '{cls.save_path}' \
+                    --reduction_mode '{cls.reduction_mode}'"
                     )
-        self.assertEqual(code, 0)
 
     def test_load_local_emb(self):
         embedding_path = "../data/word_embeddings/sample_word_emb.txt"
@@ -129,7 +129,7 @@ class TestDimReduction(unittest.TestCase):
                     self.assertTrue(type(inner_list[0]) is str)
                     self.assertTrue(type(float(inner_list[1])) is float)
                     self.assertTrue(type(float(inner_list[-2])) is float)
-                    
-    def tearDown(self): 
-        os.system(f"rm {self.save_path}")                  
+    @classmethod                
+    def tearDownClass(cls): 
+        os.system(f"rm {cls.save_path}")                  
                     
