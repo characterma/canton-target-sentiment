@@ -5,10 +5,10 @@ import os
 import numpy as np
 from pathlib import Path
 from sklearn.decomposition import PCA
+from transformers import AutoTokenizer
 
 from nlp_pipeline.model.utils import load_pretrained_bert
 from nlp_pipeline.tokenizer import TOKENIZER_CLASS_MAP
-from nlp_pipeline.transformers import AutoTokenizer
 
 
 logger = logging.getLogger(__name__)
