@@ -1,7 +1,6 @@
 import unittest
 import os
 import sys
-sys.path.append("../nlp_pipeline/")
 
 
 class TestEndToEnd(unittest.TestCase):

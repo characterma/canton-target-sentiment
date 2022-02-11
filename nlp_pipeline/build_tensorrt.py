@@ -3,10 +3,8 @@ import logging
 import json
 import torch
 import sys
-
 import torch_tensorrt
 
-sys.path.append("../src/")
 from nlp_pipeline.model import get_model, get_onnx_session
 from nlp_pipeline.tokenizer import get_tokenizer
 from nlp_pipeline.utils import load_config, set_log_path, get_args

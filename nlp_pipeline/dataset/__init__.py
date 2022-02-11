@@ -24,3 +24,10 @@ def get_dataset(dataset, tokenizer, args, raw_data=None):
 
 def get_feature_class(args):
     return TASK_TO_FEATURE[args.task]
+
+
+def get_feature(data_dict, tokenizer, args):
+    feature_class = get_feature_class(args)
+    return feature_class(
+        data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=False, padding=False
+    ).feature_dict
