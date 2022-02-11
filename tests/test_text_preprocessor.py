@@ -1,7 +1,7 @@
 import unittest
 import sys
-sys.path.append("../src/")
-from preprocess import Preprocessor
+
+from nlp_pipeline.preprocess import Preprocessor
 
 
 class TestPreprocessor(unittest.TestCase):

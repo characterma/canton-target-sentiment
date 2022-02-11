@@ -6,11 +6,10 @@ from transformers import AutoTokenizer
 from collections import namedtuple 
 from pathlib import Path 
 
-sys.path.append("../src/")
-from dataset import TargetClassificationFeature
-from utils import load_config
-from tokenizer import get_tokenizer
-from label import get_label_to_id
+from nlp_pipeline.dataset import TargetClassificationFeature
+from nlp_pipeline.utils import load_config
+from nlp_pipeline.tokenizer import get_tokenizer
+from nlp_pipeline.label import get_label_to_id
 
 
 class TestGetFeatures(unittest.TestCase):

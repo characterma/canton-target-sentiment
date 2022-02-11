@@ -1,7 +1,6 @@
 import unittest
 import os
 import sys
-sys.path.append("../src/")
 
 
 class TestEndToEnd(unittest.TestCase):
@@ -23,7 +22,7 @@ class TestEndToEnd(unittest.TestCase):
                    'chinese_word_segmentation/BERT_CRF', 
                    ]
     skip_jit = []
-    os.chdir("../src/")
+    os.chdir("../nlp_pipeline/")
 
     @classmethod
     def tearDownClass(cls):

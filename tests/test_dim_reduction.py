@@ -5,11 +5,11 @@ import numpy as np
 from numpy import dot
 from numpy.linalg import norm
 
-sys.path.append("../src/")
-from dim_reduction import load_embedding
-from dim_reduction import dimension_reduction
-from model.utils import MODEL_CLASS_MAP
-from tokenizer import TOKENIZER_CLASS_MAP
+from nlp_pipeline.dim_reduction import load_embedding
+from nlp_pipeline.dim_reduction import dimension_reduction
+from nlp_pipeline.model.utils import MODEL_CLASS_MAP
+from nlp_pipeline.tokenizer import TOKENIZER_CLASS_MAP
+
 
 def load_local_vocab(vocab_path):
     vocabs = []
@@ -36,7 +36,7 @@ class TestDimReduction(unittest.TestCase):
         cls.reduction_mode = 'PPA-PCA'
         cls.save_path = f"../data/word_embeddings/roberta_wwm_large_embedding_{cls.embedding_num_dimension_target}d.txt"
         
-        os.chdir("../src/")
+        os.chdir("../nlp_pipeline/")
         code = os.system(f"python dim_reduction.py \
                     --pretrain_path '{cls.pretrain_path}'\
                     --output_dim '{cls.embedding_num_dimension_target}' \

@@ -2,7 +2,6 @@ import unittest
 import os
 import sys
 import torch
-sys.path.append("../src/")
 
 
 class TestFreezeEmbeddings(unittest.TestCase):
@@ -15,7 +14,7 @@ class TestFreezeEmbeddings(unittest.TestCase):
             os.system(f"rm ../tests/test_end_to_end_samples/{i}/log")
 
     def test_freeze_bert_embeddings(self):
-        os.chdir("../src/")
+        os.chdir("../nlp_pipeline/")
         os.system("python run.py --config_dir='../tests/test_end_to_end_samples/1/'")
         os.system("python run.py --config_dir='../tests/test_end_to_end_samples/2/'")
 
@@ -29,7 +28,7 @@ class TestFreezeEmbeddings(unittest.TestCase):
         self.assertTrue(not torch.equal(state_dict1['linear.linear.fc_0.weight'], state_dict2['linear.linear.fc_0.weight']))
 
     def test_freeze_non_bert_embeddings(self):
-        os.chdir("../src/")
+        os.chdir("../nlp_pipeline/")
         os.system("python run.py --config_dir='../tests/test_end_to_end_samples/3/'")
         os.system("python run.py --config_dir='../tests/test_end_to_end_samples/4/'")
 
