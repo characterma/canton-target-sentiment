@@ -41,14 +41,14 @@ class TestEndToEnd(unittest.TestCase):
             code = os.system(f"python run.py --config_dir='../config/examples/{task_model}' --test_only")
             self.assertEqual(code, 0, task_model)
 
-    # def test_onnx(self):
-    #     for task_model in self.task_models:
-    #         if task_model not in self.skip_onnx:
-    #             code = os.system(f"python build_onnx.py --config_dir='../config/examples/{task_model}'")
-    #             self.assertEqual(code, 0, task_model)
+    def test_onnx(self):
+        for task_model in self.task_models:
+            if task_model not in self.skip_onnx:
+                code = os.system(f"python build_onnx.py --config_dir='../config/examples/{task_model}'")
+                self.assertEqual(code, 0, task_model)
 
-    #             code = os.system(f"python optimize_onnx.py --config_dir='../config/examples/{task_model}'")
-    #             self.assertEqual(code, 0, task_model)
+                code = os.system(f"python optimize_onnx.py --config_dir='../config/examples/{task_model}'")
+                self.assertEqual(code, 0, task_model)
 
 
     def test_jit_trace(self):
