@@ -1,3 +1,5 @@
+numpy
+pandas
 opencc-python-reimplemented==0.1.6
 onnxruntime==1.9.0
 onnx==1.9.0
