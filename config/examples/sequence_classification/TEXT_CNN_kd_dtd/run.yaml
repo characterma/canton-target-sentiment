@@ -1,5 +1,5 @@
 task: "sequence_classification"
-device: 0
+device: 1
 data:
   output_dir: "../config/examples/sequence_classification/TEXT_CNN_kd_dtd"
   data_dir: "../data/datasets/sample/sequence_classification"
@@ -35,3 +35,7 @@ train:
 model_params:
   num_train_epochs: 20
   embedding_trainable: True
+  tokenizer_source: "transformers" # adapt pretrained embedding
+  tokenizer_name: "hfl/chinese-roberta-wwm-ext-large" # adapt pretrained embedding
+  pretrained_emb_path: "../data/word_embeddings/sample_word_emb.txt" # load pretrained embedding file
+  emb_dim: 300 # depends on dimension of above pretrained emb path 
