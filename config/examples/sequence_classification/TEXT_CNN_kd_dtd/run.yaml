@@ -1,5 +1,5 @@
 task: "sequence_classification"
-device: 1
+device: 0
 data:
   output_dir: "../config/examples/sequence_classification/TEXT_CNN_kd_dtd"
   data_dir: "../data/datasets/sample/sequence_classification"
