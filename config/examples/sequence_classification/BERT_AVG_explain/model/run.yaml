@@ -1,7 +1,7 @@
 task: "sequence_classification"
-device: 0
+device: 'cpu'
 data:
-  output_dir: "../config/examples/sequence_classification/BERT_CLS"
+  output_dir: "../config/examples/sequence_classification/explainable_ai"
   data_dir: "../data/datasets/sample/sequence_classification"
   train: train_sample.json
   dev: train_sample.json
@@ -16,7 +16,13 @@ eval:
   batch_size: 64
   model_file: "model.pt"
 train:
-  model_class: "BERT_CLS"
+  model_class: "BERT_AVG"
+  kd:
+    use_kd: False
+    teacher_dir: "../output/post_sentiment_20210707_bert_avg/model"
+    loss_type: 'mse'
+    soft_lambda: 0.5
+    kl_T: 5
   seed: 42
   log_steps: 100
   batch_size: 32
@@ -30,5 +36,9 @@ model_params:
   output_hidden_act_func: "PReLU"
   output_hidden_dim: 128
   # output_hidden_act_func: null
-  tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
-  pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
+  tokenizer_name: "clue/albert_chinese_tiny"
+  pretrained_lm: "clue/albert_chinese_tiny"
+explanation:
+    Lime:
+      method: "Lime"
+

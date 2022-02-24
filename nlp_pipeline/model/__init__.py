@@ -19,7 +19,8 @@ def get_model(args):
         model = Model(args=args)
     else:
         logger.info("  Model path = %s", model_path)
-        model = torch.load(model_path, map_location=torch.device(args.device))
+        model = Model(args=args)
+        model.load_state_dict(torch.load(model_path, map_location=torch.device(args.device)))
     model.return_tensors = None
     return model
 

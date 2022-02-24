@@ -4,26 +4,29 @@ import torch
 import os
 from transformers import AutoTokenizer
 from collections import namedtuple 
-from pathlib import Path 
+from pathlib import Path, PurePath
 
 from nlp_pipeline.dataset import TargetClassificationFeature
 from nlp_pipeline.utils import load_config
 from nlp_pipeline.tokenizer import get_tokenizer
 from nlp_pipeline.label import get_label_to_id
-
+# passed
 
 class TestGetFeatures(unittest.TestCase):
+    test_dir = Path(PurePath(__file__).parent).resolve()
+    src_dir = test_dir.parent / "nlp_pipeline"
+    sys.path.append(src_dir)
 
     @classmethod
     def tearDownClass(cls):
-        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/result")
-        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/model")
-        os.system(f"rm -rf ../tests/test_end_to_end_samples/8/logs")
-        os.system(f"rm ../tests/test_end_to_end_samples/8/log")
+        os.system(f"rm -rf {cls.test_dir}/test_end_to_end_samples/8/result")
+        os.system(f"rm -rf {cls.test_dir}/test_end_to_end_samples/8/model")
+        os.system(f"rm -rf {cls.test_dir}/test_end_to_end_samples/8/logs")
+        os.system(f"rm {cls.test_dir}/test_end_to_end_samples/8/log")
 
     def test_get_feature(self):
         args = namedtuple('args', 'config_dir')
-        args.config_dir = Path(f"../tests/test_end_to_end_samples/8")
+        args.config_dir = Path(f"{self.test_dir}/test_end_to_end_samples/8")
         args = load_config(args)
         tokenizer = get_tokenizer(args=args)
         label_to_id, label_to_id_inv = get_label_to_id(tokenizer, args)

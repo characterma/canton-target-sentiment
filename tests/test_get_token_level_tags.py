@@ -4,7 +4,7 @@ import torch
 from transformers import AutoTokenizer
 
 from nlp_pipeline.dataset.tagging.chinese_word_segmentation import get_token_level_tags
-
+# passed
 
 class TestGetTokenLevelTags(unittest.TestCase):
     def test_get_token_level_tags(self):

@@ -3,6 +3,7 @@ import logging
 import json
 import torch
 import sys
+import numpy as np
 
 from nlp_pipeline.model import get_model, get_onnx_session
 from nlp_pipeline.tokenizer import get_tokenizer
@@ -37,16 +38,24 @@ def build_jit_trace(args):
     batch = dict()
     for col in feature_dict:
         batch[col] = torch.stack([feature_dict[col]], dim=0).to(args.device)
-        print(batch[col].device)
+        print(col, batch[col].device)
     if 'label' in batch:
         del batch['label']
 
+
     x = tuple([batch[col].squeeze(-1) for col in batch])
+    model.eval()
     traced_model = torch.jit.trace(model, x)
     traced_model.save(
         str(args.model_dir / "traced_model.ts")
     )
     logger.info("***** Build traced model succeeded. *****")
+
+    orig_output = model(**batch).cpu().detach().numpy()
+    trace_output = traced_model(*batch.values()).cpu().detach().numpy()
+    print("ori:", orig_output)
+    print("trace:", trace_output)
+    np.testing.assert_allclose(orig_output, trace_output, rtol=1e-02, atol=1e-02)
     return traced_model
 
 

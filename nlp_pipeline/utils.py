@@ -8,7 +8,7 @@ import shutil
 import torch
 import yaml
 import pickle
-from pathlib import Path
+from pathlib import Path, PurePath
 from collections import namedtuple
 
 
@@ -58,8 +58,8 @@ def get_args(config_dir):
 
 def load_config(args, is_deployment=False):
     config_dir = Path(args.config_dir)
-    print(config_dir)
-    print(os.listdir(config_dir))
+    src_dir = Path(PurePath(__file__).parent)
+    default_config_dir = src_dir.parent / "config" 
     run_config = load_yaml(config_dir / "run.yaml")
     args.run_config = run_config
     args.data_config = run_config["data"]
@@ -70,7 +70,7 @@ def load_config(args, is_deployment=False):
     args.kd_config = run_config["train"].get("kd", {"use_kd": False})
     args.prepro_config = run_config["text_prepro"]
     args.explain_config = run_config.get("explanation", {})
-    model_config = load_yaml("../config/model.yaml")
+    model_config = load_yaml(default_config_dir / "model.yaml")
     model_class = args.train_config["model_class"]
     args.model_config = model_config[model_class]
     args.model_config.update(run_config["model_params"])
@@ -78,12 +78,19 @@ def load_config(args, is_deployment=False):
     args.config_dir = config_dir
     if not is_deployment:
         output_dir = Path(args.data_config["output_dir"])
+        args.output_dir = output_dir
+        if not args.output_dir.is_absolute():
+            args.output_dir = src_dir / Path(args.output_dir)
+            
+        args.data_dir = Path(args.data_config["data_dir"])
+        if not args.data_dir.is_absolute():
+            args.data_dir = src_dir / Path(args.data_dir)
+
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        args.output_dir = output_dir
-        args.data_dir = Path(args.data_config["data_dir"])
-        args.model_dir = output_dir / "model"
-        args.result_dir = output_dir / "result"
+        args.model_dir = args.output_dir / "model"
+        args.result_dir = args.output_dir / "result"
+
         if not os.path.exists(args.model_dir):
             os.makedirs(args.model_dir)
         if not os.path.exists(args.result_dir):
@@ -92,15 +99,31 @@ def load_config(args, is_deployment=False):
         args.tensorboard_dir = Path(output_dir / "logs")
         if not os.path.exists(args.tensorboard_dir):
             os.makedirs(args.tensorboard_dir)
+
+        if args.pretrained_emb_path is not None and not Path(args.pretrained_emb_path).is_absolute():
+            args.pretrained_emb_path = str(src_dir) + "/" + args.pretrained_emb_path
+        print(args.pretrained_emb_path, "**********************************")
+
     else:
-        args.output_dir = config_dir
-        args.model_dir = config_dir
+        args.output_dir = Path(config_dir)
+        args.model_dir = Path(config_dir)
+
+        if not args.output_dir.is_absolute():
+            args.output_dir = src_dir / Path(args.output_dir)
+            
+        if not args.model_dir.is_absolute():
+            args.model_dir = src_dir / Path(args.model_dir)
+
+        if not args.data_dir.is_absolute():
+            args.data_dir = src_dir / Path(args.data_dir)
+    print(args.model_dir, "*********************************************************")
     return args
 
 
 def save_config(args):
+    default_config_dir = Path(PurePath(__file__).parent).resolve().parent / "config" 
     shutil.copy(args.config_dir / "run.yaml", args.model_dir / "run.yaml")
-    shutil.copy("../config/model.yaml", args.model_dir / "model.yaml")
+    shutil.copy(default_config_dir / "model.yaml", args.model_dir / "model.yaml")
 
 
 def combine_and_save_metrics(metrics, args, suffix=None):

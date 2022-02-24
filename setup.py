@@ -11,11 +11,19 @@ dev_packages = [
       "scrapbook"
 ]
 
+skip_lines = [
+      "--find-links https://download.pytorch.org/whl/torch_stable.html", 
+      "torch==1.6.0+cu101"
+]
+
 
 required_packages = []
 with open("requirements.txt", "r") as file:
       for ln in file.readlines():
             ln = ln.strip()
+            if ln in skip_lines:
+                  continue
+
             if ln not in dev_packages:
                   required_packages.append(ln)
 

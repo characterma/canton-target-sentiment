@@ -63,7 +63,7 @@ def evaluate(model, eval_dataset, args):
         eval_dataset,
         shuffle=False,
         batch_size=args.eval_config["batch_size"],
-        # collate_fn=eval_dataset.pad_collate,
+        collate_fn=eval_dataset.collate_fn,
     )
 
     label_ids = []
@@ -188,7 +188,7 @@ class Trainer:
             self.train_dataset,
             sampler=RandomSampler(self.train_dataset),
             batch_size=self.train_config["batch_size"],
-            # collate_fn=self.train_dataset.pad_collate,
+            collate_fn=self.train_dataset.collate_fn,
         )
         optimizer, scheduler = self.create_optimizer_and_scheduler(n=len(dataloader))
         logger.info("***** Running training *****")
@@ -267,5 +267,5 @@ class Trainer:
         if self.final_model == "best" and self.best_model_state is not None:
             self.model.load_state_dict(self.best_model_state)
         logger.info("  Model path = %s", str(out_path))
-        torch.save(self.model, out_path)
+        torch.save(self.model.state_dict(), out_path)
         self.tensorboard_writer.close()

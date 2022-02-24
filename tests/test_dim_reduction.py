@@ -4,12 +4,13 @@ import sys
 import numpy as np
 from numpy import dot
 from numpy.linalg import norm
+from pathlib import Path, PurePath
 
 from nlp_pipeline.dim_reduction import load_embedding
 from nlp_pipeline.dim_reduction import dimension_reduction
 from nlp_pipeline.model.utils import MODEL_CLASS_MAP
-from nlp_pipeline.tokenizer import TOKENIZER_CLASS_MAP
-
+from nlp_pipeline.tokenizer import get_transformers_tokenizer_class
+# # passed
 
 def load_local_vocab(vocab_path):
     vocabs = []
@@ -27,17 +28,20 @@ def load_local_embedding(embedding_path):
     return np.array(embedding, dtype=np.float32)
 
 class TestDimReduction(unittest.TestCase):
-    
+    test_dir = Path(PurePath(__file__).parent).resolve()
+    src_dir = test_dir.parent / "nlp_pipeline"
+    config_dir = test_dir.parent / "config"
+    data_dir = test_dir.parent / "data"
+
     @classmethod
     def setUpClass(cls):
         cls.pretrain_path = 'hfl/chinese-roberta-wwm-ext-large'
         cls.embedding_num_vocab_target = 21128
         cls.embedding_num_dimension_target = 64
         cls.reduction_mode = 'PPA-PCA'
-        cls.save_path = f"../data/word_embeddings/roberta_wwm_large_embedding_{cls.embedding_num_dimension_target}d.txt"
+        cls.save_path = f"{cls.data_dir}/word_embeddings/roberta_wwm_large_embedding_{cls.embedding_num_dimension_target}d.txt"
         
-        os.chdir("../nlp_pipeline/")
-        code = os.system(f"python dim_reduction.py \
+        code = os.system(f"python {cls.src_dir}/dim_reduction.py \
                     --pretrain_path '{cls.pretrain_path}'\
                     --output_dim '{cls.embedding_num_dimension_target}' \
                     --save_path '{cls.save_path}' \
@@ -45,12 +49,12 @@ class TestDimReduction(unittest.TestCase):
                     )
 
     def test_load_local_emb(self):
-        embedding_path = "../data/word_embeddings/sample_word_emb.txt"
+        embedding_path = f"{self.data_dir}/word_embeddings/sample_word_emb.txt"
         vocab_result, embedding_result = load_embedding(embedding_path)
         
         # load target files
-        vocab_target_path = "../data/word_embeddings/sample_word_emb_vocab.txt"
-        embedding_target_path = "../data/word_embeddings/sample_word_emb_embedding.txt"
+        vocab_target_path = f"{self.data_dir}/word_embeddings/sample_word_emb_vocab.txt"
+        embedding_target_path = f"{self.data_dir}/word_embeddings/sample_word_emb_embedding.txt"
         vocab_target = load_local_vocab(vocab_target_path)
         embedding_target = load_local_embedding(embedding_target_path)
         
@@ -60,12 +64,10 @@ class TestDimReduction(unittest.TestCase):
     def test_load_pretrain_model_in_classmap(self):
         pretrain_path = 'bert-base-chinese'
         self.assertTrue(pretrain_path in MODEL_CLASS_MAP)
-        self.assertTrue(pretrain_path in TOKENIZER_CLASS_MAP)
-        
         vocab_result, embedding_result = load_embedding(pretrain_path)
         # load target files
-        vocab_target_path = "../data/word_embeddings/sample_vocab.txt"
-        embedding_target_path = "../data/word_embeddings/sample_bert_base_chinese_embedding_768d.txt"
+        vocab_target_path = f"{self.data_dir}/word_embeddings/sample_vocab.txt"
+        embedding_target_path = f"{self.data_dir}/word_embeddings/sample_bert_base_chinese_embedding_768d.txt"
         
         vocab_target = load_local_vocab(vocab_target_path)
         embedding_target = load_local_embedding(embedding_target_path)
@@ -76,12 +78,10 @@ class TestDimReduction(unittest.TestCase):
     def test_load_pretrain_model_notin_classmap(self):
         pretrain_path = 'hfl/chinese-bert-wwm'
         self.assertTrue(pretrain_path not in MODEL_CLASS_MAP)
-        self.assertTrue(pretrain_path not in TOKENIZER_CLASS_MAP)
-         
         vocab_result, embedding_result = load_embedding(pretrain_path)
         # load target files
-        vocab_target_path = "../data/word_embeddings/sample_vocab.txt"
-        embedding_target_path = "../data/word_embeddings/sample_chinese_bert_wwm_embedding_768d.txt"
+        vocab_target_path = f"{self.data_dir}/word_embeddings/sample_vocab.txt"
+        embedding_target_path = f"{self.data_dir}/word_embeddings/sample_chinese_bert_wwm_embedding_768d.txt"
         
         vocab_target = load_local_vocab(vocab_target_path)
         embedding_target = load_local_embedding(embedding_target_path)
