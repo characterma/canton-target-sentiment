@@ -21,13 +21,13 @@ class TestEndToEnd(unittest.TestCase):
     skip_onnx = [
                    'chinese_word_segmentation/CNN_CRF',
                    'chinese_word_segmentation/BERT_CRF', 
-                   'target_classification/TGSAN'
+                   'target_classification/TGSAN',
                    'target_classification/TGSAN2'
                    ]
     skip_jit = [
                    'chinese_word_segmentation/CNN_CRF',
                    'chinese_word_segmentation/BERT_CRF', 
-                    'target_classification/TGSAN'
+                    'target_classification/TGSAN',
                     'target_classification/TGSAN2'
     ]
     test_dir = Path(PurePath(__file__).parent).resolve()
