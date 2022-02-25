@@ -7,7 +7,7 @@ from tqdm import tqdm
 import pandas as pd
 
 from nlp_pipeline.preprocess import Preprocessor
-from nlp_pipeline.dataset.utils import get_model_inputs
+from nlp_pipeline.dataset.utils import PadCollate, get_model_inputs 
 
 
 logger = logging.getLogger(__name__)
@@ -18,8 +18,19 @@ class NLPDataset:
         self.args = args
         self.dataset = dataset
         self.tokenizer = tokenizer
-
         self.required_features = get_model_inputs(args=args)
+        pad_cols = self.required_features.copy()
+        if 'label' in pad_cols:
+            pad_cols.remove('label')
+        if self.args.data_config.get('pad_in_collate', False):
+            self.collate_fn = PadCollate(
+                pad_cols=pad_cols, 
+                pad_dim=0,
+                max_length=self.args.model_config['max_length']
+            )
+        else:
+            self.collate_fn = None
+
         self.feature_class = feature_class
 
         self.features = []
@@ -47,6 +58,7 @@ class NLPDataset:
                 tokenizer=self.tokenizer,
                 args=self.args,
                 diagnosis=True, 
+                padding=False if self.args.data_config.get('pad_in_collate', False) else 'max_length'
             )
 
             if fea.feature_dict is not None:

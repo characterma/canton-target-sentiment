@@ -130,7 +130,7 @@ def run_kd(args):
 def run(args):
     if not args.test_only:
         save_config(args)
-
+    print(args.model_dir, "*****")
     tokenizer = get_tokenizer(args=args)
 
     label_to_id, label_to_id_inv = get_label_to_id(tokenizer, args)

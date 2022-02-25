@@ -15,6 +15,9 @@ class BERT_CLS(BertPreTrainedModel):
         super(BERT_CLS, self).__init__(load_pretrained_config(args))
         self.model_config = args.model_config
         self.pretrained_model = load_pretrained_bert(args)
+        if not args.model_config["embedding_trainable"]:
+            self.freeze_emb()
+            
         self.num_labels = len(args.label_to_id)
         self.dropout = nn.Dropout(
             p=args.model_config["classifier_dropout"]
@@ -26,6 +29,12 @@ class BERT_CLS(BertPreTrainedModel):
         self.loss_func = nn.CrossEntropyLoss(reduction="mean")
         self.return_logits = False
         self.to(args.device)
+
+    def freeze_emb(self):
+        # Freeze all parameters except self attention parameters
+        for param_name, param in self.pretrained_model.named_parameters():
+            if "embeddings" in param_name:
+                param.requires_grad = False
 
     def set_return_logits(self):
         self.return_logits = True

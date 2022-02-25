@@ -3,7 +3,7 @@ import sys
 import torch
 
 from nlp_pipeline.tokenizer import MultiLingualTokenizer, CharacterSplitTokenizer
-
+# passed on 2022-02-16
 
 class TestTokenizer(unittest.TestCase):
     def test_multilingual_tokenizer(self):

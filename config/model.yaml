@@ -10,6 +10,7 @@ TDBERT:
     output_hidden_act_func: Tanh
     # ================= Training params =================
     num_train_epochs: 10
+    embedding_trainable: True
     optimizer: "AdamW"
     learning_rate: 2e-5
     weight_decay: 0.0
@@ -84,6 +85,7 @@ BERT_CRF:
     bert_dropout: 0.1
     # ================= Training params =================
     num_train_epochs: 10
+    embedding_trainable: True
     optimizer: "AdamW"
     learning_rate: 2e-5
     weight_decay: 0.0
@@ -131,6 +133,7 @@ BERT_AVG:
     output_hidden_dim: 128
     # ================= Training params =================
     num_train_epochs: 10
+    embedding_trainable: True
     optimizer: "AdamW"
     learning_rate: 2e-5
     weight_decay: 0.0
@@ -151,6 +154,7 @@ BERT_CLS:
     classifier_dropout: 0.2
     # ================= Training params =================
     num_train_epochs: 12
+    embedding_trainable: True
     optimizer: "AdamW"
     learning_rate: 2e-5
     weight_decay: 0.0

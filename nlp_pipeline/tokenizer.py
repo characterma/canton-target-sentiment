@@ -6,7 +6,7 @@ import random
 from collections import Counter
 from tqdm import tqdm
 from pathlib import Path
-from transformers import AutoTokenizer, BertTokenizerFast
+
 
 from nlp_pipeline.preprocess import Preprocessor
 from nlp_pipeline.utils import get_args, load_config
@@ -16,26 +16,29 @@ from nlp_pipeline.constants import get_constant
 logger = logging.getLogger(__name__)
 
 
-TOKENIZER_CLASS_MAP = {
-    "toastynews/electra-hongkongese-large-discriminator": AutoTokenizer,
-    "toastynews/xlnet-hongkongese-base": AutoTokenizer,
-    "xlnet-base-cased": AutoTokenizer,
-    "xlm-roberta-base": AutoTokenizer,
-    "xlm-roberta-large": AutoTokenizer,
-    "bert-large-cased": AutoTokenizer,
-    "bert-base-cased": AutoTokenizer,  # https://huggingface.co/transformers/model_doc/bert.html#bertconfig
-    "bert-base-uncased": AutoTokenizer,
-    "bert-base-multilingual-cased": AutoTokenizer,  # tested
-    "bert-base-multilingual-uncased": AutoTokenizer,
-    "bert-base-chinese": AutoTokenizer,  # testing
-    "denpa92/bert-base-cantonese": BertTokenizerFast,  # missing tokenizer.
-    "voidful/albert_chinese_tiny": BertTokenizerFast,  #
-    "clue/albert_chinese_tiny": BertTokenizerFast,  #
-    "voidful/albert_chinese_small": BertTokenizerFast,  #
-    "clue/albert_chinese_small": BertTokenizerFast,
-    "voidful/albert_chinese_base": BertTokenizerFast,  #
-    "hfl/chinese-roberta-wwm-ext-large": BertTokenizerFast,
-}
+def get_transformers_tokenizer_class(name):
+    from transformers import AutoTokenizer, BertTokenizerFast
+    class_map = {
+        "toastynews/electra-hongkongese-large-discriminator": AutoTokenizer,
+        "toastynews/xlnet-hongkongese-base": AutoTokenizer,
+        "xlnet-base-cased": AutoTokenizer,
+        "xlm-roberta-base": AutoTokenizer,
+        "xlm-roberta-large": AutoTokenizer,
+        "bert-large-cased": AutoTokenizer,
+        "bert-base-cased": AutoTokenizer,  # https://huggingface.co/transformers/model_doc/bert.html#bertconfig
+        "bert-base-uncased": AutoTokenizer,
+        "bert-base-multilingual-cased": AutoTokenizer,  # tested
+        "bert-base-multilingual-uncased": AutoTokenizer,
+        "bert-base-chinese": AutoTokenizer,  # testing
+        "denpa92/bert-base-cantonese": BertTokenizerFast,  # missing tokenizer.
+        "voidful/albert_chinese_tiny": BertTokenizerFast,  #
+        "clue/albert_chinese_tiny": BertTokenizerFast,  #
+        "voidful/albert_chinese_small": BertTokenizerFast,  #
+        "clue/albert_chinese_small": BertTokenizerFast,
+        "voidful/albert_chinese_base": BertTokenizerFast,  #
+        "hfl/chinese-roberta-wwm-ext-large": BertTokenizerFast,
+    }
+    return class_map.get(name, AutoTokenizer)
 
 
 def load_vocab(tokenizer, vocab_path, args):
@@ -77,7 +80,7 @@ def build_vocab_from_dataset(datasets, tokenizer, args):
 
     for dataset in datasets:
         filename = args.data_config[dataset]
-        data_path = Path(args.data_config["data_dir"]) / filename
+        data_path = args.data_dir / filename
         raw_data = json.load(open(data_path, "r"))
         for data_dict in tqdm(raw_data):
             preprocessor = Preprocessor(
@@ -124,12 +127,14 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
         datasets = ['train']
     # logger.info("  Tokenizer name = '%s'", name)
     if source == "transformers":
+
         prev_model_dir = args.model_config.get("pretrained_lm_from_prev", None)
         if prev_model_dir is None:
             name = args.model_config["tokenizer_name"]
-            Tokenizer = TOKENIZER_CLASS_MAP.get(name, AutoTokenizer)
+            Tokenizer = get_transformers_tokenizer_class(name)
             
             tokenizer_dir = args.model_dir / "tokenizer"
+            print(str(tokenizer_dir))
             if os.path.isdir(tokenizer_dir):
                 tokenizer = Tokenizer.from_pretrained(
                     str(tokenizer_dir),
@@ -164,7 +169,7 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
             prev_args = get_args(prev_model_dir)
             prev_args = load_config(prev_args)
             name = prev_args.model_config["tokenizer_name"]
-            Tokenizer = TOKENIZER_CLASS_MAP.get(name, AutoTokenizer)
+            Tokenizer = get_transformers_tokenizer_class(name)
             tokenizer = Tokenizer.from_pretrained(
                 name,
                 use_fast=True,

@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 from transformers import AutoTokenizer
 
 from nlp_pipeline.model.utils import load_pretrained_bert
-from nlp_pipeline.tokenizer import TOKENIZER_CLASS_MAP
+from nlp_pipeline.tokenizer import get_transformers_tokenizer_class
 
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def get_pretrain_emb(pretrain_model: str):
                 "pretrained_lm_from_prev": None, #Path(ppath) if os.path.exists(Path(ppath)) else None,
             }
     args = arg(pretrain_model)        
-    tokenizer = TOKENIZER_CLASS_MAP.get(pretrain_model, AutoTokenizer).from_pretrained(
+    tokenizer = get_transformers_tokenizer_class(pretrain_model).from_pretrained(
         pretrain_model,
         use_fast = True,
         add_special_tokens = True

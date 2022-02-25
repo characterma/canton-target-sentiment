@@ -26,7 +26,7 @@ def get_feature_func(args):
 
 class OnnxModelRunner(object):
     def __init__(self, args):
-        self.session = (args=args)
+        self.session = get_onnx_session(args=args)
         self.device = args.device
         self.label_to_id_inv = args.label_to_id_inv
 
@@ -68,34 +68,38 @@ class TracedModelRunner(object):
         return prediction, scores
 
 
+
+
+
 class APIInput(BaseModel):
     ##########################################
     # Define API input here
     ##########################################
     content : str
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--config_dir", type=str, default="../model/")
-parser.add_argument("--device", type=str, default="")
-parser.add_argument("--model_type", type=str, default="")
-args = parser.parse_args()
-device = args.device
-
-args = load_config(args, is_deployment=True)
-if device!="":
-    args.device = device
-
-
-get_feature = get_feature_func(args=args)
-
-
-if args.model_type == "onnx":
-    runner = OnnxModelRunner(args)
-elif args.model_type == "traced":
-    runner = TracedModelRunner(args)
-
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config_dir", type=str, default="../model/")
+    parser.add_argument("--device", type=str, default="")
+    parser.add_argument("--model_type", type=str, default="")
+    args = parser.parse_args()
+    device = args.device
+
+    args = load_config(args, is_deployment=True)
+    if device!="":
+        args.device = device
+
+
+    get_feature = get_feature_func(args=args)
+
+
+    if args.model_type == "onnx":
+        runner = OnnxModelRunner(args)
+    elif args.model_type == "traced":
+        runner = TracedModelRunner(args)
+
     app = FastAPI()
 
     @app.post(f'/{END_PT}', status_code=200)

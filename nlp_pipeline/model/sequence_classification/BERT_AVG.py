@@ -11,7 +11,9 @@ class BERT_AVG(BertPreTrainedModel):
         super(BERT_AVG, self).__init__(load_pretrained_config(args))
         self.model_config = args.model_config
         self.pretrained_model = load_pretrained_bert(args)
-
+        if not args.model_config["embedding_trainable"]:
+            self.freeze_emb()
+            
         hidden_size = self.pretrained_model.config.hidden_size
         output_hidden_dim = args.model_config['output_hidden_dim']
         output_hidden_act_func = args.model_config['output_hidden_act_func']
@@ -39,6 +41,12 @@ class BERT_AVG(BertPreTrainedModel):
         h = h.masked_fill(attention_mask==0, float(0))
         h = h.sum(dim=1) / attention_mask.sum(dim=1)        
         return h
+
+    def freeze_emb(self):
+        # Freeze all parameters except self attention parameters
+        for param_name, param in self.pretrained_model.named_parameters():
+            if "embeddings" in param_name:
+                param.requires_grad = False
 
     def set_return_logits(self):
         self.return_logits = True

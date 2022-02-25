@@ -1,8 +1,8 @@
 import torch.nn as nn
 from transformers import BertPreTrainedModel
 
-from model.layer.crf import LinearChainCRF
-from model.utils import load_pretrained_bert, load_pretrained_config, NLPModelOutput
+from nlp_pipeline.model.layer.crf import LinearChainCRF
+from nlp_pipeline.model.utils import load_pretrained_bert, load_pretrained_config, NLPModelOutput
 
 
 class BERT_CRF(BertPreTrainedModel):

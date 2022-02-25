@@ -2,7 +2,7 @@ import unittest
 import sys
 
 from nlp_pipeline.preprocess import Preprocessor
-
+# passed on 2022-02-16
 
 class TestPreprocessor(unittest.TestCase):
     def test_simplified_chinese(self):

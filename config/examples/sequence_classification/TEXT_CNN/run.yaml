@@ -6,7 +6,6 @@ data:
   train: train_sample.json
   dev: test_sample.json
   test: test_sample.json
-  unlabeled: unlabeled_sample.json
 text_prepro:
   steps:
     - utf8_replace
