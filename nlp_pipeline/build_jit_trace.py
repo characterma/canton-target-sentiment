@@ -27,6 +27,8 @@ def build_jit_trace(args):
     args.label_to_id_inv = label_to_id_inv
 
     data_dict = json.load(open(args.data_dir / args.data_config['test'], "r"))[0]
+    if 'label' in data_dict:
+        del data_dict['label']
     feature = feature_class(
         data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=False
     )
@@ -34,13 +36,16 @@ def build_jit_trace(args):
     feature_dict = feature.feature_dict
     model = get_model(args=args)
     model.set_return_logits()
+    
+    model_inputs = []
+    for i in get_model_inputs(args=args):
+        if i in feature_dict.keys():
+            model_inputs.append(i)
 
     batch = dict()
-    for col in feature_dict:
+    for col in model_inputs:
         batch[col] = torch.stack([feature_dict[col]], dim=0).to(args.device)
         print(col, batch[col].device)
-    if 'label' in batch:
-        del batch['label']
 
 
     x = tuple([batch[col].squeeze(-1) for col in batch])

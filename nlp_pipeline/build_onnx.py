@@ -29,31 +29,40 @@ def build_onnx(args):
     args.label_to_id = label_to_id
     args.label_to_id_inv = label_to_id_inv
 
+    # Load data
     data_dict = json.load(open(args.data_dir / args.data_config['test'], "r"))[0]
     if 'label' in data_dict:
         del data_dict['label']
-
     feature = feature_class(
         data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=False
     )
-
     feature_dict = feature.feature_dict
+
+    # Load model
     model = get_model(args=args)
     model.set_return_logits()
 
-    batch = dict()
-    for col in feature_dict:
-        batch[col] = torch.stack([feature_dict[col]], dim=0).to(args.device)
-
-    x = tuple([batch[col].squeeze(-1) for col in batch])
-    model_inputs = batch.keys()
+    # Get model input fields
+    model_inputs = []
+    for i in get_model_inputs(args=args):
+        if i in feature_dict.keys():
+            model_inputs.append(i)
 
     logger.info("***** Exporting onnx model. *****")
-    dynamic_axes = dict()
 
-    for col in feature_dict:
+    # Dynamic axes
+    dynamic_axes = dict()
+    for col in model_inputs:
         dynamic_axes[col] = {0: 'batch_size', 1: 'max_seq_len',}
     dynamic_axes['outputs'] = TASK_TO_OUTPUT_SHAPE[args.task]
+    
+    # Make input for onnx export
+    batch = dict()
+    for col in model_inputs:
+        batch[col] = torch.stack([feature_dict[col]], dim=0).to(args.device)
+    x = tuple([batch[col].squeeze(-1) for col in batch])
+
+    # Export & load onnx
     model.eval()
     with torch.no_grad():
         torch.onnx.export(
@@ -69,22 +78,16 @@ def build_onnx(args):
 
     logger.info("***** Testing onnx model. *****")
     session = get_onnx_session(args=args)
-    batch = dict()
-    for col in feature_dict:
-        batch[col] = feature_dict[col].unsqueeze(0).numpy()
-    if 'label' in batch:
-        del batch['label']
 
-    # test batch running
+    # Test onnx output vs original model output
     for bz in [1, 2, 8, 16]:
 
         for l in [0.5, 1, 2]:
 
-
             batch_orig = dict()
             batch_onnx = dict()
-
-            for col in feature_dict:
+            # print(bz, l)
+            for col in model_inputs:
                 org_tensor = feature_dict[col].unsqueeze(0)
                 repeat_size = [1] * len(org_tensor.size())
                 repeat_size[0] = bz 
@@ -95,17 +98,20 @@ def build_onnx(args):
 
                     batch_orig[col] = feature_dict[col].unsqueeze(0).repeat(*repeat_size).to(args.device)
                     batch_onnx[col] = feature_dict[col].unsqueeze(0).repeat(*repeat_size).numpy()
+
                 else:
                     seq_len = org_tensor.size()[1]
                     batch_orig[col] = feature_dict[col].unsqueeze(0).repeat(*repeat_size)[:, :int(seq_len * l)].to(args.device)
                     batch_onnx[col] = feature_dict[col].unsqueeze(0).repeat(*repeat_size)[:, :int(seq_len * l)].numpy()
+
+                # print(col, batch_onnx[col].shape)
+
             orig_output = model(**batch_orig).cpu().detach().numpy()
             onnx_output = session.run(None, input_feed=batch_onnx)
-            onnx_output = np.array(onnx_output[0])
             print("ori:", orig_output)
             print("onx:", onnx_output)
+            onnx_output = np.array(onnx_output[0])
             np.testing.assert_allclose(orig_output, onnx_output, rtol=1e-02, atol=1e-02)
-
 
     logger.info("***** Build onnx succeeded. *****")
 
