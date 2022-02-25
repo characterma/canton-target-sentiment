@@ -7,7 +7,7 @@ from pathlib import Path, PurePath
 from collections import namedtuple
 
 from nlp_pipeline.tokenizer import MultiLingualTokenizer, build_vocab_from_dataset
-# passed
+
 
 class TestBuildVocabFromDataset(unittest.TestCase):
 
