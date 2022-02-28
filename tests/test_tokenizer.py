@@ -1,8 +1,8 @@
 import unittest
 import sys
 import torch
-sys.path.append("../src/")
-from tokenizer import MultiLingualTokenizer, CharacterSplitTokenizer
+
+from nlp_pipeline.tokenizer import MultiLingualTokenizer, CharacterSplitTokenizer
 
 
 class TestTokenizer(unittest.TestCase):

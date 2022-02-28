@@ -3,13 +3,17 @@ import sys
 import torch
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePath
 from collections import namedtuple
-sys.path.append("../src/")
-from tokenizer import MultiLingualTokenizer, build_vocab_from_dataset
+
+from nlp_pipeline.tokenizer import MultiLingualTokenizer, build_vocab_from_dataset
 
 
 class TestBuildVocabFromDataset(unittest.TestCase):
+
+    test_dir = Path(PurePath(__file__).parent).resolve()
+    src_dir = test_dir.parent / "nlp_pipeline"
+    config_dir = test_dir.parent / "config"
 
     args = namedtuple('args', 'data_config prepro_config model_config')
     args.data_config = {
@@ -17,6 +21,7 @@ class TestBuildVocabFromDataset(unittest.TestCase):
         "train": "sample_for_build_vocab1.json", 
         "dev": "sample_for_build_vocab2.json", 
     }
+    args.data_dir = src_dir / args.data_config['data_dir']
     args.prepro_config = {'steps': []}
     args.model_config = {'vocab_freq_cutoff': 0}
     args.model_dir = Path("./")
@@ -26,10 +31,11 @@ class TestBuildVocabFromDataset(unittest.TestCase):
 
     data2 = [{'content': '竞赛'}]
 
-    if not os.path.exists("../data/datasets/sample/"):
-        os.makedirs("../data/datasets/sample/")
-    json.dump(data1, open("../data/datasets/sample/sample_for_build_vocab1.json", "w"))
-    json.dump(data2, open("../data/datasets/sample/sample_for_build_vocab2.json", "w"))
+    if not os.path.exists(args.data_dir):
+        os.makedirs(args.data_dir)
+
+    json.dump(data1, open(args.data_dir / "sample_for_build_vocab1.json", "w"))
+    json.dump(data2, open(args.data_dir / "sample_for_build_vocab2.json", "w"))
     word_to_id_0 = {'<OOV>': 0,
                     '<PAD>': 1,
                     'Bay': 2,
