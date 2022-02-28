@@ -1,17 +1,19 @@
 import os
-import sys
 import unittest
 import papermill as pm
 import scrapbook as sb
-
-sys.path.append("../src/")
+from pathlib import Path, PurePath
 
 kernel_name = "python3"
 notebook_path = '../notebooks/unlabel_data_sampling.ipynb'
 output_notebook = "../notebooks/unlabel_data_sampling_tmp.ipynb"
 
 class TestUnlabelSampling(unittest.TestCase):
-    
+    test_dir = Path(PurePath(__file__).parent).resolve()
+    src_dir = test_dir.parent / "nlp_pipeline"
+    # config_dir = test_dir.parent / "config"
+    # data_dir = test_dir.parent / "data"
+
     @classmethod
     def setUpClass(cls):
         cls.sample_size = 10
@@ -27,7 +29,7 @@ class TestUnlabelSampling(unittest.TestCase):
                 certainty = cls.certainty
             )
         )
-        cls.results = sb.read_notebook(output_notebook).scraps.data_dict
+        cls.results = sb.read_notebook(str(cls.src_dir / output_notebook)).scraps.data_dict
 
     # test number of samples in result
     def test_number_of_sample(self):

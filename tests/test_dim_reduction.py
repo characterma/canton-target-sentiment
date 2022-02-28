@@ -26,7 +26,7 @@ def load_local_embedding(embedding_path):
 class TestDimReduction(unittest.TestCase):
     test_dir = Path(PurePath(__file__).parent).resolve()
     src_dir = test_dir.parent / "nlp_pipeline"
-    config_dir = test_dir.parent / "config"
+    #config_dir = test_dir.parent / "config"
     data_dir = test_dir.parent / "data"
 
     @classmethod
