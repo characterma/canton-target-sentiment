@@ -1,16 +1,12 @@
 import unittest
 import os
-import sys
 import numpy as np
 from numpy import dot
 from numpy.linalg import norm
 from pathlib import Path, PurePath
 
 from nlp_pipeline.dim_reduction import load_embedding
-from nlp_pipeline.dim_reduction import dimension_reduction
 from nlp_pipeline.model.utils import MODEL_CLASS_MAP
-from nlp_pipeline.tokenizer import get_transformers_tokenizer_class
-
 
 def load_local_vocab(vocab_path):
     vocabs = []
@@ -30,7 +26,7 @@ def load_local_embedding(embedding_path):
 class TestDimReduction(unittest.TestCase):
     test_dir = Path(PurePath(__file__).parent).resolve()
     src_dir = test_dir.parent / "nlp_pipeline"
-    config_dir = test_dir.parent / "config"
+    #config_dir = test_dir.parent / "config"
     data_dir = test_dir.parent / "data"
 
     @classmethod

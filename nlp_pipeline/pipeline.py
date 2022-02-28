@@ -220,19 +220,23 @@ class Pipeline:
             batch[col] = feature_dict[col].unsqueeze(0).to(self.args.device)
             
         output = self.model(**batch)
-        results = dict(prediction_id=None, prediction=None)
+        results = dict(prediction_id=None, prediction=None, logits=None)
 
         if isinstance(output['prediction'], torch.Tensor):
             prediction = output['prediction'].tolist()[0]
+            logits = output['logits'].tolist()[0]
         else:
             prediction = output['prediction'][0]
+            logits = output['logits'][0]
 
         if isinstance(prediction, list):
             results["prediction_id"] = prediction
             results["prediction"] = list(map(lambda y: self.args.label_to_id_inv[y], prediction))
+            results['logits'] = logits
         else:
             results["prediction_id"] = prediction
             results["prediction"] = self.args.label_to_id_inv[prediction]
+            results['logits'] = logits
         return results
 
     def explain(self, data_dict, method, enable_faithfulness=False, **kwargs):

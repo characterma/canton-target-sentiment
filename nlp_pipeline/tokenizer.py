@@ -175,7 +175,9 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
                 use_fast=True,
                 add_special_tokens=True
             )
-        
+        # for non transformer model
+        args.vocab_size = tokenizer.vocab_size
+        args.word_to_id = tokenizer.get_vocab()
         return tokenizer
 
     elif source in ["internal", "char_split"]:
