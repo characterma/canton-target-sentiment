@@ -20,8 +20,8 @@ class TestUnlabelSampling(unittest.TestCase):
         cls.label_ratio = {'-1': 0.3, '0': 0.2, '1': 0.5}
         cls.certainty = 0.33
         pm.execute_notebook(
-            notebook_path, 
-            output_notebook,
+            str(cls.src_dir / notebook_path),
+            str(cls.src_dir / output_notebook),
             kernel_name = kernel_name,
             parameters = dict(
                 src_dir = str(cls.src_dir),
