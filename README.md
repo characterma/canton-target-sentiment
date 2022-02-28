@@ -11,6 +11,12 @@ pip install -r requirements.txt
 python -m pip install -e '.[dev]'
 ```
 
+# Unittest
+
+```bash
+python -m unittest
+```
+
 ## For deployment
 ```bash
 python -m pip install '.[deploy]'

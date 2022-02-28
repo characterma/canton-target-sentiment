@@ -33,6 +33,25 @@ You can find example for `run.yaml` for each task and model:
 
 The fields inside this `run.yaml` controls the task, data, preprocessing, model, and more. You should at least update the `data` field in which you define the `output_dir`, `data_dir`, and data files names.
 
+# Explaining run.yaml
+
+| Key          | Sub-key              | explanation                                                                                                                  | values                              |   |
+|--------------|----------------------|------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|---|
+| task         | -                    | the machine learning task                                                                                                    |                                     |   |
+| device       | -                    | the device which model runs on                                                                                               | 'cpu', 0, 1, ...                    |   |
+| data         | output_dir           | the directory under which results and model will be saved                                                                    |                                     |   |
+|              | data_dir             | the directory containing data files                                                                                          |                                     |   |
+|              | train                | train set file name                                                                                                          | 'train.json'                        |   |
+|              | dev                  | dev set file name                                                                                                            | 'dev.json'                          |   |
+|              | test                 | test set file name                                                                                                           | 'test.json'                         |   |
+|              | unlabeled            | unlabeled data file name (for KD)                                                                                            |                                     |   |
+|              | extra_special_tokens | List of special tokens to be added to a newly initialized tokenizer. Available special tokens can be found under ./constants | - unused5                           |   |
+| text_prepro  | steps                | text preprocessing steps (in order). Available steps can be found in preprocess.py                                           | - simplified_chinese - full_to_half |   |
+| train        | model_class          | model to use                                                                                                                 | 'TDBERT'                            |   |
+| model_params | -                    | model parameters overwriting those in model.yaml                                                                             |                                     |   |
+|              |                      |                                                                                                                              |                                     |   |
+|              |                      |                                                                                                                              |                                     |   |
+
 # Train
 
 Go into `canton-target-sentiment/nlp_pipeline/`.
