@@ -3,7 +3,7 @@ import os
 import sys
 import torch
 from pathlib import Path, PurePath
-# passed on 2022-02-16
+
 
 class TestFreezeEmbeddings(unittest.TestCase):
     test_dir = Path(PurePath(__file__).parent).resolve()

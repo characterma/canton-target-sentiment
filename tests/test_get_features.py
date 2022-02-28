@@ -10,7 +10,7 @@ from nlp_pipeline.dataset import TargetClassificationFeature
 from nlp_pipeline.utils import load_config
 from nlp_pipeline.tokenizer import get_tokenizer
 from nlp_pipeline.label import get_label_to_id
-# passed
+
 
 class TestGetFeatures(unittest.TestCase):
     test_dir = Path(PurePath(__file__).parent).resolve()

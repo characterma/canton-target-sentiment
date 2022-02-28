@@ -4,7 +4,7 @@ import torch
 from torch.nn.functional import mse_loss, kl_div, log_softmax, softmax
 
 from nlp_pipeline.trainer_kd import KDTrainer
-# # passed
+
 
 def compute_kd_old_loss(student_logits, teacher_logits, kd_config):
         soft_student = log_softmax(student_logits / kd_config["kl_T"], dim=-1)
