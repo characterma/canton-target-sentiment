@@ -24,6 +24,7 @@ class TestUnlabelSampling(unittest.TestCase):
             output_notebook,
             kernel_name = kernel_name,
             parameters = dict(
+                src_dir = str(cls.src_dir),
                 sample_size = cls.sample_size,
                 label_ratio = cls.label_ratio,
                 certainty = cls.certainty
