@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
-from transformers.modeling_bert import BertEmbeddings
-
+try:
+    from transformers.modeling_bert import BertEmbeddings
+except ImportError:
+    from transformers.models.bert.modeling_bert import BertEmbeddings
 from nlp_pipeline.model.layer.fc import FCLayer
 from nlp_pipeline.model.utils import load_pretrained_config, NLPModelOutput
 
