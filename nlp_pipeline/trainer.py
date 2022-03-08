@@ -183,6 +183,23 @@ class Trainer:
 
         return optimizer, scheduler
 
+    def compute_kl_loss(self, p, q, pad_mask=None):
+        
+        p_loss = F.kl_div(F.log_softmax(p, dim=-1), F.softmax(q, dim=-1), reduction='none')
+        q_loss = F.kl_div(F.log_softmax(q, dim=-1), F.softmax(p, dim=-1), reduction='none')
+        
+        # pad_mask is for seq-level tasks
+        if pad_mask is not None:
+            p_loss.masked_fill_(pad_mask, 0.)
+            q_loss.masked_fill_(pad_mask, 0.)
+
+        # You can choose whether to use function "sum" and "mean" depending on your task
+        p_loss = p_loss.sum()
+        q_loss = q_loss.sum()
+
+        loss = (p_loss + q_loss) / 2
+        return loss
+
     def train(self):
         dataloader = DataLoader(
             self.train_dataset,
@@ -205,6 +222,7 @@ class Trainer:
             int(self.model_config["num_train_epochs"]), desc=f"Epoch"
         )
         log_steps = self.train_config.get("log_steps", 1)
+        r_drop_factor = self.train_config.get("r_drop_factor", 0)
         global_step = 0
         for epoch, _ in enumerate(train_iterator):
             self.model.zero_grad()
@@ -217,7 +235,14 @@ class Trainer:
                     inputs[col] = batch[col].to(self.device).long()
                 outputs = self.model(**inputs)
                 loss = outputs['loss']
-                logits = outputs['logits']
+
+                if r_drop_factor > 0:
+                    outputs2 = self.model(**inputs)
+                    logits1 = outputs['logits']
+                    logits2 = outputs2['logits']
+                    kl_loss = self.compute_kl_loss(logits1, logits2)
+                    loss = loss + r_drop_factor * kl_loss
+
                 loss.backward()
                 loss = loss.tolist()
                 if global_step % log_steps == 0:

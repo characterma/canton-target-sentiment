@@ -1,8 +1,8 @@
 task: "sequence_classification"
-device: 0
+device: 1
 data:
-  output_dir: "../output/mc/20220128_textcnn_sst2_220221c"
-  data_dir: "../data/datasets/public/sequence_classification/sst"
+  output_dir: "../output/sst/20220307_bert_cls_ag"
+  data_dir: "../data/datasets/public/sequence_classification/ag"
   train: train.json
   dev: test.json
   test: test.json
@@ -18,7 +18,7 @@ eval:
   batch_size: 16
   model_file: "model.pt"
 train:
-  model_class: "TEXT_CNN"
+  model_class: "BERT_CLS"
   kd:
     use_kd: False
     teacher_dir: "../output/post_sentiment_20210707_bert_avg/model"
@@ -31,10 +31,11 @@ train:
   final_model: "best" # "best" or "last"
   optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
   early_stop: null
+  r_drop_factor: 0
 model_params:
   # ================= TDBERT =================
   max_length: 256
-  num_train_epochs: 1
+  num_train_epochs: 10
   embedding_trainable: True
   # output_hidden_act_func: "PReLU"
   output_hidden_dim: 128
