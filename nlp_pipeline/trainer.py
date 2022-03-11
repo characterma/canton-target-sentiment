@@ -12,6 +12,8 @@ from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
 
 from nlp_pipeline.metric import compute_metrics
+from nlp_pipeline.adversarial import PGD
+# from nlp_pipeline.ema import ExponentialMovingAverage
 
 
 logger = logging.getLogger(__name__)
@@ -121,7 +123,22 @@ class Trainer:
         self.best_score = None
         self.best_model_state = None
         self.non_increase_cnt = 0
+
+        self.warmup_steps = self.model_config.get("warmup_steps", 0)
+
         self.early_stop = self.train_config.get("early_stop", None)
+
+        self.enable_model_ema = self.train_config.get("enable_model_ema", False)
+        self.model_ema_alpha = self.train_config.get("model_ema_alpha", 0.5)
+        self.model_ema_steps = self.train_config.get("model_ema_steps", 100)
+
+        self.enable_adversarial = self.train_config.get("enable_adversarial", False)
+        self.adversarial_k = self.train_config.get("adversarial_k", 3)
+        self.adversarial_param_names = self.train_config.get("adversarial_param_names", ['emb.'])
+
+        self.initialize_model_ema()
+        self.initialize_adversarial()
+
         self.final_model = self.train_config.get("final_model", "last")
         self.tensorboard_writer = SummaryWriter(self.args.tensorboard_dir)
 
@@ -177,11 +194,12 @@ class Trainer:
         if scheduler == "linear":
             scheduler = get_linear_schedule_with_warmup(
                 optimizer,
-                num_warmup_steps=int(self.model_config["warmup_steps"]),
+                num_warmup_steps=int(self.warmup_steps),
                 num_training_steps=t_total,
             )
 
         return optimizer, scheduler
+
 
     def compute_kl_loss(self, p, q, pad_mask=None):
         
@@ -199,6 +217,25 @@ class Trainer:
 
         loss = (p_loss + q_loss) / 2
         return loss
+
+    def initialize_model_ema(self):
+        if self.enable_model_ema:
+            self.model_ema = ExponentialMovingAverage(
+                self.model, 
+                device=self.device, 
+                decay=1.0 - self.model_ema_alpha
+            )
+        else:
+            self.model_ema = None
+
+    def initialize_adversarial(self):
+        if self.enable_adversarial:
+            self.adversarial = PGD(
+                self.model, 
+                self.adversarial_param_names
+            )
+        else:
+            self.adversarial = None
 
     def train(self):
         dataloader = DataLoader(
@@ -244,6 +281,8 @@ class Trainer:
                     loss = loss + r_drop_factor * kl_loss
 
                 loss.backward()
+                self.run_adversarial(inputs)
+
                 loss = loss.tolist()
                 if global_step % log_steps == 0:
                     self.tensorboard_writer.add_scalar("Loss/train", loss, global_step)
@@ -255,6 +294,8 @@ class Trainer:
                     if scheduler is not None:
                         scheduler.step()
                     self.model.zero_grad()
+
+                self.update_model_ema(global_step)
                 epoch_iterator.set_postfix({"tr_loss": np.mean(loss)})
                 global_step += 1
 
@@ -263,19 +304,49 @@ class Trainer:
                 break
         self.on_training_end()
 
+    def update_model_ema(self, step):
+        if self.model_ema and step % self.model_ema_steps == 0:
+            self.model_ema.update_parameters(model)
+            if step < self.warmup_steps:
+                # Reset ema buffer to keep copying weights during warmup period
+                self.model_ema.n_averaged.fill_(0)
+
+    def run_adversarial(self, batch):
+        if self.adversarial:
+            self.adversarial.backup_grad()
+            for t in range(self.adversarial_k):
+                self.adversarial.attack(is_first_attack=(t==0)) 
+                if t != self.adversarial_k - 1:
+                    self.model.zero_grad()
+                else:
+                    self.adversarial.restore_grad()
+                
+                outputs = self.model(**batch)
+                loss = outputs['loss']
+                loss.backward() 
+            self.adversarial.restore() 
+
+    def update_best_model(self, model, metrics):
+        if self.final_model == "best":
+            opt_metric = self.train_config.get("optimization_metric", "macro_f1")
+            if self.best_score is None or self.best_score < metrics[opt_metric]:
+                self.best_score = metrics[opt_metric]
+                self.best_model_state = copy.deepcopy(model.state_dict())
+            else:
+                self.non_increase_cnt += 1
+                
     def on_epoch_end(self, epoch):
         logger.info(f"***** Epoch end: {epoch} *****")
         metrics = evaluate(
             model=self.model, eval_dataset=self.dev_dataset, args=self.args
         )
-        # write train loss & dev metrics on tensorboard
-        if self.final_model == "best":
-            opt_metric = self.train_config.get("optimization_metric", "macro_f1")
-            if self.best_score is None or self.best_score < metrics[opt_metric]:
-                self.best_score = metrics[opt_metric]
-                self.best_model_state = copy.deepcopy(self.model.state_dict())
-            else:
-                self.non_increase_cnt += 1
+        self.update_best_model(self.model, metrics)
+        if self.model_ema:
+            metrics_ema = evaluate(
+                model=self.model_ema, eval_dataset=self.dev_dataset, args=self.args
+            )
+            self.update_best_model(self.model_ema, metrics_ema)
+
         for metric, value in metrics.items():
             if type(value) in [int, float, str]:
                 try:

@@ -1,8 +1,8 @@
 task: "sequence_classification"
-device: 1
+device: 0
 data:
-  output_dir: "../output/sst/20220307_bert_cls_ag"
-  data_dir: "../data/datasets/public/sequence_classification/ag"
+  output_dir: "../output/sst/20220309_bertcls_sst_adversarial"
+  data_dir: "../data/datasets/public/sequence_classification/sst"
   train: train.json
   dev: test.json
   test: test.json
@@ -32,6 +32,12 @@ train:
   optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
   early_stop: null
   r_drop_factor: 0
+  enable_model_ema: False
+  model_ema_alpha: 0.5
+  model_ema_steps: 100
+  enable_adversarial: True  # False
+  adversarial_k: 3
+  adversarial_param_names: [ 'pretrained_model.embeddings.']
 model_params:
   # ================= TDBERT =================
   max_length: 256
@@ -40,8 +46,8 @@ model_params:
   # output_hidden_act_func: "PReLU"
   output_hidden_dim: 128
   output_use_bn: False
-  tokenizer_name: "bert-base-cased"  # voidful/albert_chinese_tiny
-  pretrained_lm: "bert-base-cased" # voidful/albert_chinese_tiny
+  tokenizer_name: "bert-base-chinese"  # voidful/albert_chinese_tiny
+  pretrained_lm: "bert-base-chinese" # voidful/albert_chinese_tiny
   special_token_path: null
 explanation:
     Random:
