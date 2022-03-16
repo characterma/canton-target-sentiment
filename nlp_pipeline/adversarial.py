@@ -1,6 +1,10 @@
 import torch
 
 
+def get_adversarial_class(name):
+    return eval(name)
+
+
 class PGD():
     def __init__(self, model, param_names):
         self.model = model
@@ -41,3 +45,28 @@ class PGD():
         for name, param in self.model.named_parameters():
             if param.requires_grad:
                 param.grad = self.grad_backup[name]
+
+
+class FGM():
+    def __init__(self, model, param_names):
+        self.model = model
+        self.param_names = param_names
+        self.backup = {}
+
+    def attack(self, epsilon=1.):
+        # emb_name这个参数要换成你模型中embedding的参数名
+        for name, param in self.model.named_parameters():
+            if param.requires_grad and any([p in name for p in self.param_names]):
+                self.backup[name] = param.data.clone()
+                norm = torch.norm(param.grad)
+                if norm != 0 and not torch.isnan(norm):
+                    r_at = epsilon * param.grad / norm
+                    param.data.add_(r_at)
+
+    def restore(self):
+        # emb_name这个参数要换成你模型中embedding的参数名
+        for name, param in self.model.named_parameters():
+            if param.requires_grad and any([p in name for p in self.param_names]): 
+                assert name in self.backup
+                param.data = self.backup[name]
+        self.backup = {}

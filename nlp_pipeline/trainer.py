@@ -12,8 +12,8 @@ from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
 
 from nlp_pipeline.metric import compute_metrics
-from nlp_pipeline.adversarial import PGD
-# from nlp_pipeline.ema import ExponentialMovingAverage
+from nlp_pipeline.adversarial import get_adversarial_class
+from nlp_pipeline.ema import ExponentialMovingAverage
 
 
 logger = logging.getLogger(__name__)
@@ -133,8 +133,11 @@ class Trainer:
         self.model_ema_steps = self.train_config.get("model_ema_steps", 100)
 
         self.enable_adversarial = self.train_config.get("enable_adversarial", False)
+        self.adversarial_class = self.train_config.get("adversarial_class", 'PGD')
         self.adversarial_k = self.train_config.get("adversarial_k", 3)
         self.adversarial_param_names = self.train_config.get("adversarial_param_names", ['emb.'])
+        self.adversarial_alpha = self.train_config.get("adversarial_alpha", 1)
+        self.adversarial_epsilon = self.train_config.get("adversarial_epsilon", 0.3)
 
         self.initialize_model_ema()
         self.initialize_adversarial()
@@ -230,7 +233,7 @@ class Trainer:
 
     def initialize_adversarial(self):
         if self.enable_adversarial:
-            self.adversarial = PGD(
+            self.adversarial = get_adversarial_class(self.adversarial_class)(
                 self.model, 
                 self.adversarial_param_names
             )
@@ -276,9 +279,9 @@ class Trainer:
                 if r_drop_factor > 0:
                     outputs2 = self.model(**inputs)
                     logits1 = outputs['logits']
-                    logits2 = outputs2['logits']
+                    logits2, loss2 = outputs2['logits'], outputs2['loss']
                     kl_loss = self.compute_kl_loss(logits1, logits2)
-                    loss = loss + r_drop_factor * kl_loss
+                    loss = 0.5 * (loss + loss2) + r_drop_factor * kl_loss
 
                 loss.backward()
                 self.run_adversarial(inputs)
@@ -306,25 +309,36 @@ class Trainer:
 
     def update_model_ema(self, step):
         if self.model_ema and step % self.model_ema_steps == 0:
-            self.model_ema.update_parameters(model)
+            self.model_ema.update_parameters(self.model)
             if step < self.warmup_steps:
                 # Reset ema buffer to keep copying weights during warmup period
                 self.model_ema.n_averaged.fill_(0)
 
     def run_adversarial(self, batch):
         if self.adversarial:
-            self.adversarial.backup_grad()
-            for t in range(self.adversarial_k):
-                self.adversarial.attack(is_first_attack=(t==0)) 
-                if t != self.adversarial_k - 1:
-                    self.model.zero_grad()
-                else:
-                    self.adversarial.restore_grad()
-                
+            if self.adversarial_class=='PGD':
+                self.adversarial.backup_grad()
+                for t in range(self.adversarial_k):
+                    self.adversarial.attack(
+                        is_first_attack=(t==0), 
+                        epsilon=self.adversarial_epsilon, 
+                        alpha=self.adversarial_alpha,
+                    ) 
+                    if t != self.adversarial_k - 1:
+                        self.model.zero_grad()
+                    else:
+                        self.adversarial.restore_grad()
+                    
+                    outputs = self.model(**batch)
+                    loss = outputs['loss']
+                    loss.backward() 
+                self.adversarial.restore() 
+            else:
+                self.adversarial.attack(epsilon=self.adversarial_epsilon)
                 outputs = self.model(**batch)
                 loss = outputs['loss']
                 loss.backward() 
-            self.adversarial.restore() 
+                self.adversarial.restore() 
 
     def update_best_model(self, model, metrics):
         if self.final_model == "best":
