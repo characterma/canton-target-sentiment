@@ -115,6 +115,7 @@ result.txt
 notebooks/*
 output/*
 data/*
+config/*
 
 .DS_Store
 sample_pred_out.txt
