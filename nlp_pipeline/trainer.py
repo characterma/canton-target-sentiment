@@ -14,6 +14,7 @@ import torch.nn.functional as F
 from nlp_pipeline.metric import compute_metrics
 from nlp_pipeline.adversarial import get_adversarial_class
 from nlp_pipeline.ema import ExponentialMovingAverage
+from nlp_pipeline.loss import FocalLoss
 
 
 logger = logging.getLogger(__name__)
@@ -128,6 +129,10 @@ class Trainer:
 
         self.early_stop = self.train_config.get("early_stop", None)
 
+        self.enable_focal_loss = self.train_config.get("enable_focal_loss", False)
+        self.focal_loss_gamma = self.train_config.get("focal_loss_gamma", 2)
+        self.focal_loss_reduction = self.train_config.get("focal_loss_reduction", "mean")
+
         self.enable_model_ema = self.train_config.get("enable_model_ema", False)
         self.model_ema_alpha = self.train_config.get("model_ema_alpha", 0.5)
         self.model_ema_steps = self.train_config.get("model_ema_steps", 100)
@@ -139,6 +144,7 @@ class Trainer:
         self.adversarial_alpha = self.train_config.get("adversarial_alpha", 1)
         self.adversarial_epsilon = self.train_config.get("adversarial_epsilon", 0.3)
 
+        self.initialize_focal_loss()
         self.initialize_model_ema()
         self.initialize_adversarial()
 
@@ -221,6 +227,15 @@ class Trainer:
         loss = (p_loss + q_loss) / 2
         return loss
 
+    def initialize_focal_loss(self):
+        if self.enable_focal_loss:
+            self.focal_loss = FocalLoss(
+                gamma=self.focal_loss_gamma, 
+                reduction=self.focal_loss_reduction
+            )
+        else:
+            self.focal_loss = None
+
     def initialize_model_ema(self):
         if self.enable_model_ema:
             self.model_ema = ExponentialMovingAverage(
@@ -274,7 +289,14 @@ class Trainer:
                 for col in batch:
                     inputs[col] = batch[col].to(self.device).long()
                 outputs = self.model(**inputs)
-                loss = outputs['loss']
+
+                if self.focal_loss is not None:
+                    loss = self.focal_loss(
+                        input=outputs['logits'], 
+                        target=inputs['label']
+                    )
+                else:
+                    loss = outputs['loss']
 
                 if r_drop_factor > 0:
                     outputs2 = self.model(**inputs)
