@@ -1,0 +1,57 @@
+task: "sequence_classification"
+device: 0
+data:
+  output_dir: "../output/optim_tricks/ema_rdrop_pgd"
+  data_dir: "../data/datasets/public/sequence_classification/sst"
+  train: train.json
+  dev: test.json
+  test: test.json
+  unlabeled: unlabeled.json
+  extra_special_tokens: 
+    - unused5
+  pad_in_collate: False
+text_prepro:
+  steps:
+    - simplified_chinese
+    - full_to_half
+eval:
+  batch_size: 16
+  model_file: "model.pt"
+train:
+  model_class: "BERT_CLS"
+  kd:
+    use_kd: False
+    teacher_dir: "../output/post_sentiment_20210707_bert_avg/model"
+    loss_type: 'mse'
+    soft_lambda: 0.5
+    kl_T: 5
+  seed: 42
+  log_steps: 100
+  batch_size: 16
+  final_model: "best" # "best" or "last"
+  optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
+  early_stop: null
+  r_drop_factor: 0.5
+  enable_model_ema: True
+  model_ema_alpha: 0.5
+  model_ema_steps: 100
+  enable_adversarial: True  # False
+  adversarial_class: 'PGD' # FGM PGD
+  adversarial_k: 3
+  adversarial_param_names: [ 'pretrained_model.embeddings.']
+  adversarial_alpha: 0.5
+  adversarial_epsilon: 0.1
+model_params:
+  # ================= TDBERT =================
+  max_length: 256
+  num_train_epochs: 6
+  embedding_trainable: True
+  # output_hidden_act_func: "PReLU"
+  output_hidden_dim: 128
+  output_use_bn: False
+  tokenizer_name: "bert-base-cased"  # voidful/albert_chinese_tiny
+  pretrained_lm: "bert-base-cased" # voidful/albert_chinese_tiny
+  special_token_path: null
+explanation:
+    Random:
+      method: "Random"
