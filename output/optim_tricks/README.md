@@ -36,5 +36,5 @@
 | Adversarial PGD |    0.924       |    0.924      |  adversarial_class: 'PGD'; adversarial_k: 3; adversarial_param_names: [ 'pretrained_model.embeddings.']; adversarial_alpha: 0.5; adversarial_epsilon: 0.1|
 | Adversarial FGM |    0.922       |    0.922      |  adversarial_class: 'FGM'; adversarial_param_names: ['pretrained_model.embeddings.']; adversarial_epsilon: 0.6|
 | R-drop + EMA           |     0.919      |   0.919       | combination of the above |
-| R-drop + EMA + Adversarial PGD          |           |          |  combination of the above |
+| R-drop + EMA + Adversarial PGD          |     0.919       |    0.919       |  combination of the above |
 | R-drop + EMA + Adversarial FGM          |   0.921        |   0.921       |  combination of the above |
