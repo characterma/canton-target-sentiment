@@ -44,3 +44,21 @@ Go to nlp_pipeline/ directory.
 ```bash
 python run.py --config_dir="../config/examples/sequence_classification/BERT_AVG_explain" --test_only --explain --faithfulness
 ```
+
+# Build optimization models
+
+Go to nlp_pipeline/ directory.
+
+For task X and model Y, 
+
+## Onnx
+
+```bash
+python build_onnx.py --config_dir='../config/examples/X/Y'
+```
+
+## Jit trade
+
+```bash
+python build_jit_trace.py --config_dir='../config/examples/X/Y'
+```

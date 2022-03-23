@@ -1,11 +1,37 @@
 import unittest
 import sys
 import torch
+import json
+import os 
 
-from nlp_pipeline.tokenizer import MultiLingualTokenizer, CharacterSplitTokenizer
+from collections import namedtuple 
+from pathlib import Path, PurePath
+
+from nlp_pipeline.tokenizer import get_tokenizer, MultiLingualTokenizer, CharacterSplitTokenizer
+from nlp_pipeline.utils import load_config
 
 
 class TestTokenizer(unittest.TestCase):
+    test_dir = Path(PurePath(__file__).parent).resolve()
+
+    @classmethod
+    def tearDownClass(cls):
+        os.system(f"rm -rf {cls.test_dir}/test_end_to_end_samples/9/result")
+        os.system(f"rm -rf {cls.test_dir}/test_end_to_end_samples/9/model")
+        os.system(f"rm -rf {cls.test_dir}/test_end_to_end_samples/9/logs")
+        os.system(f"rm {cls.test_dir}/test_end_to_end_samples/9/log")
+
+    def test_extra_special_tokens(self):
+        args = namedtuple('args', 'config_dir')
+        args.config_dir = Path(f"{self.test_dir}/test_end_to_end_samples/9")
+        args = load_config(args)
+        tokenizer = get_tokenizer(args=args)
+        special_tokens_map = json.load(
+            open(args.config_dir / "model" / "tokenizer" / "special_tokens_map.json", 'r')
+        )
+        for sp_tkn in ["[unused5]", "[unused4]", "[unused3]", "[unused2]", "[unused1]"]:
+            self.assertTrue(sp_tkn in special_tokens_map["additional_special_tokens"])
+
     def test_multilingual_tokenizer(self):
         raw_text = "hello world 新冠?疫情為全球。帶來"
         word_to_id = {
