@@ -5,7 +5,7 @@ import torch
 import sys
 import numpy as np
 
-from nlp_pipeline.model import get_model, get_onnx_session
+from nlp_pipeline.model import get_model, get_onnx_session, get_jit_traced_model
 from nlp_pipeline.tokenizer import get_tokenizer
 from nlp_pipeline.utils import load_config, set_log_path, get_args
 from nlp_pipeline.label import get_label_to_id
@@ -57,6 +57,7 @@ def build_jit_trace(args):
     logger.info("***** Build traced model succeeded. *****")
 
     orig_output = model(**batch).cpu().detach().numpy()
+    traced_model = get_jit_traced_model(args)
     trace_output = traced_model(*batch.values()).cpu().detach().numpy()
     print("ori:", orig_output)
     print("trace:", trace_output)
