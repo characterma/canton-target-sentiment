@@ -156,6 +156,7 @@ class KDTrainer(Trainer):
             )
 
             for batch in tqdm(dataloader_tr):
+                
                 inputs = dict()
                 for col in batch:
                     if torch.is_tensor(batch[col]):
