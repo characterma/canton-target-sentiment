@@ -1,6 +1,5 @@
-ARG PYTHON_VERSION=3.7
-
 FROM nvidia/cuda:10.1-cudnn7-runtime-ubuntu18.04
+ARG PYTHON_VERSION=3.7
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl locales
 
