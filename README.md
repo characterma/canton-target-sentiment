@@ -1,4 +1,3 @@
-
 # Installation
 
 ## Install requirements.txt
@@ -53,8 +52,14 @@ For task X and model Y,
 
 ## Onnx
 
+export model to onnx
 ```bash
 python build_onnx.py --config_dir='../config/examples/X/Y'
+```
+
+conduct onnx model quantization
+```bash
+python optimize_onnx.py --config_dir='../config/examples/X/Y'
 ```
 
 ## Jit trade
