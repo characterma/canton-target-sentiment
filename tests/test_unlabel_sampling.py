@@ -17,7 +17,7 @@ class TestUnlabelSampling(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.sample_size = 10
-        cls.label_ratio = {'-1': 0.3, '0': 0.2, '1': 0.5}
+        cls.label_ratio = {'0': 1.0}
         cls.certainty = 0.33
         pm.execute_notebook(
             str(cls.src_dir / notebook_path),
