@@ -4,6 +4,7 @@ import numpy as np
 import copy
 import sklearn
 import torch
+import time
 from torch.utils.data import DataLoader, RandomSampler, WeightedRandomSampler
 from torch.optim import RMSprop
 from tqdm import tqdm, trange
@@ -13,7 +14,6 @@ import torch.nn.functional as F
 
 from nlp_pipeline.metric import compute_metrics
 from nlp_pipeline.adversarial import get_adversarial_class
-from nlp_pipeline.ema import ExponentialMovingAverage
 from nlp_pipeline.loss import FocalLoss
 
 
@@ -76,8 +76,13 @@ def evaluate(model, eval_dataset, args):
     losses = []
 
     has_label = False
+    n_samples = 0
+    total_time = 0
     for batch in tqdm(dataloader, desc="Evaluating"):
+        t0 = time.time()
         results = prediction_step(model, batch, args=args)
+        n_samples += len(batch)
+        total_time += (time.time() - t0)
         losses.append(results["loss"])
         predictions.extend(results["prediction"])
         prediction_ids.extend(results["prediction_id"])
@@ -98,6 +103,7 @@ def evaluate(model, eval_dataset, args):
         metrics = compute_metrics(task=args.task, labels=labels, predictions=predictions)
         metrics["loss"] = np.mean(losses)
         metrics["dataset"] = eval_dataset.dataset
+        metrics["samples_per_second"] = n_samples / total_time
         for m in metrics:
             logger.info("  %s = %s", m, str(metrics[m]))
     else:
@@ -238,6 +244,7 @@ class Trainer:
 
     def initialize_model_ema(self):
         if self.enable_model_ema:
+            from nlp_pipeline.ema import ExponentialMovingAverage
             self.model_ema = ExponentialMovingAverage(
                 self.model, 
                 device=self.device, 
