@@ -35,5 +35,5 @@ def get_onnx_session(args):
 def get_jit_traced_model(args):
     logger.info("***** Initializing jit traced model *****")
     model_path = args.model_dir / "traced_model.ts"
-    model = torch.jit.load(model_path)  
+    model = torch.jit.load(str(model_path)) 
     return model
