@@ -202,6 +202,3 @@ In order to learn from high quality unlabeled data, [unlabel_data_sampling noteb
 )
 
 Reference: https://jira.wisers.com:18090/display/RES/Proposed+Module2
-
-## Pipeline 
-For evaluation or prediction of student TEXT CNN model, [pipeline module](notebooks/pipeline/predict_using_existing_model.ipynb) is preferred solution to adopt so. Yet, pipeline module requires a specific file "config.json". This "config.json" is located at tokenizer folder of BERT based model folder. Please copy the "config.json" from tokenizer folder in teacher model directory, then paste the file to tokenizer folder of student model directory.
