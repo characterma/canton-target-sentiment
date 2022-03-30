@@ -11,6 +11,12 @@ pip install -r requirements.txt
 python -m pip install -e '.[dev]'
 ```
 
+# Unittest
+
+```bash
+python -m unittest
+```
+
 ## For deployment
 ```bash
 python -m pip install '.[deploy]'
@@ -37,6 +43,24 @@ Go to nlp_pipeline/ directory.
 
 ```bash
 python run.py --config_dir="../config/examples/sequence_classification/BERT_AVG_explain" --test_only --explain --faithfulness
+```
+
+# Build optimization models
+
+Go to nlp_pipeline/ directory.
+
+For task X and model Y, 
+
+## Onnx
+
+```bash
+python build_onnx.py --config_dir='../config/examples/X/Y'
+```
+
+## Jit trade
+
+```bash
+python build_jit_trace.py --config_dir='../config/examples/X/Y'
 ```
 
 # KD Training Guildline
@@ -181,4 +205,3 @@ Reference: https://jira.wisers.com:18090/display/RES/Proposed+Module2
 
 ## Pipeline 
 For evaluation or prediction of student TEXT CNN model, [pipeline module](notebooks/pipeline/predict_using_existing_model.ipynb) is preferred solution to adopt so. Yet, pipeline module requires a specific file "config.json". This "config.json" is located at tokenizer folder of BERT based model folder. Please copy the "config.json" from tokenizer folder in teacher model directory, then paste the file to tokenizer folder of student model directory.
-
