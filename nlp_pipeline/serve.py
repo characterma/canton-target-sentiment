@@ -51,13 +51,18 @@ class TracedModelRunner(object):
         self.model = get_jit_traced_model(args=args)
         self.device = args.device
         self.label_to_id_inv = args.label_to_id_inv
+        self.model_inputs = get_model_inputs(args=args)
 
     @torch.no_grad()
     def predict(self, feature_dict):
+
         batch = dict()
-        for col in feature_dict:
-            batch[col] = feature_dict[col].unsqueeze(0).to(self.device)
-        output = self.model(**batch)
+        for col in self.model_inputs:
+            if col not in feature_dict:
+                continue
+            batch[col] = torch.stack([feature_dict[col]], dim=0).to(self.device)
+            
+        output = self.model(*batch.values())
         # parse output:
         probabilities = output[0].flatten()  # ???
         prediction_id = probabilities.argmax()

@@ -67,7 +67,6 @@ class TDBERT(BertPreTrainedModel):
         attention_mask,
         token_type_ids,
         label=None,
-        **kwargs
     ):
         lm = self.pretrained_model(
             input_ids=input_ids,
