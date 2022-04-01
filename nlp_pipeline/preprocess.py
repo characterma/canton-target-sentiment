@@ -120,6 +120,7 @@ class Preprocessor:
         self.data_dict['content'] = content
 
     def enclose_target(self):
+        # enclose and use the original target as target
         content = self.data_dict['content']
         left_token = "[E]"
         right_token = "[/E]"
@@ -133,6 +134,26 @@ class Preprocessor:
             shift += len(left_token) + len(right_token)
             target_locs.append(
                 [t[0], t[0] + len(left_token)]
+            )
+            
+        self.data_dict['content'] = content
+        self.data_dict['target_locs'] = target_locs
+
+    def enclose_target2(self):
+        # enclose and use [E] as target
+        content = self.data_dict['content']
+        left_token = "[unused1]"
+        right_token = "[unused2]"
+
+        target_locs = []
+        shift = 0
+        for t in sorted(self.data_dict['target_locs'], key=lambda x: x[0]):
+            t[0] += shift
+            t[1] += shift
+            content = content[:t[0]] + left_token + content[t[0]:t[1]] + right_token + content[t[1]:]
+            shift += len(left_token) + len(right_token)
+            target_locs.append(
+                [t[0] , t[0] + len(left_token)]
             )
             
         self.data_dict['content'] = content
