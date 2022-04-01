@@ -17,10 +17,12 @@ class Preprocessor:
         self, 
         data_dict, 
         steps, 
+        args = None
     ):
         self.cc = OpenCC("t2s")
         self.data_dict = copy.deepcopy(data_dict)
         self.data_dict["raw"] = copy.deepcopy(data_dict)
+        self.args = args
 
         for s in steps:
             getattr(self, s)()
@@ -95,6 +97,20 @@ class Preprocessor:
             
         self.data_dict['target_locs'] = target_locs
         self.data_dict['content'] = content
+
+    def target_sentence_truncate(self):
+        assert self.args is not None
+        max_length = self.args.model_config['max_length']
+
+        target_locs = sorted(self.data_dict['target_locs'], key=lambda x: x[0])
+        if target_locs[0][1] >= max_length:
+            offset = target_locs[0][0] - int((max_length - 2) / 2)
+            content = self.data_dict['content'][offset:max_length+offset]
+            for t in target_locs:
+                t[0] -= offset
+                t[1] -= offset
+            self.data_dict['target_locs'] = target_locs
+            self.data_dict['content'] = content
 
     def enclose_target(self):
         content = self.data_dict['content']

@@ -155,14 +155,15 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
                         for st in args.data_config.get("extra_special_tokens"):
                             extra_special_tokens.extend(get_constant(st))
                         extra_special_tokens = list(set(extra_special_tokens))
-                        tokenizer.add_tokens(extra_special_tokens, special_tokens=True)
+                        # tokenizer.add_tokens(extra_special_tokens, special_tokens=True)
+                        tokenizer.add_special_tokens({ "additional_special_tokens":  extra_special_tokens})
                         logger.info("***** Added extra special tokens *****")
                         logger.info("  Extra special tokens = '%s'", extra_special_tokens)
                     except Exception as e:
                         logger.info("***** Failed adding extra special tokens *****")
                         logger.info("  Error = '%s'", e)
 
-                        
+                
                 tokenizer.save_pretrained(str(tokenizer_dir))
             args.tokenizer_len = len(tokenizer)
         else:
