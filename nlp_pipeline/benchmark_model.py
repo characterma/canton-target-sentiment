@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 def benchmark_model(model_type, args):
     args = load_config(args=args)
-    args.device = "cuda"
+    args.device = 0
     set_log_path(args.output_dir)
     tokenizer = get_tokenizer(args=args)
     feature_class = get_feature_class(args)
@@ -35,21 +35,21 @@ def benchmark_model(model_type, args):
     raw_data = json.load(open(args.data_dir / args.data_config['test'], "r"))
     for x in raw_data:
         del x['label'] 
-    data_dict = raw_data[0]
-    feature = feature_class(
-        data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=False
-    )
+    # data_dict = raw_data[0]
+    # feature = feature_class(
+    #     data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=False
+    # )
 
-    feature_dict = feature.feature_dict
-    # model = get_model(args=args)
-    # model.set_return_logits()
+    # feature_dict = feature.feature_dict
+    # # model = get_model(args=args)
+    # # model.set_return_logits()
 
-    batch = dict()
-    for col in feature_dict:
-        batch[col] = torch.stack([feature_dict[col]], dim=0).to(torch.int32).to(args.device)
-        print(batch[col].device)
+    # batch = dict()
+    # for col in feature_dict:
+    #     batch[col] = torch.stack([feature_dict[col]], dim=0).to(torch.int32).to(args.device)
+    #     print(batch[col].device)
 
-    x = tuple([batch[col].squeeze(-1) for col in batch])
+    # x = tuple([batch[col].squeeze(-1) for col in batch])
     
     if model_type=="original":
         model = get_model(args=args)
@@ -76,7 +76,7 @@ def benchmark_model(model_type, args):
     dataloader = DataLoader(
         dataset,
         shuffle=False,
-        batch_size=args.batch_size,
+        batch_size=args.eval_config["batch_size"] if args.batch_size == 0 else args.batch_size,
     )
 
     num_samples = len(dataset)
@@ -89,6 +89,7 @@ def benchmark_model(model_type, args):
                 if torch.is_tensor(batch[col]):
                     inputs[col] = batch[col].to(args.device).long()
             if model_type != "onnx":
+                # print(inputs)
                 _ = model(**inputs)
             else:
                 b = dict()
@@ -105,8 +106,9 @@ def benchmark_model(model_type, args):
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", type=str, default="")
-    parser.add_argument("--device", type=str, default="cuda")
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--device", type=str, default="0")
+    parser.add_argument("--batch_size", type=int, default=0)
+
     args = parser.parse_args()
     device = args.device
     args = load_config(args=args)
@@ -117,8 +119,6 @@ if __name__=="__main__":
     for model_type in [
         'original', 
         'trace', 
-        'fp16', 
-        'fp32', 
         'onnx'
     ]:
         try:
@@ -127,10 +127,13 @@ if __name__=="__main__":
                 args=args
             )
             
-            time_statistics[model_type] = dict(total_time=total_time, num_samples=num_samples)
+            time_statistics[model_type] = dict(total_time=total_time, num_samples=num_samples, speed=num_samples / total_time)
+            
         except Exception as e:
             print(e)
         
     pp = pprint.PrettyPrinter(width=41, compact=True)
     print("Results:") 
     pp.pprint(time_statistics)
+
+    json.dump(time_statistics, open(args.config_dir / "model_speed.json", 'w'))
