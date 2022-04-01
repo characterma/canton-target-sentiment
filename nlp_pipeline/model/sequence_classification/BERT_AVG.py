@@ -32,7 +32,10 @@ class BERT_AVG(BertPreTrainedModel):
             use_bn=False
         )
 
-        self.loss_func = nn.CrossEntropyLoss(reduction="mean")
+        self.loss_func = nn.CrossEntropyLoss(
+            reduction="mean", 
+            label_smoothing=args.model_config.get('label_smoothing', 0)
+        )
         self.return_logits = False
         self.to(args.device)
 

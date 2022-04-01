@@ -35,7 +35,10 @@ class TDBERT(BertPreTrainedModel):
             activation=output_hidden_act_func,
             use_bn=False,
         )
-        self.loss_func = nn.CrossEntropyLoss(reduction="none")
+        self.loss_func = nn.CrossEntropyLoss(
+            reduction="none", 
+            label_smoothing=args.model_config.get('label_smoothing', 0)
+        )
         self.return_logits = False
         self.to(args.device)
 
@@ -63,8 +66,8 @@ class TDBERT(BertPreTrainedModel):
         target_mask,
         attention_mask,
         token_type_ids,
-        label=None
-    ):
+        label=None,
+        ):
         lm = self.pretrained_model(
             input_ids=input_ids,
             attention_mask=attention_mask,

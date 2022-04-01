@@ -74,6 +74,21 @@ class TestPreprocessor(unittest.TestCase):
         self.assertTrue(pp.data_dict['content'] == data_dict_2['content'])
         self.assertTrue(pp.data_dict['target_locs'] == data_dict_2['target_locs'])
 
+    def test_replace_punctuation_with_space(self):
+        data_dict_1 = {
+            'content': "#仪式感不能少没有卡地亚，没有浪琴，但是我有阿玛尼，“我愿意把星辰银河都送给你”别说人间不值得 你最值得！", 
+            'target_locs': [[15, 17]]
+        }
+        data_dict_2 = {
+            'content': " 仪式感不能少没有卡地亚 没有浪琴 但是我有阿玛尼  我愿意把星辰银河都送给你 别说人间不值得 你最值得 ", 
+            'target_locs': [[15, 17]]
+        }
+        pp = Preprocessor(
+            data_dict=data_dict_1, steps=["replace_punctuation_with_space"]
+        )
+
+        self.assertTrue(pp.data_dict['content'] == data_dict_2['content'])
+        self.assertTrue(pp.data_dict['target_locs'] == data_dict_2['target_locs'])
 
     def test_mask_other_targets(self):
         data_dict_1 = {

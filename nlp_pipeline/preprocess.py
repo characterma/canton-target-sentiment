@@ -6,6 +6,7 @@ from copy import deepcopy
 from opencc import OpenCC
 
 from nlp_pipeline.constants.sina_emojis import sina_emojis
+from nlp_pipeline.constants.punctuation import punctuation
 
 
 FULL2HALF = dict((i + 0xFEE0, i) for i in range(0x21, 0x7F))
@@ -59,6 +60,28 @@ class Preprocessor:
     def rm_non_chinese_char(self):
         filtrate = re.compile(u"[^\u4E00-\u9FA5]")
         self.data_dict["content"] = filtrate.sub(r"", self.data_dict["content"])
+
+    def replace_punctuation_with_space(self):
+        updated_idx = []
+        to_replace = sorted(punctuation , key=lambda x: len(x), reverse=True)  
+        to_replace = ['\\' + r for r in to_replace]
+        if 'target_locs' in self.data_dict:
+            target_locs = deepcopy(self.data_dict['target_locs'])
+        pattern = "|".join(to_replace)
+        for match in re.finditer(pattern, self.data_dict['content']):
+            text = self.data_dict['content']
+            e = match.end()
+            s = match.start()
+            if 'target_locs' in self.data_dict:
+                for t0, t1 in zip(self.data_dict['target_locs'], target_locs):
+                    if t0[0] >= e:
+                        t1[0] -= max((e - s) - 1, 0)
+                        t1[1] -= max((e - s) - 1, 0)
+                    elif t0[1] <= s:
+                        pass
+            self.data_dict['content'] = self.data_dict['content'].replace(match.group(), " ")     
+        if 'target_locs' in self.data_dict:
+            self.data_dict['target_locs'] = target_locs
 
     def rm_emojis(self):
         updated_idx = []
