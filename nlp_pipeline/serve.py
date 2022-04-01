@@ -58,9 +58,8 @@ class TracedModelRunner(object):
 
         batch = dict()
         for col in self.model_inputs:
-            if col not in feature_dict:
-                continue
-            batch[col] = torch.stack([feature_dict[col]], dim=0).to(self.device)
+            if col in feature_dict:
+                batch[col] = torch.stack([feature_dict[col]], dim=0).to(self.device)
             
         output = self.model(*batch.values())
         # parse output:

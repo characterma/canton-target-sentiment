@@ -26,10 +26,15 @@ class BERT_CLS(BertPreTrainedModel):
             in_features=self.pretrained_model.config.hidden_size, 
             out_features=self.num_labels
         )
-        self.loss_func = nn.CrossEntropyLoss(
-            reduction="mean", 
-            label_smoothing=args.model_config.get('label_smoothing', 0)
-        )
+        try:
+            self.loss_func = nn.CrossEntropyLoss(
+                reduction="mean", 
+                label_smoothing=args.model_config.get('label_smoothing', 0)
+            )
+        except Exception as e:
+            self.loss_func = nn.CrossEntropyLoss(
+                reduction="mean", 
+            )
         self.return_logits = False
         self.to(args.device)
 
