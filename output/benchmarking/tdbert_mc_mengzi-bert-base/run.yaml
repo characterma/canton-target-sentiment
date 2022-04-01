@@ -1,0 +1,28 @@
+data:
+  data_dir: ../data/datasets/internal/target_classification/mc
+  dev: dev.json
+  extra_special_tokens:
+  - unused5
+  output_dir: ../output/benchmarking/tdbert_mc_mengzi-bert-base
+  test: test.json
+  train: train.json
+device: 0
+eval:
+  batch_size: 64
+  model_file: model.pt
+model_params:
+  embedding_trainable: true
+  num_train_epochs: 6
+  pretrained_lm: Langboat/mengzi-bert-base
+  tokenizer_name: Langboat/mengzi-bert-base
+task: target_classification
+text_prepro:
+  steps:
+  - simplified_chinese
+train:
+  batch_size: 16
+  early_stop: null
+  final_model: best
+  model_class: TDBERT
+  optimization_metric: macro_f1
+  seed: 42
