@@ -16,7 +16,8 @@ from transformers import (
     XLMRobertaModel,
     BertModel,
     AlbertModel,
-    AutoModel
+    AutoModelForSeq2SeqLM, 
+    AutoModel, 
 )
 from transformers.file_utils import ModelOutput
 
@@ -71,6 +72,7 @@ MODEL_CLASS_MAP = {
     "clue/albert_chinese_small": AlbertModel,
     "voidful/albert_chinese_base": AlbertModel,  #
     "hfl/chinese-roberta-wwm-ext-large": BertModel,
+    "Helsinki-NLP/opus-mt-zh-en": AutoModelForSeq2SeqLM
 }
 
 
@@ -83,11 +85,14 @@ def load_pretrained_bert(args):
         model_name = model_config["pretrained_lm"]
         model_dir = model_config.get("pretrained_lm_dir", model_name)
         logger.info("  Pretrained BERT = '%s'", str(model_dir))
-        try: 
-            model = MODEL_CLASS_MAP.get(model_name, AutoModel).from_pretrained(model_dir)
-        except:
-            logging.error('Pretrained model requires specific huggingface model class, please add it into MODEL_CLASS_MAP.')
-            raise
+        if model_name in MODEL_CLASS_MAP:
+            model = MODEL_CLASS_MAP[model_name].from_pretrained(model_dir)
+        else:
+            try: 
+                model = AutoModel.from_pretrained(model_dir)
+            except:
+                logging.error('Pretrained model requires specific huggingface model class, please add it into MODEL_CLASS_MAP.')
+                raise
         model.resize_token_embeddings(args.tokenizer_len)
         return model
     else:
