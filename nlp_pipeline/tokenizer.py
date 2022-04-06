@@ -16,29 +16,33 @@ from nlp_pipeline.constants import get_constant
 logger = logging.getLogger(__name__)
 
 
-def get_transformers_tokenizer_class(name):
-    from transformers import AutoTokenizer, BertTokenizerFast
+def get_transformers_tokenizer(name_or_path):
+    from transformers import AutoTokenizer, BertTokenizerFast, BertTokenizer
+    name_or_path = str(name_or_path)
     class_map = {
-        "toastynews/electra-hongkongese-large-discriminator": AutoTokenizer,
-        "toastynews/xlnet-hongkongese-base": AutoTokenizer,
-        "xlnet-base-cased": AutoTokenizer,
-        "xlm-roberta-base": AutoTokenizer,
-        "xlm-roberta-large": AutoTokenizer,
-        "bert-large-cased": AutoTokenizer,
-        "bert-base-cased": AutoTokenizer,  # https://huggingface.co/transformers/model_doc/bert.html#bertconfig
-        "bert-base-uncased": AutoTokenizer,
-        "bert-base-multilingual-cased": AutoTokenizer,  # tested
-        "bert-base-multilingual-uncased": AutoTokenizer,
-        "bert-base-chinese": AutoTokenizer,  # testing
-        "denpa92/bert-base-cantonese": BertTokenizerFast,  # missing tokenizer.
-        "voidful/albert_chinese_tiny": BertTokenizerFast,  #
-        "clue/albert_chinese_tiny": BertTokenizerFast,  #
-        "voidful/albert_chinese_small": BertTokenizerFast,  #
-        "clue/albert_chinese_small": BertTokenizerFast,
-        "voidful/albert_chinese_base": BertTokenizerFast,  #
-        "hfl/chinese-roberta-wwm-ext-large": BertTokenizerFast,
+        # "Langboat/mengzi-bert-base": BertTokenizer
     }
-    return class_map.get(name, AutoTokenizer)
+    if name_or_path in class_map:
+        tokenizer = class_map[name_or_path].from_pretrained(
+            name_or_path,
+            use_fast=True,
+            add_special_tokens=True
+        )
+    else:
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(
+                name_or_path,
+                use_fast=True,
+                add_special_tokens=True
+            )
+        except Exception as e:
+            print("***", e)
+            tokenizer = BertTokenizerFast.from_pretrained(
+                name_or_path,
+                use_fast=True,
+                add_special_tokens=True
+            )
+    return tokenizer
 
 
 def load_vocab(tokenizer, vocab_path, args):
@@ -127,26 +131,15 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
         datasets = ['train']
     # logger.info("  Tokenizer name = '%s'", name)
     if source == "transformers":
-
         prev_model_dir = args.model_config.get("pretrained_lm_from_prev", None)
         if prev_model_dir is None:
             name = args.model_config["tokenizer_name"]
-            Tokenizer = get_transformers_tokenizer_class(name)
-            
             tokenizer_dir = args.model_dir / "tokenizer"
             print(str(tokenizer_dir))
             if os.path.isdir(tokenizer_dir):
-                tokenizer = Tokenizer.from_pretrained(
-                    str(tokenizer_dir),
-                    use_fast=True,
-                    add_special_tokens=True
-                )
+                tokenizer = get_transformers_tokenizer(tokenizer_dir)
             else:
-                tokenizer = Tokenizer.from_pretrained(
-                    name,
-                    use_fast=True,
-                    add_special_tokens=True
-                )
+                tokenizer = get_transformers_tokenizer(name)
 
                 # load extra tokens
                 if args.data_config.get("extra_special_tokens"):
@@ -169,12 +162,8 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
             prev_args = get_args(prev_model_dir)
             prev_args = load_config(prev_args)
             name = prev_args.model_config["tokenizer_name"]
-            Tokenizer = get_transformers_tokenizer_class(name)
-            tokenizer = Tokenizer.from_pretrained(
-                name,
-                use_fast=True,
-                add_special_tokens=True
-            )
+            tokenizer = get_transformers_tokenizer(name)
+
         # for non transformer model
         args.vocab_size = tokenizer.vocab_size
         args.word_to_id = tokenizer.get_vocab()

@@ -1,5 +1,9 @@
 # Optimization tricks
 
+## Label smoothing
+### Paremeters
+- label_smoothing
+
 ## Focal loss
 ### Paremeters
 - enable_focal_loss: True
@@ -30,6 +34,7 @@
 | Method          | Accuracy | Macro-F1 | Parameters |
 |-----------------|-----------|----------|----------|
 | Original        |    0.914       |    0.914      ||
+| Label smoothing          |   0.917        |   0.917       |  label_smoothing: 0.5 |
 | Focal loss             |      0.915     |   0.915       |    focal_loss_gamma: 2; focal_loss_reduction: mean|
 | EMA             |    0.918       |    0.918      |  model_ema_alpha: 0.5; model_ema_steps: 100|
 | R-drop          |    0.919       |    0.919      | r_drop_factor: 0.5 |

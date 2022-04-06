@@ -58,7 +58,7 @@ class TGSAN2(nn.Module):
     def set_return_logits(self):
         self.return_logits = True
 
-    def forward(self, input_ids, attention_mask, target_mask, label=None, **kwargs):
+    def forward(self, input_ids, attention_mask, target_mask, label=None):
         outputs = dict()
         x = self.embedding(
             input_ids=input_ids,

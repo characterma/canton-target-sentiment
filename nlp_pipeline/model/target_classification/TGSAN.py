@@ -285,7 +285,6 @@ class TGSAN(nn.Module):
         target_mask,
         label=None,
         soft_label=None,
-        **kwargs
     ):
         outputs = dict()
         x = self.embed(input_ids).to(torch.float32)  # [B, L, E]
