@@ -16,7 +16,7 @@ from nlp_pipeline.constants import get_constant
 logger = logging.getLogger(__name__)
 
 
-def _get_tokenizer(name_or_path):
+def get_transformers_tokenizer(name_or_path):
     from transformers import AutoTokenizer, BertTokenizerFast, BertTokenizer
     name_or_path = str(name_or_path)
     class_map = {
@@ -137,9 +137,9 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
             tokenizer_dir = args.model_dir / "tokenizer"
             print(str(tokenizer_dir))
             if os.path.isdir(tokenizer_dir):
-                tokenizer = _get_tokenizer(tokenizer_dir)
+                tokenizer = get_transformers_tokenizer(tokenizer_dir)
             else:
-                tokenizer = _get_tokenizer(name)
+                tokenizer = get_transformers_tokenizer(name)
 
                 # load extra tokens
                 if args.data_config.get("extra_special_tokens"):
@@ -162,7 +162,7 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
             prev_args = get_args(prev_model_dir)
             prev_args = load_config(prev_args)
             name = prev_args.model_config["tokenizer_name"]
-            tokenizer = _get_tokenizer(name)
+            tokenizer = get_transformers_tokenizer(name)
 
         # for non transformer model
         args.vocab_size = tokenizer.vocab_size
