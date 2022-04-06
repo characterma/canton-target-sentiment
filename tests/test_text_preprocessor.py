@@ -2,6 +2,7 @@ import unittest
 import sys
 
 from nlp_pipeline.preprocess import Preprocessor
+from collections import namedtuple
 
 
 class TestPreprocessor(unittest.TestCase):
@@ -146,6 +147,23 @@ class TestPreprocessor(unittest.TestCase):
         }
         pp = Preprocessor(
             data_dict=data_dict_1, steps=["convert_java_index"]
+        )
+        self.assertTrue(pp.data_dict["content"] == data_dict_2["content"])
+        self.assertTrue(pp.data_dict["target_locs"] == data_dict_2["target_locs"])
+    
+    def test_target_sentence_truncate(self):
+        data_dict_1 = {
+            'content':  "点击蓝字关注我们1. 青岛、天津、北京、昆明、大连海关“龙腾”行动查办侵权系列案2. 天津、南京、黄埔、福州、拉萨海关开展中俄海关2018年世界杯知识产权保护联合执法行动系列案3. 广州、江门、拱北、海口海关在全国通关一体化模式下合作查获侵权货物系列案4. 南京、长沙、南宁、青岛、石家庄、乌鲁木齐海关查获出口至一带一路沿线国家侵权货物系列案5. 黄埔海关、拱北海关跨境电子商务零售进出口专项行动查获侵权货物系列案6. 上海海关进博会期间查办侵犯参展商知识产权货物系列案7. 深圳海关查获出口侵犯“空心对管轴键盘”专利权货物案8. 厦门海关建立风险模型查获出口侵权鞋类产品系列案9. 杭州海关查获出口假冒“LV”商标围巾案10.宁波海关进口环节查获侵犯“高露洁”商标专用权牙刷案青岛、天津、北京、昆明、大连海关“龙腾”行动查办侵权系列案海关总署于2018年8月1日至11月30日部署开展“龙腾”行动(2018)", 
+            'target_locs': [[327, 330]]    
+        }
+        data_dict_2 = {
+            'content':  "侵权货物系列案6. 上海海关进博会期间查办侵犯参展商知识产权货物系列案7. 深圳海关查获出口侵犯“空心对管轴键盘”专利权货物案8. 厦门海关建立风险模型查获出口侵权鞋类产品系列案9. 杭州海关查获出口假冒“LV”商标围巾案10.宁波海关进口环节查获侵犯“高露洁”商标专用权牙刷案青岛、天津、北京、昆明、大连海关“龙腾”行动查办侵权系列案海关总署于2018年8月1日至11月30日部署开展“龙腾”行动(2018)", 
+            'target_locs': [[127, 130]]    
+        }
+        args = namedtuple('args', 'model_config')
+        args.model_config = {'max_length': 256}
+        pp = Preprocessor(
+            data_dict=data_dict_1, steps=["target_sentence_truncate"], args=args
         )
         self.assertTrue(pp.data_dict["content"] == data_dict_2["content"])
         self.assertTrue(pp.data_dict["target_locs"] == data_dict_2["target_locs"])

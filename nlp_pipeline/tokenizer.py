@@ -155,7 +155,7 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
                         logger.info("***** Failed adding extra special tokens *****")
                         logger.info("  Error = '%s'", e)
 
-                        
+                
                 tokenizer.save_pretrained(str(tokenizer_dir))
             args.tokenizer_len = len(tokenizer)
         else:
