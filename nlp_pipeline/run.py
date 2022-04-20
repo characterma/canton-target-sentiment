@@ -37,7 +37,7 @@ def run_kd(args):
     teacher_model = get_model(args=teacher_args)
 
     # load student
-    if args.data_config["unlabeled"] is not None:
+    if "unlabeled" in args.data_config.keys() and args.data_config['unlabeled'] is not None:
         student_tokenizer = get_tokenizer(args=args, datasets=["train", "unlabeled"])
     else:
         student_tokenizer = get_tokenizer(args=args, datasets=["train"])
@@ -46,7 +46,7 @@ def run_kd(args):
         tokenizer=student_tokenizer, args=args
     )
     
-    if args.data_config["unlabeled"] is not None:
+    if "unlabeled" in args.data_config.keys() and args.data_config['unlabeled'] is not None:
         unlabeled_dataset = get_dataset(
             dataset="unlabeled", 
             tokenizer=teacher_tokenizer, 
@@ -95,7 +95,7 @@ def run_kd(args):
     train_dataset.add_feature("teacher_logit", teacher_logits_tr)
     del teacher_logits_tr
     
-    if args.data_config["unlabeled"] is not None:
+    if "unlabeled" in args.data_config.keys() and args.data_config['unlabeled'] is not None:
         unlabeled_dataset = get_dataset(dataset="unlabeled", tokenizer=student_tokenizer, args=args)
         unlabeled_dataset.add_feature("teacher_logit", teacher_logits_ul)
         del teacher_logits_ul
