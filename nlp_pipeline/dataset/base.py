@@ -51,7 +51,7 @@ class NLPDataset:
             logger.info("  Data path = %s", str(data_path))
             raw_data = json.load(open(data_path, "r"))
 
-        for idx, data_dict in tqdm(enumerate(raw_data)):
+        for idx, data_dict in enumerate(tqdm(raw_data)):
             diagnosis_dict = {"idx": idx}
             fea = self.feature_class(
                 data_dict=data_dict,
@@ -130,6 +130,7 @@ class NLPFeature(abc.ABC):
         preprocessor = Preprocessor(
             data_dict=data_dict, 
             steps=prepro_config["steps"], 
+            args = args
         )
 
         self.get_feature(
