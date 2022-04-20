@@ -41,7 +41,7 @@ def set_log_path(log_dir):
     log_dir = Path(log_dir)
     logging.basicConfig(
         handlers=[
-            logging.FileHandler(log_dir / "log", "w+", "utf-8"),
+            logging.FileHandler(log_dir / "log", "a", "utf-8"),
             logging.StreamHandler(),
         ],
         format="%(asctime)s %(message)s",
