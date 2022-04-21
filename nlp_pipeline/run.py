@@ -188,6 +188,7 @@ if __name__ == "__main__":
     parser.add_argument("--test_only", action="store_true")
     parser.add_argument("--explain", action="store_true")
     parser.add_argument("--faithfulness", action="store_true")
+    parser.add_argument("--suffix", type=str, default="")
     args = parser.parse_args()
 
     args = load_config(args)
