@@ -17,6 +17,11 @@ class SequenceClassificationFeature(NLPFeature):
         content2 = data_dict.get("content2", None)
         label = data_dict.get("label", None)
 
+        if "content_da" in data_dict:
+            content_da = data_dict["content_da"]
+        else:
+            content_da = None
+
         # params
         max_length = args.model_config["max_length"]
         label_to_id = args.label_to_id
@@ -35,6 +40,25 @@ class SequenceClassificationFeature(NLPFeature):
         attention_mask = tokens_encoded.attention_mask
         token_type_ids = tokens_encoded.token_type_ids
 
+        if content_da is not None:
+
+            tokens_encoded_da = tokenizer(
+                content_da,
+                max_length=max_length,
+                truncation=True,
+                padding=padding,
+                add_special_tokens=True,
+                return_offsets_mapping=True,
+            )
+
+            input_ids_da = tokens_encoded.input_ids
+            attention_mask_da = tokens_encoded.attention_mask
+            token_type_ids_da = tokens_encoded.token_type_ids
+        else:
+            input_ids_da = None
+            attention_mask_da = None
+            token_type_ids_da = None
+
         if diagnosis:
             tokens = tokenizer.convert_ids_to_tokens(input_ids)
             diagnosis_dict["content"] = content
@@ -50,12 +74,18 @@ class SequenceClassificationFeature(NLPFeature):
         else:
             if "input_ids" in required_features:
                 feature_dict["input_ids"] = torch.tensor(input_ids).long()
+                if input_ids_da is not None:
+                    feature_dict["input_ids_da"] = torch.tensor(input_ids_da).long()
 
             if "attention_mask" in required_features:
                 feature_dict["attention_mask"] = torch.tensor(attention_mask).long()
+                if attention_mask_da is not None:
+                    feature_dict["attention_mask_da"] = torch.tensor(attention_mask_da).long()
 
             if "token_type_ids" in required_features:
                 feature_dict["token_type_ids"] = torch.tensor(token_type_ids).long()
+                if token_type_ids_da is not None:
+                    feature_dict["token_type_ids_da"] = torch.tensor(token_type_ids_da).long()
 
             if label is not None and label_to_id is not None:
                 label = label_to_id[str(label)]

@@ -1,12 +1,12 @@
 task: "sequence_classification"
 device: 0
 data:
-  output_dir: "../output/sst/20220503_imdb_uda"
-  data_dir: "../data/datasets/public/sequence_classification/imdb"
-  train: train_uda.json
-  dev: test.json
-  test: test.json
-  unlabeled: unlabeled_uda.json
+  output_dir: "../config/examples/sequence_classification/BERT_CLS_uda"
+  data_dir: "../data/datasets/sample/sequence_classification"
+  train: train_sample.json
+  dev: train_sample.json
+  test: train_sample.json
+  unlabeled: unlabeled_sample.json
   extra_special_tokens: 
     - unused5
   pad_in_collate: False
@@ -28,8 +28,8 @@ train:
   uda:
     use_uda: True
     tsa: linear_schedule
-    total_steps: 15000
-    eval_steps: 1000
+    total_steps: 150
+    eval_steps: 10
     uda_coeff: 1
     uda_confidence_thresh: 0.45
     uda_softmax_temp: 0.85
@@ -57,8 +57,8 @@ model_params:
   # output_hidden_act_func: "PReLU"
   output_hidden_dim: 128
   output_use_bn: False
-  tokenizer_name: "bert-base-cased"  # voidful/albert_chinese_tiny
-  pretrained_lm: "bert-base-cased" # voidful/albert_chinese_tiny
+  tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
+  pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
   special_token_path: null
   label_smoothing: 0
 explanation:
