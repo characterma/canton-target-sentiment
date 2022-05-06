@@ -51,9 +51,9 @@ class SequenceClassificationFeature(NLPFeature):
                 return_offsets_mapping=True,
             )
 
-            input_ids_da = tokens_encoded.input_ids
-            attention_mask_da = tokens_encoded.attention_mask
-            token_type_ids_da = tokens_encoded.token_type_ids
+            input_ids_da = tokens_encoded_da.input_ids
+            attention_mask_da = tokens_encoded_da.attention_mask
+            token_type_ids_da = tokens_encoded_da.token_type_ids
         else:
             input_ids_da = None
             attention_mask_da = None

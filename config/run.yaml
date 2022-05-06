@@ -1,7 +1,7 @@
 task: "sequence_classification"
 device: 0
 data:
-  output_dir: "../output/sst/20220503_imdb_uda"
+  output_dir: "../output/sst/20220504_imdb_uda"
   data_dir: "../data/datasets/public/sequence_classification/imdb"
   train: train_uda.json
   dev: test.json
@@ -35,7 +35,7 @@ train:
     uda_softmax_temp: 0.85
   seed: 42
   log_steps: 100
-  batch_size: 16
+  batch_size: 8
   final_model: "best" # "best" or "last"
   optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
   early_stop: null
@@ -59,7 +59,6 @@ model_params:
   output_use_bn: False
   tokenizer_name: "bert-base-cased"  # voidful/albert_chinese_tiny
   pretrained_lm: "bert-base-cased" # voidful/albert_chinese_tiny
-  special_token_path: null
   label_smoothing: 0
 explanation:
     Random:

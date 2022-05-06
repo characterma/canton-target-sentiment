@@ -59,7 +59,6 @@ model_params:
   output_use_bn: False
   tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
   pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
-  special_token_path: null
   label_smoothing: 0
 explanation:
     Random:
