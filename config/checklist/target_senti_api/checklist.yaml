@@ -1,0 +1,100 @@
+model:
+  model_type: target-senti-api # pytorch/onnx/target-senti-api/doc-senti-api
+  model_path: http://ess24.wisers.com/playground/subject-sentiment-albert/sentiment/kd
+
+output_dir: ../output/example_doc_api_test/
+device: cuda
+seed: 42
+
+resources: # raw data
+  data_dir: ../../data/checklist/
+  entity:
+    company: entity/entity_company.txt
+    person: entity/entity_person.txt
+    location: entity/entity_location.txt
+    brand: entity/entity_brand.txt
+    organization: entity/entity_organization.txt
+    product: entity/entity_product.txt
+    punctuation: entity/entity_punctuation.txt
+  positive: sentiment_words/pos_samples.txt
+  negative: sentiment_words/neg_samples.txt
+  typo: typo.json
+  slang: slang.txt
+  synonyms: synonyms.txt
+  negation: negation.txt
+  test_data: target_senti/api_test_samples.json
+  labelled_data: labelled_data.json
+  unlabelled_data: unlabelled_data.txt
+
+testcases:
+  MFT:
+    - name: test-data
+      capacity: evaluate test accuracy
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: test_data
+      nsamples: 10
+
+  INV:
+    - name: random-deletion
+      capacity: robustness
+      operator: remove_random
+      inputs:
+        data: test_data
+        segmentation: word # word/char
+        purturbation_ratio: 0.15
+        samples: 1
+      nsamples: 10
+    - name: keyword-deletion-product
+      capacity: robustness
+      operator: remove_keyword
+      inputs:
+        data: test_data
+        keywords: entity.product
+        purturbation_ratio: 0.15
+        samples: 1
+      nsamples: 10
+    - name: entity-deletion-company
+      capacity: robustness
+      operator: remove_entity
+      inputs:
+        data: test_data
+        NER_target_field: company
+        NER_endpoint: http://ess25.wisers.com/playground/ner-kd-jigou-gpu/entityextr/analyse
+        samples: 1
+      nsamples: 10
+    - name: entity-replacement-company
+      capacity: robustness
+      operator: change_entity
+      inputs:
+        data: test_data
+        NER_target_field: company
+        NER_endpoint: http://ess25.wisers.com/playground/ner-kd-jigou-gpu/entityextr/analyse
+        alternatives: entity.company
+        samples: 3
+      nsamples: 10
+    - name: keyword-replacement-company
+      capacity: robustness
+      operator: change_keyword
+      inputs:
+        data: test_data
+        keywords: entity.company
+        purturbation_ratio: 0.2
+        samples: 1
+      nsamples: 10
+    - name: add_typo
+      capacity: denoising
+      operator: change_dict
+      inputs:
+        data: test_data
+        replacement_dict: typo
+        purturbation_ratio: 0.2
+        samples: 1
+    - name: strip_punctuation # need an argument to set sub char?
+      capacity: denoising
+      operator: remove_keyword
+      inputs:
+        data: test_data
+        keywords: entity.punctuation
+        purturbation_ratio: 0.2
+      nsamples: 10

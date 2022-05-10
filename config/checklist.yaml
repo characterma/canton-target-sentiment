@@ -1,0 +1,208 @@
+model:
+  model_type: target-senti-api # pytorch/onnx/jit/target-senti-api/doc-senti-api
+  model_path: http://ess25.wisers.com/playground/mc-target-sentiment-gpu/sentiment/document
+
+output_dir: ../output/subj_senti_api/
+device: cuda
+seed: 42
+
+resources: # raw data
+  data_dir: ../../data/checklist_full/
+  entity:
+    company: target_senti/entity_listed_companies.json
+    person: target_senti/entity_person.json
+    location: target_senti/entity_location.json
+    brand: target_senti/entity_brand.json
+    organization: target_senti/entity_organization.json
+    product: target_senti/entity_product.json
+    # punctuation: target_senti/entity_punctuation.json
+  positive: target_senti/positive.json
+  positive-strict: target_senti/positive_high_frequent.json
+  negative: target_senti/negative.json
+  negative-strict: target_senti/negative_high_frequent.json
+  negative-sentiment-x: target_senti/negative_sentiment_x.json
+  typo: typo.json
+  # slang: slang.json
+  # synonyms: synonyms.json
+  negation:
+    positive: target_senti/negation_positive.json
+    negative: target_senti/negation_negative.json
+  test_data: apple_care/test_data_713.json
+  labelled_data: labelled_data.json
+  unlabelled_data: unlabelled_data.txt
+
+testcases:
+  MFT:
+    - name: entity-company
+      capacity: model bias on entity
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: entity.company
+      label: 0
+      # nsamples: 10
+    - name: entity-person
+      capacity: model bias on entity
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: entity.person
+      label: 0
+      # nsamples: 10
+    - name: entity-location
+      capacity: model bias on entity
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: entity.location
+      label: 0
+      # nsamples: 10
+    - name: entity-brand
+      capacity: model bias on entity
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: entity.brand
+      label: 0
+      # nsamples: 10
+    - name: entity-organization
+      capacity: model bias on entity
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: entity.organization
+      label: 0
+      # nsamples: 10
+    - name: entity-product
+      capacity: model bias on entity
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: entity.product
+      label: 0
+      # nsamples: 10
+
+    - name: positive words
+      capacity: single sentiment word
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: positive
+      label: 1
+      # nsamples: 10
+    - name: high-frequent positive words
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: positive-strict
+      label: 1
+    - name: negative words
+      capacity: single sentiment word
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: negative
+      label: -1
+      # nsamples: 10
+    - name: high-frequent negative words
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: negative-strict
+      label: -1
+    - name: sentiment-x negative words
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: negative-sentiment-x
+      label: -1
+
+  #   - name: positive-company
+  #     capacity: entity + sentiment word
+  #     operator: test_with_template
+  #     template: "{input_a}{input_b}"
+  #     inputs:
+  #       input_a: entity.company
+  #       input_b: positive
+  #     label: 1
+  #     nsamples: 10000
+  #   - name: negative-company
+  #     capacity: entity + sentiment word
+  #     operator: test_with_template
+  #     template: "{input_a}{input_b}"
+  #     inputs:
+  #       input_a: entity.company
+  #       input_b: negative
+  #     label: -1
+  #     nsamples: 10000
+  #   - name: test-data
+  #     capacity: evaluate test accuracy
+  #     operator: test_with_raw_inputs
+  #     inputs:
+  #       input_a: test_data
+  #     # nsamples: 10
+    - name: negation-positive
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: negation.positive
+      label: 1
+    - name: negation-negative
+      operator: test_with_raw_inputs
+      inputs:
+        input_a: negation.negative
+      label: -1
+
+
+  # INV:
+  #   - name: random-deletion
+  #     capacity: robustness
+  #     operator: remove_random
+  #     inputs:
+  #       data: test_data
+  #       segmentation: word # word/char
+  #       purturbation_ratio: 0.15
+  #       samples: 1
+  #     # nsamples: 10
+  #   - name: keyword-deletion-product
+  #     capacity: robustness
+  #     operator: remove_keyword
+  #     inputs:
+  #       data: test_data
+  #       keywords: entity.product
+  #       purturbation_ratio: 0.15
+  #       samples: 1
+  #     # nsamples: 10
+  #   - name: entity-deletion-company
+  #     capacity: robustness
+  #     operator: remove_entity
+  #     inputs:
+  #       data: test_data
+  #       NER_target_field: company
+  #       NER_endpoint: http://ess25.wisers.com/playground/ner-kd-jigou-gpu/entityextr/analyse
+  #       samples: 1
+  #     # nsamples: 10
+  #   - name: entity-replacement-company
+  #     capacity: robustness
+  #     operator: change_entity
+  #     inputs:
+  #       data: test_data
+  #       NER_target_field: company
+  #       NER_endpoint: http://ess25.wisers.com/playground/ner-kd-jigou-gpu/entityextr/analyse
+  #       alternatives: entity.company
+  #       samples: 3
+  #     # nsamples: 10
+  #   - name: keyword-replacement-company
+  #     capacity: robustness
+  #     operator: change_keyword
+  #     inputs:
+  #       data: test_data
+  #       keywords: entity.company
+  #       purturbation_ratio: 0.2
+  #       samples: 1
+  #     # nsamples: 10
+  #   - name: add_typo
+  #     capacity: denoising
+  #     operator: change_dict
+  #     inputs:
+  #       data: test_data
+  #       replacement_dict: typo
+  #       purturbation_ratio: 0.2
+  #       samples: 1
+  #     # nsamples: 10
+  #   - name: strip_punctuation # need an argument to set sub char?
+  #     capacity: denoising
+  #     operator: remove_keyword
+  #     inputs:
+  #       data: test_data
+  #       keywords: entity.punctuation
+  #       purturbation_ratio: 0.2
+  #     # nsamples: 10

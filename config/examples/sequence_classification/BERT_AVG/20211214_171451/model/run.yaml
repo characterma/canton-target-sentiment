@@ -1,0 +1,69 @@
+task: "sequence_classification"
+device: "cpu"
+data:
+  output_dir: "../config/examples/sequence_classification/BERT_AVG/20211214_171451/"
+  data_dir: "../output/apple_care/roberta_large/"
+  train: sentiment_apple_train_0.json
+  dev: sentiment_apple_dev_0.json
+  test: test_data_713.json
+text_prepro:
+  steps: 
+    - utf8_replace
+    - simplified_chinese
+    - lower_case
+    - full_to_half
+eval:
+  batch_size: 1
+  model_file: "model.pt"
+train:
+  model_class: "BERT_AVG"
+  time: False
+  wandb: 
+    log_step: 100
+    sweep: False
+      # config_dir: "../config/examples/sequence_classification/BERT_AVG_kd"
+      # count: 1
+  kd:
+    use_kd: False
+    data_aug: False
+    teacher_dir: "../config/examples/sequence_classification/BERT_AVG/20211021_104012/model/"
+    loss_type: 'kl' # mse or kl for for Vanilla, lsr or ps for KA
+    soft_lambda: 0.5
+    kl_T: 5
+    ka_type: 'NA'
+    ka_lsr_prob: 0.8
+    dtd_type: 'NA'
+    dtd_bias: 0.5
+    dtd_flsw_pow: 1
+  seed: 42
+  log_steps: 100
+  batch_size: 16
+  final_model: "best" # "best" or "last"
+  optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
+  early_stop: 5
+explanation:
+  batch_size: 16
+  model_class: "LayerIntegratedGradients" # LayerIntegratedGradients
+model_params:
+  # ================= TDBERT =================
+  no_pretrained: False
+  num_train_epochs: 10
+  embedding_trainable: False
+  output_hidden_act_func: "PReLU"
+  output_hidden_dim: 128
+  no_pretrained_bert:
+    num_hidden_layers: 1
+    num_attention_heads: 1
+    pooler_num_attention_heads: 1
+    pooler_num_fc_layers: 1
+    max_position_embeddings : 256
+    hidden_size : 768
+    intermediate_size : 3076
+  # output_hidden_act_func: null
+  tokenizer_name: "hfl/chinese-roberta-wwm-ext-large"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
+  pretrained_lm: "hfl/chinese-roberta-wwm-ext-large" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
+  # pretrained_lm_dir: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
+  # ================= TGSAN =================
+  # num_train_epochs: 50
+  # pretrained_emb_path: "../data/word_embeddings/sgns.target.word-character.char1-2.dynwin5.thr10.neg5.dim300.iter5"
+  # embedding_trainable: False
