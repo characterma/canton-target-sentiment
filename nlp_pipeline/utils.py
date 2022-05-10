@@ -41,7 +41,7 @@ def set_log_path(log_dir):
     log_dir = Path(log_dir)
     logging.basicConfig(
         handlers=[
-            logging.FileHandler(log_dir / "log", "w+", "utf-8"),
+            logging.FileHandler(log_dir / "log", "a", "utf-8"),
             logging.StreamHandler(),
         ],
         format="%(asctime)s %(message)s",
@@ -67,7 +67,8 @@ def load_config(args, is_deployment=False):
     args.device = run_config["device"]
     args.task = run_config["task"]
     args.train_config = run_config["train"]
-    args.kd_config = run_config["train"].get("kd", {"use_kd": False})
+    args.kd_config = run_config["train"].get("kd", {"use_kd": False}) 
+    args.uda_config = run_config["train"].get("uda", {"use_uda": False}) 
     args.prepro_config = run_config["text_prepro"]
     args.explain_config = run_config.get("explanation", {})
     model_config = load_yaml(default_config_dir / "model.yaml")

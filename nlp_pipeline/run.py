@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 
 from nlp_pipeline.trainer import Trainer, evaluate
+from nlp_pipeline.trainer_uda import TrainerUDA
 from nlp_pipeline.utils import (
     set_seed,
     set_log_path,
@@ -22,6 +23,45 @@ from nlp_pipeline.explainer import Explainer
 
 
 logger = logging.getLogger(__name__)
+
+
+def run_uda(args):
+    if not args.test_only:
+        save_config(args)
+    print(args.model_dir, "*****")
+    tokenizer = get_tokenizer(args=args)
+
+    label_to_id, label_to_id_inv = get_label_to_id(tokenizer, args)
+    args.label_to_id = label_to_id
+    args.label_to_id_inv = label_to_id_inv
+
+    model = get_model(args=args)
+
+    labeled_dataset = get_dataset(dataset="train", tokenizer=tokenizer, args=args)
+    unlabeled_dataset = get_dataset(dataset="unlabeled", tokenizer=tokenizer, args=args)
+    dev_dataset = get_dataset(dataset="dev", tokenizer=tokenizer, args=args)
+
+    trainer = TrainerUDA(
+        model=model, 
+        labeled_dataset=labeled_dataset, 
+        unlabeled_dataset=unlabeled_dataset, 
+        dev_dataset=dev_dataset, 
+        args=args
+    )
+
+    trainer.train()
+    test_dataset = get_dataset(dataset="test", tokenizer=tokenizer, args=args)
+
+    train_metrics = evaluate(model=model, eval_dataset=labeled_dataset, args=args)
+    dev_metrics = evaluate(model=model, eval_dataset=dev_dataset, args=args)
+    test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
+
+    combine_and_save_metrics(
+        metrics=[train_metrics, dev_metrics, test_metrics], args=args, suffix=args.suffix
+    )
+    combine_and_save_statistics(
+        datasets=[labeled_dataset, dev_dataset, test_dataset], args=args, suffix=args.suffix
+    )
 
 
 def run_kd(args):
@@ -139,6 +179,7 @@ def run(args):
 
     model = get_model(args=args)
     if not args.test_only:
+
         train_dataset = get_dataset(dataset="train", tokenizer=tokenizer, args=args)
         dev_dataset = get_dataset(dataset="dev", tokenizer=tokenizer, args=args)
         trainer = Trainer(
@@ -175,10 +216,10 @@ def run(args):
 
     test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
     combine_and_save_metrics(
-        metrics=[train_metrics, dev_metrics, test_metrics], args=args
+        metrics=[train_metrics, dev_metrics, test_metrics], args=args, suffix=args.suffix
     )
     combine_and_save_statistics(
-        datasets=[train_dataset, dev_dataset, test_dataset], args=args
+        datasets=[train_dataset, dev_dataset, test_dataset], args=args, suffix=args.suffix
     )
 
 
@@ -188,6 +229,7 @@ if __name__ == "__main__":
     parser.add_argument("--test_only", action="store_true")
     parser.add_argument("--explain", action="store_true")
     parser.add_argument("--faithfulness", action="store_true")
+    parser.add_argument("--suffix", type=str, default="")
     args = parser.parse_args()
 
     args = load_config(args)
@@ -197,5 +239,7 @@ if __name__ == "__main__":
 
     if not args.test_only and args.kd_config["use_kd"]:
         run_kd(args=args)
+    elif not args.test_only and args.uda_config["use_uda"]:
+        run_uda(args=args)
     else:
         run(args=args)
