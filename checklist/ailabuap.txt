@@ -1,0 +1,4 @@
+--trusted-host ess-repos01.wisers.com
+--index http://ess-repos01.wisers.com:8081/repository/pypi-server-group/pypi
+--index-url http://ess-repos01.wisers.com:8081/repository/pypi-server-group/simple
+ailabuap==1.2
