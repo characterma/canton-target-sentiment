@@ -17,7 +17,7 @@ class SequenceClassificationFeature(NLPFeature):
         content2 = data_dict.get("content2", None)
         label = data_dict.get("label", None)
 
-        if "content_da" in data_dict:
+        if "content_da" in data_dict and args.uda_config["use_uda"]:
             content_da = data_dict["content_da"]
         else:
             content_da = None
