@@ -171,6 +171,7 @@ def get_tokenizer(args, word_to_id=None, required_token_types=None, datasets=Non
 
     elif source in ["internal", "char_split"]:
         if source == "internal":
+            required_token_types = args.model_config.get("required_token_types", None)
             tokenizer = MultiLingualTokenizer(
                 word_to_id=word_to_id, required_token_types=required_token_types
             )
