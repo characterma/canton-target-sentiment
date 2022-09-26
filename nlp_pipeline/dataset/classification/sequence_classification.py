@@ -10,7 +10,6 @@ class SequenceClassificationFeature(NLPFeature):
         self, data_dict, tokenizer, required_features, args, diagnosis=False, padding='max_length'
     ):
         diagnosis_dict = dict()
-        feature_dict = dict()
 
         # data fields
         content = data_dict["content"]
@@ -18,8 +17,10 @@ class SequenceClassificationFeature(NLPFeature):
         label = data_dict.get("label", None)
 
         if "content_da" in data_dict and args.uda_config["use_uda"]:
+            use_uda = True # use unsupervised data augmentation
             content_da = data_dict["content_da"]
         else:
+            use_uda = False
             content_da = None
 
         # params
@@ -69,9 +70,14 @@ class SequenceClassificationFeature(NLPFeature):
             diagnosis_dict["label_id"] = label_to_id.get(str(label), None)
             diagnosis_dict["length"] = np.sum(attention_mask)
 
-        if np.sum(attention_mask) == 0:
-            return None, diagnosis_dict
+        if use_uda and input_ids_da is None:
+            feature_dict = None
+
+        elif np.sum(attention_mask) == 0:
+            feature_dict = None
+
         else:
+            feature_dict = dict()
             if "input_ids" in required_features:
                 feature_dict["input_ids"] = torch.tensor(input_ids).long()
                 if input_ids_da is not None:
