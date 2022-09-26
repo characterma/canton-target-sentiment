@@ -112,6 +112,9 @@ class SentiModelRunner():
                 results = prediction_step(self.model, batch, self.args)
                 predictions.extend(results["prediction"])
 
+        # insert skipped predictions
+        test_dataset.insert_skipped_samples(predictions, 0)
+
         return predictions
 
 

@@ -1,9 +1,11 @@
 import re
+import copy
 import random
 import itertools
 import numpy as np
 from ailabuap.tokenizer import LTPTokenizer
 from ailabuap.io.api_caller import APICaller
+from copy import deepcopy
 from utils import chunks
 
 
@@ -80,17 +82,18 @@ class Perturbation:
 
             text = data_record["content"] if "content" in data_record else data_record["text"]
             inv_text_inputs = [str(text)]
-            inv_dict_inputs = [data_record]
+            inv_dict_inputs = [deepcopy(data_record)]
 
             if len(text) == 0:
                 continue
 
             if "text_subjs" in data_record:
                 text_subjs = data_record["text_subjs"]
-                kw_idxs = text_subjs["kw_idxs"]
+                kw_idxs = text_subjs[0]["kw_idxs"]
                 # text_idxs = text_subjs["text_idxs"]
 
-                text_spans = cut_text_spans(text, kw_idxs[0])
+                kw_idxs = np.array(kw_idxs).reshape(-1, 2)
+                text_spans = cut_text_spans(text, kw_idxs)
 
                 # apply perturbation on each span
                 augmented_records = perturb_fn(text_spans, *args, **kwargs)
@@ -102,21 +105,23 @@ class Perturbation:
                         aug_record = Perturbation.reconstruct_data_and_kwidxs(augmented_spans)
 
                         if aug_record["n_augs"] == 0 or aug_record["n_augs"] > max_n_augs:
-                            print(aug_record)
+                            del aug_record
                             continue
 
                         new_data = {}
-                        new_ct = aug_record["content"]
+                        new_ct = aug_record.get("content")
                         new_data["content"] = new_ct
                         new_data["docid"] = data_record.get("docid", "202202118983")
                         new_data["label"] = data_record.get("label")
                         new_data["text_subjs"] = text_subjs.copy()
-                        new_data["text_subjs"]["name"] = aug_record["kw_name"]
-                        new_data["text_subjs"]["kw_idxs"] = [aug_record["kw_idxs"]]
-                        new_data["text_subjs"]["text_idxs"] = [[0, len(new_ct)]]
+                        new_data["text_subjs"][0]["name"] = aug_record.get("kw_name")
+                        new_data["text_subjs"][0]["kw_idxs"] = [aug_record.get("kw_idxs")]
+                        new_data["text_subjs"][0]["text_idxs"] = [[0, len(new_ct)]]
 
                         inv_text_inputs.append(new_ct)
-                        inv_dict_inputs.append(new_data.copy())
+                        inv_dict_inputs.append(copy.deepcopy(new_data))
+
+                        del new_data
 
             else:
                 augmented_data = perturb_fn(text, *args, **kwargs)
@@ -367,24 +372,35 @@ class Perturbation:
 
 
 if __name__ == "__main__":
-    # data = [
-    #     {"content": "#苹果发布会# 说实话入耳的airpods pro 我带得不是很舒服 [泪]但是是大侠送的"},
-    #     # {"content": "新的MacBook Pro键盘改实体了，可能苹果发现触控的不好用，哈哈哈哈哈[允悲]#苹果发布会#"},
-    #     # {"content": "#苹果发布会#给我赶快发货！！！[怒]"}
-    # ]
 
     data = [
-        {'docid': '20220124A06Q2PC',
-            'content': '粵財控股115億元拿下南粵銀行近六成股份,"入主"資格已獲監管批准',
-            'text_subjs': {'id': '1',
-                        'name': '南粵銀行',
-                        'kw_idxs': [[[11, 15]]],
-                        'text_idxs': [[0, 33]]},
-            'label': -1}
+        {
+            'docid': '201908292667468', 
+            'content': "#洽洽瓜子二氧化硫殘留#【洽洽食品回應西瓜子二氧化硫超標：已召回，申請現場核查】針對被檢出不合格食品一事，洽洽食品向記者表示，接到北京市場監管局通知後，第一時間對該批次產品實施召回，在召回產品中抽取部分樣品送檢，檢測結果為合格。洽洽向主管部", 
+            'text_subjs': [
+                {
+                    'id': '1', 'name': '洽洽', 
+                    "kw_idxs": [[[1,3]],[[13,17]],[[53,57]],[[114,116]]],
+                    'text_idxs': [[0, 120]]
+                }
+            ], 
+            'label': -1
+        }
     ]
     # results = Perturbation.perturb(data, Perturbation.random_deletion_without_target)
     results = Perturbation.perturb(
-        data, Perturbation.remove_entity,
-        api_url="http://ess25.wisers.com/playground/ner-kd-jigou-gpu/entityextr/analyse",
-        target_type="company")
-    print(results)
+        data, Perturbation.remove_random,
+        segmentation='word',
+        purturbation_ratio=0.15,
+        n_samples=1, )
+    # results = Perturbation.perturb(
+    #     data, Perturbation.remove_entity,
+    #     api_url="http://ess25.wisers.com/res-comm/ner-kd-jigou-gpu/entityextr/analyse",
+    #     target_type="company")
+    # results = Perturbation.perturb(
+    #     data, Perturbation.remove_keyword,
+    #     purturbation_ratio=0.15,
+    #     n_samples=1, 
+    #     keywords=[
+    #         "粵財控股"
+    #     ])
