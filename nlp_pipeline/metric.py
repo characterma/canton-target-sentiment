@@ -6,7 +6,7 @@ from sklearn.metrics import classification_report as sklearn_classification_repo
 def compute_metrics(task, labels, predictions):
     if task in ["target_classification", "sequence_classification"]:
         report = compute_metrics_sequence_classification(labels, predictions)
-    elif task == "chinese_word_segmentation":
+    elif task in ["chinese_word_segmentation", "sequence_labeling"]:
         report = compute_metrics_sequence_tagging(labels, predictions)
     return report
 

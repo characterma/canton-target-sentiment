@@ -1,0 +1,53 @@
+task: "sequence_labeling"
+device: 0
+data:
+  output_dir: "../output/sequence_labeling/test/"
+  data_dir: "../data/datasets/sample/sequence_labeling/"
+  train: sample_train.json
+  dev: sample_dev.json
+  test: sample_test.json
+  extra_special_tokens: 
+    - unused5
+  pad_in_collate: False
+text_prepro:
+  steps:
+    - simplified_chinese
+    - lower_case
+train:
+  model_class: "BERT_CRF"
+  kd:
+    use_kd: False
+    teacher_dir: "../output/post_sentiment_20210707_bert_avg/model"
+    loss_type: 'mse'
+    soft_lambda: 0.5
+    kl_T: 5
+  uda:
+    use_uda: False
+    tsa: linear_schedule
+    total_steps: 15000
+    eval_steps: 1000
+    uda_coeff: 1
+    uda_confidence_thresh: 0.45
+    uda_softmax_temp: 0.85
+  seed: 42
+  batch_size: 16
+  final_model: "best" # or "last"
+  optimization_metric: "macro_f1"
+  early_stop: null
+eval:
+  batch_size: 64
+  model_file: "model.pt" # under output_dir / "model"
+model_params:
+  # ================= TDBERT =================
+  max_length: 256
+  num_train_epochs: 8
+  embedding_trainable: True
+  # output_hidden_act_func: "PReLU"
+  output_hidden_dim: 128
+  output_use_bn: False
+  tokenizer_name: "bert-base-cased"  # voidful/albert_chinese_tiny
+  pretrained_lm: "bert-base-cased" # voidful/albert_chinese_tiny
+  label_smoothing: 0
+explanation:
+    Random:
+      method: "Random"
