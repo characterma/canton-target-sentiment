@@ -1,11 +1,11 @@
 task: "sequence_labeling"
 device: 0
 data:
-  output_dir: "../output/sequence_labeling/test/"
+  output_dir: "../output/sequence_labeling/acc_test/"
   data_dir: "../data/datasets/sample/sequence_labeling/"
-  train: sample_train.json
-  dev: sample_dev.json
-  test: sample_test.json
+  train: cner_train.json
+  dev: cner_dev.json
+  test: cner_test.json
   extra_special_tokens: 
     - unused5
   pad_in_collate: False
@@ -39,14 +39,14 @@ eval:
   model_file: "model.pt" # under output_dir / "model"
 model_params:
   # ================= TDBERT =================
-  max_length: 256
-  num_train_epochs: 8
+  max_length: 128
+  num_train_epochs: 4
   embedding_trainable: True
   # output_hidden_act_func: "PReLU"
   output_hidden_dim: 128
   output_use_bn: False
-  tokenizer_name: "bert-base-cased"  # voidful/albert_chinese_tiny
-  pretrained_lm: "bert-base-cased" # voidful/albert_chinese_tiny
+  tokenizer_name: "bert-base-chinese"  # voidful/albert_chinese_tiny
+  pretrained_lm: "bert-base-chinese" # voidful/albert_chinese_tiny
   label_smoothing: 0
 explanation:
     Random:

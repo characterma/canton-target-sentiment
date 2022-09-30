@@ -34,7 +34,7 @@ class SequenceLabelingFeature(NLPFeature):
             attention_mask += [0] * padding_length
 
             if labels is not None:
-                label_ids += [tokenizer.pad_token_id] * padding_length
+                label_ids += [label_to_id["O"]] * padding_length
 
         feature_dict["input_ids"] = torch.tensor(input_ids).long()
         feature_dict["attention_mask"] = torch.tensor(attention_mask).long()
