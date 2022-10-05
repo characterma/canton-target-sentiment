@@ -217,6 +217,11 @@ class Preprocessor:
 
     def simplified_chinese(self):
         self.data_dict["content"] = self.cc.convert(self.data_dict["content"])
+        if "tokens" in self.data_dict:
+            n_tokens = len(self.data_dict["tokens"])
+            new_tokens = self.cc.convert(" ".join(self.data_dict["tokens"])).split(" ")
+            if len(new_tokens) == n_tokens:
+                self.data_dict["tokens"] = new_tokens
 
     def lower_case(self):
         self.data_dict["content"] = self.data_dict["content"].lower()

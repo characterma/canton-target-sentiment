@@ -98,6 +98,29 @@ def load_label_to_id_from_datasets(datasets, tokenizer, args, raw_data=None):
                 if label not in label_to_id:
                     label_to_id[label] = len(label_to_id)
         return label_to_id
+    elif args.task == "sequence_labeling":
+        label_to_id = {}
+        label_list = []
+        files = []
+        for dataset in datasets:
+            files.append(args.data_config[dataset])
+        files = list(set(files))
+        for filename in files:
+            data_path = args.data_dir / filename
+            if raw_data is None:
+                raw_data = json.load(open(data_path, "r"))
+            # text preprocessing
+            for data_dict in raw_data:
+                labels = list(set(list(data_dict["labels"])))
+                for label in labels:
+                    if label not in label_list:
+                        label_list.append(label)
+
+        label_list.sort()
+        label_to_id = {label: i for i, label in enumerate(label_list)}
+
+        print(label_to_id)
+        return label_to_id
     else:
         raise ValueError("Task not supported.")
     return label_to_id
