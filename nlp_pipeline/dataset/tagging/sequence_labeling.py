@@ -14,7 +14,7 @@ class SequenceLabelingFeature(NLPFeature):
         # data fields
         content = data_dict["content"]
         tokens = data_dict["tokens"]
-        labels = data_dict["labels"]
+        labels = data_dict.get("labels", None)
 
         # params
         max_length = args.model_config["max_length"]
