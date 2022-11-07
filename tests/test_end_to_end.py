@@ -16,7 +16,9 @@ class TestEndToEnd(unittest.TestCase):
                    'sequence_classification/TEXT_CNN_kd_dtd',
                    'target_classification/TDBERT', 
                    'target_classification/TGSAN', 
-                   'target_classification/TGSAN2'
+                   'target_classification/TGSAN2',
+                   'topic_classification/BERT_CLS',
+                   'topic_classification/BERT_AVG',
                    ]
 
     skip_onnx = [

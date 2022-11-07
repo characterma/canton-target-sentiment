@@ -93,14 +93,7 @@ def evaluate(model, eval_dataset, args):
             label_ids.extend(batch["label"].cpu().tolist())
 
     if has_label:
-        labels = []
-        for l1, p1 in zip(label_ids, predictions):
-            if isinstance(l1, list):
-                labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[: len(p1)])
-            else:
-                labels.append(args.label_to_id_inv[l1])
-
-        metrics = compute_metrics(task=args.task, labels=labels, predictions=predictions)
+        metrics = compute_metrics(args=args, label_ids=label_ids, predictions=predictions)
         metrics["loss"] = np.mean(losses)
         metrics["dataset"] = eval_dataset.dataset
         metrics["samples_per_second"] = n_samples / total_time

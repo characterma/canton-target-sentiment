@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import torch
 import numpy as np
-
+import torch.nn.functional as F
 from nlp_pipeline.dataset.base import NLPFeature
 
 
@@ -89,7 +89,10 @@ class TopicClassificationFeature(NLPFeature):
 
             if label is not None and label_to_id is not None:
                 label = [label_to_id[str(l)] for l in label]
-                feature_dict["label"] = torch.tensor(label)
+                feature_dict["label"] = F.one_hot(
+                                            torch.tensor(label), 
+                                            num_classes=len(label_to_id)
+                                        ).sum(axis=0).long()
 
         self.feature_dict = feature_dict
         self.diagnosis_dict = diagnosis_dict

@@ -1,13 +1,24 @@
 from seqeval.scheme import IOB2
 from seqeval.metrics import classification_report as seqeval_classification_report
 from sklearn.metrics import classification_report as sklearn_classification_report
+from sklearn.preprocessing import MultiLabelBinarizer
 
+def compute_metrics(args, label_ids, predictions):
+    labels = []
 
-def compute_metrics(task, labels, predictions):
-    if task in ["target_classification", "sequence_classification", "topic_classification"]:
+    if args.task in ["target_classification", "sequence_classification"]:
+        for l1, p1 in zip(label_ids, predictions):
+            labels.append(args.label_to_id_inv[l1])
         report = compute_metrics_sequence_classification(labels, predictions)
-    elif task == "chinese_word_segmentation":
+    elif args.task == "chinese_word_segmentation":
+        for l1, p1 in zip(label_ids, predictions):
+            labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[: len(p1)])
         report = compute_metrics_sequence_tagging(labels, predictions)
+    elif args.task == 'topic_classification':
+        import numpy as np
+        for l1, p1 in zip(label_ids, predictions):
+            labels.append([args.label_to_id_inv[i] for i,l in enumerate(l1) if l == 1])
+        report = compute_metrics_topic_classification(labels, predictions, args.label_to_id)
     return report
 
 
@@ -43,6 +54,28 @@ def compute_metrics_sequence_tagging(labels, predictions):
     }
     for label, v1 in report.items():
         if label not in ["micro avg", "macro avg", "weighted avg"]:
+            for score_name, v2 in v1.items():
+                metrics[f"{label}-{score_name}"] = v2
+    return metrics
+
+def compute_metrics_topic_classification(labels, predictions, label_to_id):
+
+    sort_label_to_id = dict(sorted(label_to_id.items(), key=lambda item: item[1]))
+    label_type = list(sort_label_to_id.keys())
+    mlb = MultiLabelBinarizer(classes = label_type)
+    labels_mat = mlb.fit_transform(labels)
+    preds_mat = mlb.fit_transform(predictions)
+    report = sklearn_classification_report(
+        labels_mat, preds_mat, target_names=label_type, output_dict=True
+    )
+
+    metrics = {
+        "macro_f1": report["macro avg"]["f1-score"],
+        "micro_f1": report["weighted avg"]["f1-score"],
+        "support": report["macro avg"]["support"]
+    }
+    for label, v1 in report.items():
+        if label in label_type:
             for score_name, v2 in v1.items():
                 metrics[f"{label}-{score_name}"] = v2
     return metrics

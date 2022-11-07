@@ -28,6 +28,22 @@ task_to_config = {
             'target_macro_f1': 1
         }, 
     }, 
+    'topic_classification': {
+        'BERT_AVG': {
+            'text_prepro': None, 
+            'model_params': {'num_train_epochs': 10}, 
+            'train_params': {'batch_size': 16}, 
+            'eval_params': {'batch_size': 32}, 
+            'target_macro_f1': 1
+        }, 
+        'BERT_CLS': {
+            'text_prepro': None, 
+            'model_params': {'num_train_epochs': 10}, 
+            'train_params': {'batch_size': 16}, 
+            'eval_params': {'batch_size': 32}, 
+            'target_macro_f1': 1
+        }
+    },
     'target_classification': {
         'TDBERT': {
             'text_prepro': None, 
