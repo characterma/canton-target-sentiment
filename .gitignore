@@ -131,10 +131,3 @@ log
 *.xlsx
 patch_202101/*
 etl/*
-
-
-# ignore all model files
-run.yaml
-model.yaml
-events*
-vocab.*
