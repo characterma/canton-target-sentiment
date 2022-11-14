@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 TASK_TO_OUTPUT_SHAPE = {
     "sequence_classification": {0: 'batch_size'}, 
-    "target_classification": {0: 'batch_size', 1: 'max_seq_len',}, 
+    "target_classification": {0: 'batch_size', 1: 'max_seq_len',},
+    "sequence_labeling": {0: 'batch_size', 1: 'max_seq_len'},
 }
     
 def build_onnx(args):  
@@ -33,6 +34,8 @@ def build_onnx(args):
     data_dict = json.load(open(args.data_dir / args.data_config['test'], "r"))[0]
     if 'label' in data_dict:
         del data_dict['label']
+    elif 'labels' in data_dict:
+        del data_dict['labels']
     feature = feature_class(
         data_dict=data_dict, tokenizer=tokenizer, args=args, diagnosis=False
     )

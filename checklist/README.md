@@ -54,30 +54,38 @@ MFT is a test with the provided labels to check if the model can predict the cor
 
 - Case 1: To test **one** list of **words/sentence** with same label (not suitable for target sentiment)
 For example, if we would like to test a set of positive words, we can define the test case as follow.
+
 ```yaml
 - name: entity-company # the name of the test, this will show on the report as the identify of this case
+
   # capacity is to state the functionality of the test in case you would like to group the similar test case
   capacity: model bias on entity
+  
   # operator is an built-in function for this type of testcase, we suggest to use test_with_template if you would like to test a list of strings without any other data files
   operator: test_with_template
+  
   # template allows you to define the string format you want. You can add some prefix or suffix words before or after {key}, and {key} will be replaced by test strings. 
   template: "{input_a}"
+  
   # specify the data resources to be used as inputs
   inputs:
     input_a: entity.company # resources shortcut or data path
+  
   # the label for this set of data
   label: 0
+  
   # nsamples is optional, if not set, all the data points will be tested
   nsamples: 10
 ```
 
 - Case 2: To test **two** list of **words/sentence** with same label (not suitable for target sentiment)
 For example, if you would like to test a set of positive words with a combination of entity, we can difine the test case as follow.
+
 ```yaml
 - name: positive-company
   capacity: entity + sentiment word
-  operator: test_with_template # similar to case 1, we use test_with_template as operator
-  template: "{input_a}{input_b}" # use two different keys for different data resources
+  operator: test_with_template # similar to case 1, we use test_with_template as operator 
+  template: "{input_a}{input_b}" # use two different keys for different data resources 
   inputs:
     input_a: entity.company
     input_b: positive
@@ -86,6 +94,7 @@ For example, if you would like to test a set of positive words with a combinatio
 ```
 
 - Case 3: To test one list of **data dict** with same label
+
 ```yaml
 - name: positive
   capacity: model generalization on positive words
@@ -98,6 +107,7 @@ For example, if you would like to test a set of positive words with a combinatio
 ```
 
 - Case 4: To test one list of **data dict** with one corresponding label for each data record
+
 ```yaml
 - name: testset-data
   capacity: evaluate test accuracy

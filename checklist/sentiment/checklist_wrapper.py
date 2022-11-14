@@ -137,10 +137,13 @@ class SentimentCheckList():
             else:
                 raise AssertionError("required variable: label is not set!")
 
-            test = operator_func(template, inputs, labels, test_name, capacity, test_name, nsamples)
-            test.run(pred_wrapper)
-            report = ReportGenerator.generate_report_for_MFT(test, i+1, self.output_detail_dir)
-            reports.extend(report)
+            try:
+                test = operator_func(template, inputs, labels, test_name, capacity, test_name, nsamples)
+                test.run(pred_wrapper)
+                report = ReportGenerator.generate_report_for_MFT(test, i+1, self.output_detail_dir)
+                reports.extend(report)
+            except Exception as e:
+                print(e)
 
         return reports
 
