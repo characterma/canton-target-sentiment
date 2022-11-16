@@ -13,3 +13,4 @@ seqeval
 xlsxwriter
 papermill
 scrapbook
+neptune-client

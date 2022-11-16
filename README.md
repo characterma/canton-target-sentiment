@@ -81,7 +81,7 @@ adjust mlops config by edition of run.yaml file
 ...
 mlops:
   neptune:
-    project: wisemen/spam-classification
+    project: wisemen/spam-classification # create your own project
     api_token: # get API token of the project on neptune page
     name:  # default uses the folder name of experiment
     description: # describe the purpose of experiment
