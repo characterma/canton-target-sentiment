@@ -68,7 +68,33 @@ python optimize_onnx.py --config_dir='../config/examples/X/Y'
 python build_jit_trace.py --config_dir='../config/examples/X/Y'
 ```
 
-# KD Training Guildline
+# MLOps logging 
+Train a sequence_classification model with experiment tracking on tools
+```bash
+python run.py --config_dir="../config/examples/sequence_classification/BERT_AVG_mlops" 
+```
+
+adjust mlops config by edition of run.yaml file
+- login neptune dashboard: wisemen930@gmail.com
+
+```yaml
+...
+mlops:
+  neptune:
+    project: wisemen/spam-classification
+    api_token: # get API token of the project on neptune page
+    name:  # default uses the folder name of experiment
+    description: # describe the purpose of experiment
+    mode: "async" # 'async' or 'debug' or 'offline' or 'read-only' or 'sync'. Ref [here](https://docs.neptune.ai/api/connection_modes/)
+    log: False # log dev metrics during training or not (save logging time if False)
+    tags: # list of tags for searching and comparing experiments 
+    - 'bert'
+    - 'spam'
+    capture_hardware_metrics: True # default True, log the hardware usage
+...
+```
+
+# KD Training 
 Train KD model by selecting a config folder
 ```bash
 python run.py --config_dir="../config/examples/sequence_classification/TEXT_CNN_kd" 

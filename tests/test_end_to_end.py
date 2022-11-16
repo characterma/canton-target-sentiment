@@ -8,8 +8,10 @@ class TestEndToEnd(unittest.TestCase):
     task_models = [
                    'chinese_word_segmentation/CNN_CRF',
                    'chinese_word_segmentation/BERT_CRF', 
-                   'sequence_classification/BERT_CLS', 
-                   'sequence_classification/BERT_AVG', 
+                   'sequence_classification/BERT_CLS',
+                   'sequence_classification/BERT_CLS_mlops',  
+                   'sequence_classification/BERT_AVG',
+                   'sequence_classification/BERT_AVG_mlops',
                    'sequence_classification/BERT_CLS_optim_tricks', 
                    'sequence_classification/TEXT_CNN', 
                    'sequence_classification/TEXT_CNN_kd', 
