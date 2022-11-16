@@ -13,7 +13,7 @@ from nlp_pipeline.utils import (
     log_args,
     get_args,
 )
-from nlp_pipeline.utils import combine_and_save_metrics, combine_and_save_statistics
+from nlp_pipeline.utils import combine_and_save_metrics, combine_and_save_statistics, start_mlops_log, stop_mlops_log
 from nlp_pipeline.dataset import get_dataset
 from nlp_pipeline.tokenizer import get_tokenizer
 from nlp_pipeline.model import get_model
@@ -222,12 +222,14 @@ def run(args):
         explainer.explain(dataset=test_dataset)
 
     test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
+    start_mlops_log(args=args)
     combine_and_save_metrics(
         metrics=[train_metrics, dev_metrics, test_metrics], args=args, suffix=args.suffix
     )
     combine_and_save_statistics(
         datasets=[train_dataset, dev_dataset, test_dataset], args=args, suffix=args.suffix
     )
+    stop_mlops_log(args=args)
 
 
 if __name__ == "__main__":
