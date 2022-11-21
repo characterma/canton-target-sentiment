@@ -13,7 +13,7 @@ from nlp_pipeline.utils import (
     log_args,
     get_args,
 )
-from nlp_pipeline.utils import combine_and_save_metrics, combine_and_save_statistics
+from nlp_pipeline.utils import combine_and_save_metrics, combine_and_save_statistics, start_mlops_log, stop_mlops_log
 from nlp_pipeline.dataset import get_dataset
 from nlp_pipeline.tokenizer import get_tokenizer
 from nlp_pipeline.model import get_model
@@ -98,7 +98,10 @@ def run_kd(args):
 
     assert(teacher_args.label_to_id==args.label_to_id)
     assert(teacher_args.label_to_id_inv==args.label_to_id_inv)
-    
+    # same tokenizer can skip redundant loading of train and unlabel dataset
+    same_tokenizer = teacher_args.model_config["tokenizer_source"]  == args.model_config["tokenizer_source"] and \
+                        teacher_args.model_config["tokenizer_name"]  == args.model_config["tokenizer_name"]
+
     # generate soft-labels, TODO: cache to disk
     if unlabeled_dataset is not None:
         teacher_logits_ul = get_logits(
@@ -107,7 +110,8 @@ def run_kd(args):
             teacher_args=teacher_args,
             student_args=args,
         )
-        del unlabeled_dataset
+        if not same_tokenizer:
+            del unlabeled_dataset
     else:
         teacher_logits_ul = None 
 
@@ -123,20 +127,23 @@ def run_kd(args):
         teacher_args=teacher_args,
         student_args=args,
     )
-    del train_dataset
+    if not same_tokenizer:
+        del train_dataset
     
     del teacher_model
     del teacher_tokenizer
 
     # Features for student model
-    train_dataset = get_dataset(dataset="train", tokenizer=student_tokenizer, args=args)
+    if not same_tokenizer:
+        train_dataset = get_dataset(dataset="train", tokenizer=student_tokenizer, args=args)
     dev_dataset = get_dataset(dataset="dev", tokenizer=student_tokenizer, args=args)
     test_dataset = get_dataset(dataset="test", tokenizer=student_tokenizer, args=args)
     train_dataset.add_feature("teacher_logit", teacher_logits_tr)
     del teacher_logits_tr
     
     if "unlabeled" in args.data_config.keys() and args.data_config['unlabeled'] is not None:
-        unlabeled_dataset = get_dataset(dataset="unlabeled", tokenizer=student_tokenizer, args=args)
+        if not same_tokenizer:
+            unlabeled_dataset = get_dataset(dataset="unlabeled", tokenizer=student_tokenizer, args=args)
         unlabeled_dataset.add_feature("teacher_logit", teacher_logits_ul)
         del teacher_logits_ul
     else:
@@ -215,12 +222,14 @@ def run(args):
         explainer.explain(dataset=test_dataset)
 
     test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
+    start_mlops_log(args=args)
     combine_and_save_metrics(
         metrics=[train_metrics, dev_metrics, test_metrics], args=args, suffix=args.suffix
     )
     combine_and_save_statistics(
         datasets=[train_dataset, dev_dataset, test_dataset], args=args, suffix=args.suffix
     )
+    stop_mlops_log(args=args)
 
 
 if __name__ == "__main__":

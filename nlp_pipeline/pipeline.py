@@ -69,6 +69,8 @@ class Pipeline:
                     default_model = "TDBERT"
                 elif task=="chinese_word_segmentation":
                     default_model = "BERT_CRF"
+                elif task=='topic_classification':
+                    default_model = "BERT_AVG"
                 else:
                     raise(ValueError(f"Task {task} is not supported."))
                 logger.info("  Default model = %s", default_model)

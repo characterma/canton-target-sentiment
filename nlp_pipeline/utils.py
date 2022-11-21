@@ -8,9 +8,13 @@ import shutil
 import torch
 import yaml
 import pickle
+
+# specialize for mlops tools
+import neptune.new as neptune
+from neptune.new.types import File
+
 from pathlib import Path, PurePath
 from collections import namedtuple
-
 
 def log_args(logger, args):
     logger.info("***** Args *****")
@@ -67,6 +71,7 @@ def load_config(args, is_deployment=False):
     args.device = run_config["device"]
     args.task = run_config["task"]
     args.train_config = run_config["train"]
+    args.mlops_config = run_config.get("mlops", {})
     args.kd_config = run_config["train"].get("kd", {"use_kd": False}) 
     args.uda_config = run_config["train"].get("uda", {"use_uda": False}) 
     args.prepro_config = run_config["text_prepro"]
@@ -75,8 +80,12 @@ def load_config(args, is_deployment=False):
     model_class = args.train_config["model_class"]
     args.model_config = model_config[model_class]
     args.model_config.update(run_config["model_params"])
-
     args.config_dir = config_dir
+
+    # specialize for mlops tools
+    if args.mlops_config.get("neptune") and args.mlops_config["neptune"]['log']:
+            args.mlops_config["neptune"]["run"] = neptune_init(args)
+
     if not is_deployment:
         output_dir = Path(args.data_config["output_dir"])
         args.output_dir = output_dir
@@ -120,12 +129,34 @@ def load_config(args, is_deployment=False):
     print(args.model_dir, "*********************************************************")
     return args
 
+def neptune_init(args):
+    return neptune.init_run(
+                project=args.mlops_config["neptune"]["project"],
+                api_token=args.mlops_config["neptune"]["api_token"],
+                name=args.mlops_config["neptune"]["name"] 
+                        if args.mlops_config["neptune"]["name"] 
+                        else args.data_config["output_dir"].split('/')[-1],  # 
+                description=args.mlops_config["neptune"]["description"],  # 
+                mode=args.mlops_config["neptune"]["mode"],  # 
+                tags=args.mlops_config["neptune"]["tags"],  # 
+                capture_hardware_metrics=args.mlops_config["neptune"]["capture_hardware_metrics"],  #
+    )  # your credentials
 
 def save_config(args):
     default_config_dir = Path(PurePath(__file__).parent).resolve().parent / "config" 
     shutil.copy(args.config_dir / "run.yaml", args.model_dir / "run.yaml")
     shutil.copy(default_config_dir / "model.yaml", args.model_dir / "model.yaml")
 
+def start_mlops_log(args):
+    if args.mlops_config.get("neptune"):
+        if not args.mlops_config["neptune"]['log']:
+            args.mlops_config["neptune"]["run"] = neptune_init(args)
+        args.mlops_config["neptune"]["run"]['run_config'] = args.run_config
+        args.mlops_config["neptune"]["run"]['model_config'] = args.model_config
+
+def stop_mlops_log(args):
+    if args.mlops_config.get("neptune"):
+        args.mlops_config["neptune"]["run"].stop()
 
 def combine_and_save_metrics(metrics, args, suffix=None):
     metrics = [m for m in metrics if m is not None]
@@ -135,7 +166,12 @@ def combine_and_save_metrics(metrics, args, suffix=None):
     else:
         filename = "result_test_only.csv" if args.test_only else "result.csv"
     metrics_df.to_csv(args.result_dir / filename, index=False)
-
+    if args.mlops_config.get("neptune"):
+        for metric in metrics:
+            args.mlops_config["neptune"]["run"][f"metrics/{metric['dataset']}_metric"] = metric
+        if args.task == 'sequence_classification':
+            metrics_df.index = metrics_df['dataset']
+            args.mlops_config["neptune"]["run"]['plot/classification_report'].upload(File.as_html(metrics_df))
 
 def combine_and_save_statistics(datasets, args, suffix=None):
     datasets = [ds for ds in datasets if ds is not None]
@@ -181,3 +217,16 @@ def combine_and_save_statistics(datasets, args, suffix=None):
                 filename = "statistics_test_only.pkl" if args.test_only else "statistics.pkl"
             with open(args.result_dir / filename, "wb") as f:
                 pickle.dump(statistics_df, f)
+
+    if args.task == 'sequence_classification' and args.mlops_config.get("neptune"):
+        train_diagnosis_df = diagnosis_df[diagnosis_df['dataset']=='train']
+        train_cm = pd.crosstab(train_diagnosis_df['label'], train_diagnosis_df['prediction'], rownames=['label'], colnames=['pred'])
+        args.mlops_config["neptune"]["run"]['plot/train_confusion_matrix'].upload(File.as_html(train_cm))
+        
+        dev_diagnosis_df = diagnosis_df[diagnosis_df['dataset']=='dev']
+        dev_cm = pd.crosstab(dev_diagnosis_df['label'], dev_diagnosis_df['prediction'], rownames=['label'], colnames=['pred'])
+        args.mlops_config["neptune"]["run"]['plot/dev_confusion_matrix'].upload(File.as_html(dev_cm))
+
+        test_diagnosis_df = diagnosis_df[diagnosis_df['dataset']=='test']
+        test_cm = pd.crosstab(test_diagnosis_df['label'], test_diagnosis_df['prediction'], rownames=['label'], colnames=['pred'])
+        args.mlops_config["neptune"]["run"]['plot/test_confusion_matrix'].upload(File.as_html(test_cm))

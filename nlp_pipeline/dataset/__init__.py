@@ -8,7 +8,7 @@ TASK_TO_FEATURE = {
     "target_classification": TargetClassificationFeature,
     "chinese_word_segmentation": ChineseWordSegmentationFeature,
     "sequence_classification": SequenceClassificationFeature,
-    "sequence_labeling": SequenceLabelingFeature,
+    "topic_classification": TopicClassificationFeature
 }
 
 

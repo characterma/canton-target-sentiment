@@ -93,14 +93,7 @@ def evaluate(model, eval_dataset, args):
             label_ids.extend(batch["label"].cpu().tolist())
 
     if has_label:
-        labels = []
-        for l1, p1 in zip(label_ids, predictions):
-            if isinstance(l1, list):
-                labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[: len(p1)])
-            else:
-                labels.append(args.label_to_id_inv[l1])
-
-        metrics = compute_metrics(task=args.task, labels=labels, predictions=predictions)
+        metrics = compute_metrics(args=args, label_ids=label_ids, predictions=predictions)
         metrics["loss"] = np.mean(losses)
         metrics["dataset"] = eval_dataset.dataset
         metrics["samples_per_second"] = n_samples / total_time
@@ -125,6 +118,7 @@ class Trainer:
 
         self.model_config = args.model_config
         self.train_config = args.train_config
+        self.mlops_config = args.mlops_config
         self.model_dir = args.model_dir
 
         self.best_score = None
@@ -318,6 +312,8 @@ class Trainer:
                 loss = loss.tolist()
                 if global_step % log_steps == 0:
                     self.tensorboard_writer.add_scalar("Loss/train", loss, global_step)
+                    if self.mlops_config.get("neptune") and self.mlops_config["neptune"]["log"]:
+                         self.mlops_config["neptune"]["run"]['Loss/train'].log(loss)
                 if (step + 1) % self.model_config["gradient_accumulation_steps"] == 0:
                     torch.nn.utils.clip_grad_norm_(
                         self.model.parameters(), self.model_config["max_grad_norm"]
@@ -397,6 +393,8 @@ class Trainer:
                     self.tensorboard_writer.add_scalar(
                         f"dev/{metric}", float(value), epoch
                     )
+                    if self.mlops_config.get("neptune") and self.mlops_config["neptune"]["log"]:
+                         self.mlops_config["neptune"]["run"][f"dev/{metric}"].log(float(value))
                 except Exception as e:
                     continue
 
