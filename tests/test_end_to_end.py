@@ -27,7 +27,7 @@ class TestEndToEnd(unittest.TestCase):
                    'chinese_word_segmentation/CNN_CRF',
                    'chinese_word_segmentation/BERT_CRF', 
                    # 'target_classification/TGSAN',
-                   'target_classification/TGSAN2'
+                   'target_classification/TGSAN2',
                    'topic_classification/BERT_CLS',
                    'topic_classification/BERT_AVG',
                    ]
