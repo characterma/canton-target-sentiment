@@ -2,6 +2,8 @@
 import argparse
 import logging
 from pathlib import Path
+import json
+import os
 
 from nlp_pipeline.trainer import Trainer, evaluate
 from nlp_pipeline.trainer_uda import TrainerUDA
@@ -55,13 +57,14 @@ def run_uda(args):
     train_metrics = evaluate(model=model, eval_dataset=labeled_dataset, args=args)
     dev_metrics = evaluate(model=model, eval_dataset=dev_dataset, args=args)
     test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
-
+    start_mlops_log(args=args)
     combine_and_save_metrics(
         metrics=[train_metrics, dev_metrics, test_metrics], args=args, suffix=args.suffix
     )
     combine_and_save_statistics(
         datasets=[labeled_dataset, dev_dataset, test_dataset], args=args, suffix=args.suffix
     )
+    stop_mlops_log(args=args)
 
 
 def run_kd(args):
@@ -164,17 +167,19 @@ def run_kd(args):
     train_metrics = evaluate(model=student_model, eval_dataset=train_dataset, args=args)
     dev_metrics = evaluate(model=student_model, eval_dataset=dev_dataset, args=args)
     test_metrics = evaluate(model=student_model, eval_dataset=test_dataset, args=args)
-
+    start_mlops_log(args=args)
     combine_and_save_metrics(
         metrics=[train_metrics, dev_metrics, test_metrics], args=args
     )
     combine_and_save_statistics(
         datasets=[train_dataset, dev_dataset, test_dataset], args=args
     )
+    stop_mlops_log(args=args)
     save_config(args)
 
 
 def run(args):
+    import os
     if not args.test_only:
         save_config(args)
     print(args.model_dir, "*****")
@@ -186,12 +191,17 @@ def run(args):
 
     model = get_model(args=args)
     if not args.test_only:
-
         train_dataset = get_dataset(dataset="train", tokenizer=tokenizer, args=args)
         dev_dataset = get_dataset(dataset="dev", tokenizer=tokenizer, args=args)
+        additional_train_datasets = []
+        if args.data_config.get("additional_train_dir"):
+            for file_name in os.listdir(args.data_config["additional_train_dir"]):
+                with open(os.path.join(args.data_config['additional_train_dir'], file_name), "rb") as f:
+                    raw_data = json.load(f)
+                additional_train_datasets.append(get_dataset(dataset="train", tokenizer=tokenizer, args=args, raw_data=raw_data))
         trainer = Trainer(
-            model=model, train_dataset=train_dataset, dev_dataset=dev_dataset, args=args
-        )
+            model=model, train_dataset=train_dataset, dev_dataset=dev_dataset, args=args,
+            additional_train_datasets=additional_train_datasets)
         trainer.train()
     else:
         train_dataset = None
@@ -230,6 +240,126 @@ def run(args):
         datasets=[train_dataset, dev_dataset, test_dataset], args=args, suffix=args.suffix
     )
     stop_mlops_log(args=args)
+    
+    if args.al_config.get("use_al") and not args.test_only:
+        logger.info("***** Running active learning *****")
+        from nlp_pipeline.active_learning import query_active_learning_data
+        import os
+        import pandas as pd
+
+        al_dataset = get_dataset(dataset="al_unlabel", tokenizer=tokenizer, args=args)
+        _ = evaluate(model=model, eval_dataset=al_dataset, args=args)
+        
+        # Filter out already labeled data
+        labeled_docid = list(train_dataset.diagnosis_df['docid']) + list(dev_dataset.diagnosis_df['docid']) + list(test_dataset.diagnosis_df['docid'])
+        for dataset in additional_train_datasets:
+            labeled_docid += list(dataset.diagnosis_df['docid'])
+        
+        query_data = query_active_learning_data(al_dataset.diagnosis_df, args=args, labeled_docid=labeled_docid)
+
+        # Save queried data 
+        with open(os.path.join(args.data_dir, args.data_config["al_unlabel"]), "rb") as f:
+            unlabel_data = pd.DataFrame(json.load(f))
+        query_data_df = unlabel_data[unlabel_data['docid'].isin(set(query_data['docid']))]
+        iter_ind = 0
+        logger.info("***** Saving active learning data *****")
+        while True:
+            file_name = f"{args.al_config['output_file']}_{iter_ind}.json"
+            if file_name not in os.listdir(args.al_config["output_dir"]):
+                query_data_df.to_json(os.path.join(args.al_config["output_dir"], file_name), orient='records')
+                break
+            
+            iter_ind += 1
+
+
+def run_al_exp(args):
+    import os
+    from nlp_pipeline.pipeline import Pipeline
+    from tqdm import tqdm
+    import pickle
+    
+    print(args.model_dir, "*****")
+    tokenizer = get_tokenizer(args=args)
+
+    label_to_id, label_to_id_inv = get_label_to_id(tokenizer, args)
+    args.label_to_id = label_to_id
+    args.label_to_id_inv = label_to_id_inv
+
+    train_dataset = get_dataset(dataset="train", tokenizer=tokenizer, args=args)
+    dev_dataset = get_dataset(dataset="dev", tokenizer=tokenizer, args=args)
+    test_dataset = get_dataset(dataset="test", tokenizer=tokenizer, args=args)
+    if args.al_config.get("use_al") and not args.test_only:
+        al_dataset = get_dataset(dataset="al_unlabel", tokenizer=tokenizer, args=args)
+
+    iteration_result = []
+    for i in range(args.al_config.get("iteration")):
+        save_config(args)
+
+        model = get_model(args=args)
+        additional_train_datasets = []
+        if args.data_config.get("additional_train_dir"):
+            for file_name in os.listdir(args.data_config["additional_train_dir"]):
+                with open(os.path.join(args.data_config['additional_train_dir'], file_name), "rb") as f:
+                    raw_data = json.load(f)
+                additional_train_datasets.append(get_dataset(dataset="train", tokenizer=tokenizer, args=args, raw_data=raw_data))
+        trainer = Trainer(
+            model=model, train_dataset=train_dataset, dev_dataset=dev_dataset, args=args,
+            additional_train_datasets=additional_train_datasets)
+        trainer.train()
+
+        train_metrics = evaluate(model=model, eval_dataset=train_dataset, args=args)
+        dev_metrics = evaluate(model=model, eval_dataset=dev_dataset, args=args)
+        test_metrics = evaluate(model=model, eval_dataset=test_dataset, args=args)
+
+        iteration_result.append(test_metrics)
+
+        with open(args.al_config.get("result_file", "../active_learning_result/active_learning_result.pkl"), "wb") as f:
+            pickle.dump(iteration_result, f)
+
+        start_mlops_log(args=args)
+        combine_and_save_metrics(
+            metrics=[train_metrics, dev_metrics, test_metrics], args=args, suffix=args.suffix
+        )
+        combine_and_save_statistics(
+            datasets=[train_dataset, dev_dataset, test_dataset], args=args, suffix=args.suffix
+        )
+        stop_mlops_log(args=args)
+
+        if args.al_config.get("use_al") and not args.test_only:
+            logger.info("***** Running active learning *****")
+            from nlp_pipeline.active_learning import query_active_learning_data
+            import os
+            import pandas as pd
+
+            _ = evaluate(model=model, eval_dataset=al_dataset, args=args, get_embeddings=args.al_config["query_method"] in ["cal", "coreset"])
+            
+            # Filter out already labeled data
+            labeled_docid = list(train_dataset.diagnosis_df['docid']) + list(dev_dataset.diagnosis_df['docid']) + list(test_dataset.diagnosis_df['docid'])
+            for dataset in additional_train_datasets:
+                labeled_docid += list(dataset.diagnosis_df['docid'])
+
+            query_data = query_active_learning_data(al_dataset.diagnosis_df, args=args, labeled_docid=labeled_docid)
+
+            # Save queried data 
+            with open(os.path.join(args.data_dir, args.data_config["al_unlabel"]), "rb") as f:
+                unlabel_data = pd.DataFrame(json.load(f))
+            query_data_df = unlabel_data[unlabel_data['docid'].isin(set(query_data['docid']))]
+            iter_ind = 0
+            logger.info("***** Saving active learning data *****")
+            while True:
+                file_name = f"{args.al_config['output_file']}_{iter_ind}.json"
+                if file_name not in os.listdir(args.al_config["output_dir"]):
+                    query_data_df.to_json(os.path.join(args.al_config["output_dir"], file_name), orient='records')
+                    break
+                
+                iter_ind += 1
+        
+        model_dir = args.output_dir
+        os.remove(model_dir / "model/model.pt")
+        
+        del trainer
+        del model
+
 
 
 if __name__ == "__main__":
@@ -250,5 +380,7 @@ if __name__ == "__main__":
         run_kd(args=args)
     elif not args.test_only and args.uda_config["use_uda"]:
         run_uda(args=args)
+    elif not args.test_only and args.al_config["run_al_exp"]:
+        run_al_exp(args=args)
     else:
         run(args=args)

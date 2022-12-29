@@ -81,6 +81,7 @@ def load_config(args, is_deployment=False):
     args.model_config = model_config[model_class]
     args.model_config.update(run_config["model_params"])
     args.config_dir = config_dir
+    args.al_config = run_config.get('active_learning', {})
 
     # specialize for mlops tools
     if args.mlops_config.get("neptune") and args.mlops_config["neptune"]['log']:

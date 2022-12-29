@@ -3,13 +3,13 @@ from seqeval.metrics import classification_report as seqeval_classification_repo
 from sklearn.metrics import classification_report as sklearn_classification_report
 from sklearn.preprocessing import MultiLabelBinarizer
 
-def compute_metrics(args, label_ids, predictions):
+def compute_metrics(args, label_ids, predictions, prediction_probas=None):
     labels = []
 
     if args.task in ["target_classification", "sequence_classification"]:
         for l1, p1 in zip(label_ids, predictions):
             labels.append(args.label_to_id_inv[l1])
-        report = compute_metrics_sequence_classification(labels, predictions)
+        report = compute_metrics_sequence_classification(labels, predictions, prediction_probas=prediction_probas, label_to_id=args.label_to_id)
     elif args.task == "chinese_word_segmentation":
         for l1, p1 in zip(label_ids, predictions):
             labels.append(list(map(lambda x: args.label_to_id_inv[x], l1))[: len(p1)])
@@ -22,7 +22,7 @@ def compute_metrics(args, label_ids, predictions):
     return report
 
 
-def compute_metrics_sequence_classification(labels, predictions):
+def compute_metrics_sequence_classification(labels, predictions, prediction_probas=None, label_to_id=None):
 
     report = sklearn_classification_report(
         labels, predictions, output_dict=True
@@ -34,6 +34,18 @@ def compute_metrics_sequence_classification(labels, predictions):
         "micro_f1": report["weighted avg"]["f1-score"],
         "support": report["macro avg"]["support"],
     }
+    if prediction_probas and label_to_id:
+        # Calculate Area under Precision-Recall curve
+        import pandas as pd
+        from sklearn.metrics import precision_recall_curve, auc
+
+        df = pd.DataFrame({"labels": labels, "predictions": prediction_probas})
+        for label in labels_unique:
+            probas_id = label_to_id[label]
+            precision, recall, _ = precision_recall_curve(df["labels"] == label, [probas[probas_id] for probas in df["predictions"]])
+            auc_score = auc(recall, precision)
+            metrics[f"{label}-auc"] = auc_score
+
     for label, v1 in report.items():
         if label in labels_unique:
             for score_name, v2 in v1.items():

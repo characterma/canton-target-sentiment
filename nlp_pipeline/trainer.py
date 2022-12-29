@@ -5,7 +5,7 @@ import copy
 import sklearn
 import torch
 import time
-from torch.utils.data import DataLoader, RandomSampler, WeightedRandomSampler
+from torch.utils.data import DataLoader, RandomSampler, WeightedRandomSampler, ConcatDataset
 from torch.optim import RMSprop
 from tqdm import tqdm, trange
 from transformers import AdamW, get_linear_schedule_with_warmup
@@ -56,7 +56,22 @@ def prediction_step(model, batch, args):
     return results
 
 
-def evaluate(model, eval_dataset, args):
+def get_cls_embedding(model, batch, args):
+    model.eval()
+    with torch.no_grad():
+        inputs = dict()
+        for col in batch:
+            if torch.is_tensor(batch[col]):
+                inputs[col] = batch[col].to(args.device).long()
+        inputs.pop("label")
+        x = model.pretrained_model(**inputs)
+
+    embeddings = x['last_hidden_state'][:, 0, :].cpu().tolist()
+
+    return embeddings
+
+
+def evaluate(model, eval_dataset, args, get_embeddings=False):
 
     logger.info("***** Running evaluation *****")
     logger.info("  Num examples = %d", len(eval_dataset))
@@ -74,6 +89,7 @@ def evaluate(model, eval_dataset, args):
     prediction_ids = []
     probabilities = []
     losses = []
+    cls_embeddings = []
 
     has_label = False
     n_samples = 0
@@ -91,9 +107,12 @@ def evaluate(model, eval_dataset, args):
         if "label" in batch:
             has_label = True
             label_ids.extend(batch["label"].cpu().tolist())
+        if get_embeddings:
+            cls_embedding = get_cls_embedding(model, batch, args=args)
+            cls_embeddings.extend(cls_embedding)
 
     if has_label:
-        metrics = compute_metrics(args=args, label_ids=label_ids, predictions=predictions)
+        metrics = compute_metrics(args=args, label_ids=label_ids, predictions=predictions, prediction_probas=probabilities)
         metrics["loss"] = np.mean(losses)
         metrics["dataset"] = eval_dataset.dataset
         metrics["samples_per_second"] = n_samples / total_time
@@ -105,14 +124,17 @@ def evaluate(model, eval_dataset, args):
     eval_dataset.insert_diagnosis_column(predictions, "prediction")
     eval_dataset.insert_diagnosis_column(prediction_ids, "prediction_id")
     eval_dataset.insert_diagnosis_column(probabilities, "probabilities")
+    if get_embeddings:
+        eval_dataset.insert_diagnosis_column(cls_embeddings, "cls_embeddings")
     return metrics
 
 
 class Trainer:
-    def __init__(self, model, train_dataset, dev_dataset, args):
+    def __init__(self, model, train_dataset, dev_dataset, args, additional_train_datasets=[]):
         self.args = args
         self.train_dataset = train_dataset
         self.dev_dataset = dev_dataset
+        self.additional_train_datasets = additional_train_datasets
         self.model = model
         self.device = args.device if torch.cuda.is_available() else "cpu"
 
@@ -257,15 +279,16 @@ class Trainer:
             self.adversarial = None
 
     def train(self):
+        all_datasets = ConcatDataset(self.additional_train_datasets + [self.train_dataset])
         dataloader = DataLoader(
-            self.train_dataset,
-            sampler=RandomSampler(self.train_dataset),
+            all_datasets,
+            sampler=RandomSampler(all_datasets),
             batch_size=self.train_config["batch_size"],
             collate_fn=self.train_dataset.collate_fn,
         )
         optimizer, scheduler = self.create_optimizer_and_scheduler(n=len(dataloader))
         logger.info("***** Running training *****")
-        logger.info("  Num examples = %d", len(self.train_dataset))
+        logger.info("  Num examples = %d", len(dataloader.dataset))
         logger.info("  Num Epochs = %d", self.model_config["num_train_epochs"])
         logger.info("  Sampler = %s", self.model_config.get("sampler", ""))
         logger.info("  Batch size = %d", self.train_config["batch_size"])
