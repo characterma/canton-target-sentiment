@@ -248,7 +248,7 @@ def run(args):
         import pandas as pd
 
         al_dataset = get_dataset(dataset="al_unlabel", tokenizer=tokenizer, args=args)
-        _ = evaluate(model=model, eval_dataset=al_dataset, args=args)
+        _ = evaluate(model=model, eval_dataset=al_dataset, args=args, get_embeddings=args.al_config["query_method"] in ["cal", "coreset"])
         
         # Filter out already labeled data
         labeled_docid = list(train_dataset.diagnosis_df['docid']) + list(dev_dataset.diagnosis_df['docid']) + list(test_dataset.diagnosis_df['docid'])
@@ -264,7 +264,7 @@ def run(args):
         iter_ind = 0
         logger.info("***** Saving active learning data *****")
         while True:
-            file_name = f"{args.al_config['output_file']}_{iter_ind}.json"
+            file_name = f"{args.al_config.get('output_file', 'active_learning_data')}_{iter_ind}.json"
             if file_name not in os.listdir(args.al_config["output_dir"]):
                 query_data_df.to_json(os.path.join(args.al_config["output_dir"], file_name), orient='records')
                 break
@@ -274,8 +274,6 @@ def run(args):
 
 def run_al_exp(args):
     import os
-    from nlp_pipeline.pipeline import Pipeline
-    from tqdm import tqdm
     import pickle
     
     print(args.model_dir, "*****")
@@ -347,7 +345,7 @@ def run_al_exp(args):
             iter_ind = 0
             logger.info("***** Saving active learning data *****")
             while True:
-                file_name = f"{args.al_config['output_file']}_{iter_ind}.json"
+                file_name = f"{args.al_config.get('output_file', 'active_learning_data')}_{iter_ind}.json"
                 if file_name not in os.listdir(args.al_config["output_dir"]):
                     query_data_df.to_json(os.path.join(args.al_config["output_dir"], file_name), orient='records')
                     break

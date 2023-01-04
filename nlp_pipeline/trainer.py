@@ -56,7 +56,7 @@ def prediction_step(model, batch, args):
     return results
 
 
-def get_cls_embedding(model, batch, args):
+def get_cls_embedding_by_batch(model, batch, args):
     model.eval()
     with torch.no_grad():
         inputs = dict()
@@ -66,8 +66,26 @@ def get_cls_embedding(model, batch, args):
         inputs.pop("label")
         x = model.pretrained_model(**inputs)
 
-    embeddings = x['last_hidden_state'][:, 0, :].cpu().tolist()
+    batch_embedding = x["last_hidden_state"][:, 0, :].cpu().tolist()
 
+    return batch_embedding
+
+
+def get_embedding_vector(eval_dataset, args, model=None):
+    embeddings = []
+    if args.al_config["embedding_method"] == "cls_embedding":
+        dataloader = DataLoader(
+            eval_dataset,
+            shuffle=False,
+            batch_size=args.eval_config["batch_size"],
+            collate_fn=eval_dataset.collate_fn,
+        )
+        for batch in tqdm(dataloader, desc="Getting embeddings"):
+            batch_embedding = get_cls_embedding_by_batch(model, batch, args)
+            embeddings.extend(batch_embedding)
+    else:
+        raise ValueError("Method for getting embeddings not found/implemented.")
+    
     return embeddings
 
 
@@ -89,7 +107,6 @@ def evaluate(model, eval_dataset, args, get_embeddings=False):
     prediction_ids = []
     probabilities = []
     losses = []
-    cls_embeddings = []
 
     has_label = False
     n_samples = 0
@@ -107,9 +124,10 @@ def evaluate(model, eval_dataset, args, get_embeddings=False):
         if "label" in batch:
             has_label = True
             label_ids.extend(batch["label"].cpu().tolist())
-        if get_embeddings:
-            cls_embedding = get_cls_embedding(model, batch, args=args)
-            cls_embeddings.extend(cls_embedding)
+
+    if get_embeddings:
+        logger.info("***** Getting embedding *****")
+        embeddings = get_embedding_vector(eval_dataset, args, model)
 
     if has_label:
         metrics = compute_metrics(args=args, label_ids=label_ids, predictions=predictions, prediction_probas=probabilities)
@@ -125,7 +143,7 @@ def evaluate(model, eval_dataset, args, get_embeddings=False):
     eval_dataset.insert_diagnosis_column(prediction_ids, "prediction_id")
     eval_dataset.insert_diagnosis_column(probabilities, "probabilities")
     if get_embeddings:
-        eval_dataset.insert_diagnosis_column(cls_embeddings, "cls_embeddings")
+        eval_dataset.insert_diagnosis_column(embeddings, "embeddings")
     return metrics
 
 
