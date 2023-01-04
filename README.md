@@ -259,8 +259,8 @@ Reference: https://jira.wisers.com:18090/display/WAI/Active+Learning+on+Text+cla
 - Prediction Entropy: "prediction_entropy"
 - Least Confidence: "least_confidence"
 - Breaking Ties: "breaking_ties"
-- Contrastive Active Learning(CAL): "cal"
-- Coreset: "coreset"
+- Contrastive Active Learning(CAL): "cal" (It is required to use <cls> embedding, therefore the training model need to contain a BERT pre-train model)
+- Coreset: "coreset" (It is required to use <cls> embedding, therefore the training model need to contain a BERT pre-train model)
 - Random Sample: "random_sample"
 
 

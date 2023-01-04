@@ -67,7 +67,7 @@ def greedy_coreset(x, indices_unlabeled, indices_labeled, n, distance_metric='co
 def query_by_contrastive_active_learning(df, args, batch_size=100, k=10):
 
     nn = NearestNeighbors(n_neighbors=10, algorithm="kd_tree")
-    embeddings = pd.DataFrame(df['cls_embeddings'].to_list())
+    embeddings = pd.DataFrame(df['embeddings'].to_list())
     nn.fit(embeddings)
     scores = []
     probas = df['probabilities']
@@ -111,13 +111,21 @@ def query_active_learning_data(df, args, labeled_docid=[]):
     elif args.al_config["query_method"] == "coreset":
         unlabel_index = df.reset_index().index[~df['docid'].isin(labeled_docid)]
         labeled_index = df.reset_index().index[df['docid'].isin(labeled_docid)]
-        selected_index = greedy_coreset(pd.DataFrame(df['cls_embeddings'].to_list()), unlabel_index, labeled_index, args.al_config["query_size"])
+        selected_index = greedy_coreset(pd.DataFrame(df['embeddings'].to_list()), unlabel_index, labeled_index, args.al_config["query_size"])
         score = [1 if ind in set(selected_index) else 0 for ind in range(len(df))]
 
     elif args.al_config["query_method"] == "cal":
         # KL divergence of the prediciton probability of N (set as 10 currently) nearest neighbours 
         # clustered by the BERT <CLS> embeddings, select the highest
         selected_index = query_by_contrastive_active_learning(df, args=args)
+        score = [1 if ind in set(selected_index) else 0 for ind in range(len(df))]
+
+    elif args.al_config["query_method"] == "hybrid":
+        df['active_learning_score'] = [entropy(item) for item in df["probabilities"]]
+        sel_df = df.sort_values("active_learning_score", ascending=False)[:args.al_config["query_size"]*args.al_config.get("hybrid_fraction", 10)] # TODO
+        unlabel_index = sel_df.reset_index().index[~sel_df['docid'].isin(labeled_docid)]
+        labeled_index = sel_df.reset_index().index[sel_df['docid'].isin(labeled_docid)]
+        selected_index = greedy_coreset(pd.DataFrame(sel_df['embeddings'].to_list()), unlabel_index, labeled_index, args.al_config["query_size"])
         score = [1 if ind in set(selected_index) else 0 for ind in range(len(df))]
 
     elif args.al_config["query_method"] == "random_sample":

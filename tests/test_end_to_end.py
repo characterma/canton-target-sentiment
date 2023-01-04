@@ -12,6 +12,7 @@ class TestEndToEnd(unittest.TestCase):
                    'sequence_classification/BERT_CLS_mlops',  
                    'sequence_classification/BERT_AVG',
                    'sequence_classification/BERT_AVG_mlops',
+                   'sequence_classification/BERT_AVG_AL',
                    'sequence_classification/BERT_CLS_optim_tricks', 
                    'sequence_classification/TEXT_CNN', 
                    'sequence_classification/TEXT_CNN_kd', 
@@ -35,7 +36,7 @@ class TestEndToEnd(unittest.TestCase):
                    'chinese_word_segmentation/CNN_CRF',
                    'chinese_word_segmentation/BERT_CRF', 
                    # 'target_classification/TGSAN',
-                   # 'target_classification/TGSAN2'
+                   # 'target_classification/TGSAN2',
                    'topic_classification/BERT_CLS',
                    'topic_classification/BERT_AVG',
     ]
@@ -51,6 +52,10 @@ class TestEndToEnd(unittest.TestCase):
             os.system(f"rm -rf {cls.config_dir}/examples/{task_model}/model")
             os.system(f"rm -rf {cls.config_dir}/examples/{task_model}/logs")
             os.system(f"rm {cls.config_dir}/examples/{task_model}/log")
+
+            if task_model == "sequence_classification/BERT_AVG_AL":
+                al_data_dir = cls.test_dir.parent / "data/datasets/sample/sequence_classification/active_learning"
+                os.system(f"rm {al_data_dir}/*.json")
 
     def test_models(self):
         for task_model in self.task_models:
