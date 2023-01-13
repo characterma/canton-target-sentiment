@@ -1,24 +1,21 @@
 # Installation
 
-## Install requirements.txt
-```bash
-pip install -r requirements.txt
-```
-
 ## For development
+Before installation of below packages, please install PyTorch package based on system environment (CPU / GPU with specified CUDA version). Currently NLP pipeline is stable on versions 1.6 / 1.8 / 1.12 . Reference on: https://pytorch.org/get-started/previous-versions/
 ```bash
 python -m pip install -e '.[dev]'
+# pip install -r requirements.txt
+```
+
+## For deployment
+```bash
+python -m pip install '.[deploy]'
 ```
 
 # Unittest
 
 ```bash
 python -m unittest
-```
-
-## For deployment
-```bash
-python -m pip install '.[deploy]'
 ```
 
 # Train
