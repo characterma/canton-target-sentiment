@@ -66,14 +66,17 @@ def get_cls_embedding_by_batch(model, batch, args):
         inputs.pop("label")
         x = model.pretrained_model(**inputs)
 
-    batch_embedding = x["last_hidden_state"][:, 0, :].cpu().tolist()
+    if args.al_config["embedding_method"] == "cls_embedding":
+        batch_embedding = x["last_hidden_state"][:, 0, :].cpu().tolist()
+    elif args.al_config["embedding_method"] == "avg_embedding":
+        batch_embedding = torch.mean(x["last_hidden_state"].cpu(), dim=1).tolist()
 
     return batch_embedding
 
 
 def get_embedding_vector(eval_dataset, args, model=None):
     embeddings = []
-    if args.al_config["embedding_method"] == "cls_embedding":
+    if args.al_config["embedding_method"] in ["cls_embedding", "avg_embedding"]:
         dataloader = DataLoader(
             eval_dataset,
             shuffle=False,
@@ -83,6 +86,11 @@ def get_embedding_vector(eval_dataset, args, model=None):
         for batch in tqdm(dataloader, desc="Getting embeddings"):
             batch_embedding = get_cls_embedding_by_batch(model, batch, args)
             embeddings.extend(batch_embedding)
+    elif args.al_config["embedding_method"].endswith(".json"):
+        import pandas as pd
+        import json
+        with open(args.al_config["embedding_method"], "rb") as f: #TODO
+            embeddings = pd.DataFrame(json.load(f))["embedding"]
     else:
         raise ValueError("Method for getting embeddings not found/implemented.")
     

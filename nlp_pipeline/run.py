@@ -248,7 +248,7 @@ def run(args):
         import pandas as pd
 
         al_dataset = get_dataset(dataset="al_unlabel", tokenizer=tokenizer, args=args)
-        _ = evaluate(model=model, eval_dataset=al_dataset, args=args, get_embeddings=args.al_config["query_method"] in ["cal", "coreset"])
+        _ = evaluate(model=model, eval_dataset=al_dataset, args=args, get_embeddings=args.al_config["query_method"] in ["cal", "coreset", "hybrid"])
         
         # Filter out already labeled data
         labeled_docid = list(train_dataset.diagnosis_df['docid']) + list(dev_dataset.diagnosis_df['docid']) + list(test_dataset.diagnosis_df['docid'])
@@ -329,7 +329,7 @@ def run_al_exp(args):
             import os
             import pandas as pd
 
-            _ = evaluate(model=model, eval_dataset=al_dataset, args=args, get_embeddings=args.al_config["query_method"] in ["cal", "coreset"])
+            _ = evaluate(model=model, eval_dataset=al_dataset, args=args, get_embeddings=args.al_config["query_method"] in ["cal", "coreset", "hybrid"])
             
             # Filter out already labeled data
             labeled_docid = list(train_dataset.diagnosis_df['docid']) + list(dev_dataset.diagnosis_df['docid']) + list(test_dataset.diagnosis_df['docid'])

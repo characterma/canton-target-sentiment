@@ -1,7 +1,7 @@
 task: "sequence_classification"
 device: 0
 data:
-  output_dir: "../config/examples/sequence_classification/BERT_AVG_AL"
+  output_dir: "../config/examples/sequence_classification/BERT_AVG_AL_EXP"
   data_dir: "../data/datasets/sample/sequence_classification"
   train: train_sample.json
   dev: train_sample.json
@@ -41,9 +41,9 @@ active_learning:
   query_method: "prediction_entropy"
   query_size: 1
   # Below setting can be removed, it is for running experiment only
-  run_al_exp: False
+  run_al_exp: True
   result_file: "../active_learning_result/result.pkl"
-  iteration: 0
+  iteration: 2
 mlops:
   neptune:
     project: wisemen/spam-classification
