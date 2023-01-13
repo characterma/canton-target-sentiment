@@ -14,3 +14,4 @@ xlsxwriter
 papermill
 scrapbook
 neptune-client
+protobuf==3.20.0
