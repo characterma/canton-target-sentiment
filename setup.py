@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 dev_packages = [
-      "captum",
+      "captum==0.4.1",
       "scikit-learn==0.23.1", 
       "tensorboard==2.8.0", 
       "seqeval", 

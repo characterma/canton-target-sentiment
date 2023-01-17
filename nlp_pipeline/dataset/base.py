@@ -52,7 +52,7 @@ class NLPDataset:
             raw_data = json.load(open(data_path, "r"))
 
         for idx, data_dict in enumerate(tqdm(raw_data)):
-            diagnosis_dict = {"idx": idx}
+            diagnosis_dict = {"idx": idx, "docid": data_dict.get("docid", "")}
             fea = self.feature_class(
                 data_dict=data_dict,
                 tokenizer=self.tokenizer,

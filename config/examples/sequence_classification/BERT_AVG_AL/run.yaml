@@ -1,0 +1,57 @@
+task: "sequence_classification"
+device: 0
+data:
+  output_dir: "../config/examples/sequence_classification/BERT_AVG_AL"
+  data_dir: "../data/datasets/sample/sequence_classification"
+  train: train_sample.json
+  dev: train_sample.json
+  test: train_sample.json
+  al_unlabel: al_sample.json
+  additional_train_dir: "../data/datasets/sample/sequence_classification/active_learning"
+text_prepro:
+  steps:
+    - utf8_replace
+    - simplified_chinese
+    - lower_case
+    - full_to_half
+eval:
+  batch_size: 64
+  model_file: "model.pt"
+train:
+  model_class: "BERT_AVG"
+  seed: 42
+  log_steps: 100
+  batch_size: 32
+  final_model: "best" # "best" or "last"
+  optimization_metric: "macro_f1" # "micro_f1" or "macro_f1"
+  early_stop: 5
+model_params:
+  # ================= TDBERT =================
+  num_train_epochs: 1
+  embedding_trainable: True
+  output_hidden_act_func: "PReLU"
+  output_hidden_dim: 128
+  # output_hidden_act_func: null
+  tokenizer_name: "bert-base-chinese"  # source:::tokenizer_type "huggingface:::toastynews/electra-hongkongese-large-discriminator"
+  pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
+active_learning:
+  use_al: True
+  output_dir: "../output/active_learning/output"
+  output_file: "active_learning_queried_data"
+  query_method: "prediction_entropy"
+  query_size: 1
+  # Below setting can be removed, it is for running experiment only
+  run_al_exp: False
+  result_file: "../output/active_learning/result/result.pkl"
+  iteration: 0
+#mlops:
+#  neptune:
+#    project: wisemen/spam-classification
+#    api_token: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwY2E2NjE2My02Mjg1LTRkNGYtOWY0Yy1kYTFlZTU3M2NjMjcifQ==
+#    name:  # default uses the folder name of experiment
+#    description: "Sequence Classification - Active Learning"
+#    mode: "async" # 'async' or 'debug' or 'offline' or 'read-only' or 'sync'
+#    log: False
+#    tags: 
+#      - "log"
+#    capture_hardware_metrics: True # default True

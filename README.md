@@ -1,24 +1,21 @@
 # Installation
 
-## Install requirements.txt
-```bash
-pip install -r requirements.txt
-```
-
 ## For development
+Before installation of below packages, please install PyTorch package based on system environment (CPU / GPU with specified CUDA version). Currently NLP pipeline is stable on versions 1.6 / 1.8 / 1.12 . Reference on: https://pytorch.org/get-started/previous-versions/
 ```bash
 python -m pip install -e '.[dev]'
+# pip install -r requirements.txt
+```
+
+## For deployment
+```bash
+python -m pip install '.[deploy]'
 ```
 
 # Unittest
 
 ```bash
 python -m unittest
-```
-
-## For deployment
-```bash
-python -m pip install '.[deploy]'
 ```
 
 # Train
@@ -233,3 +230,38 @@ In order to learn from high quality unlabeled data, [unlabel_data_sampling noteb
 )
 
 Reference: https://jira.wisers.com:18090/display/RES/Proposed+Module2
+
+## Active Learning
+```yaml
+...
+data:
+  al_unlabel: al_sample.json  # File name of the unlabel data set
+  additional_train_dir: "../data/datasets/sample/sequence_classification/active_learning" # Dir for the folder that stores additional training data
+...
+active_learning:
+  use_al: True # use active learning to query data to label
+  output_dir: "../output/active_learning/output" # Dir for the folder that stores query active learning data
+  output_file: "active_learning_queried_data" # File name for the query active learning data, a number will be added to the end automaticaly, e.g. "active_learning_queried_data_0.json"
+  query_method: "prediction_entropy" # Method for quering data, see below
+  query_size: 10 # Number of data to query
+  # Below setting can be removed, it is for running experiment only
+  run_al_exp: False # Please set it to False if you are not trying to run active learning iteration experiment
+  result_file: "../output/active_learning/result/iteration_results.pkl" # File name for the training result of each iteration, will be stored in ../active_learning_result folder
+  iteration: 10 # Number of active learning result to run 
+...
+```
+Reference: https://jira.wisers.com:18090/display/WAI/Active+Learning+on+Text+classification
+
+### Implemented query_method:
+- Prediction Entropy: "prediction_entropy"
+- Least Confidence: "least_confidence"
+- Breaking Ties: "breaking_ties"
+- Contrastive Active Learning(CAL): "cal" (It is required to use <cls> embedding, therefore the training model need to contain a BERT pre-train model)
+- Coreset: "coreset" (It is required to use <cls> embedding, therefore the training model need to contain a BERT pre-train model)
+- Random Sample: "random_sample"
+
+
+### Note for running active learning:
+- You can follow configs/examples/sequence_classification/BERT_AVG_AL/run.yaml as an example
+- train, dev, test, al set SHOULD all contain "docid", it is to prevent querying duplicated data, errors may occur if it is absent
+- Contrastive Active Learning will take a longer time if the al set is too large, it is recommended to NOT put ALL the unlabel data together to query by active learning
