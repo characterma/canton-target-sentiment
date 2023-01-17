@@ -13,6 +13,7 @@ class TestEndToEnd(unittest.TestCase):
                    'sequence_classification/BERT_AVG',
                    'sequence_classification/BERT_AVG_mlops',
                    'sequence_classification/BERT_AVG_AL',
+                   'sequence_classification/BERT_AVG_AL_EXP',
                    'sequence_classification/BERT_CLS_optim_tricks', 
                    'sequence_classification/TEXT_CNN', 
                    'sequence_classification/TEXT_CNN_kd', 
@@ -53,9 +54,13 @@ class TestEndToEnd(unittest.TestCase):
             os.system(f"rm -rf {cls.config_dir}/examples/{task_model}/logs")
             os.system(f"rm {cls.config_dir}/examples/{task_model}/log")
 
-            if task_model == "sequence_classification/BERT_AVG_AL":
-                al_data_dir = cls.test_dir.parent / "data/datasets/sample/sequence_classification/active_learning"
+            if task_model == "sequence_classification/BERT_AVG_AL" or "sequence_classification/BERT_AVG_AL_EXP":
+                al_data_dir = cls.test_dir.parent / "output/active_learning/output"
                 os.system(f"rm {al_data_dir}/*.json")
+            
+            if task_model == "sequence_classification/BERT_AVG_AL_EXP":
+                al_res_dir = cls.test_dir.parent / "output/active_learning/result"
+                os.system(f"rm {al_res_dir}/*.pkl")
 
     def test_models(self):
         for task_model in self.task_models:

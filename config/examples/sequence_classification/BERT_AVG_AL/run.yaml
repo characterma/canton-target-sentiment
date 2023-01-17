@@ -36,22 +36,22 @@ model_params:
   pretrained_lm: "bert-base-chinese" # huggingface format "toastynews/electra-hongkongese-large-discriminator"
 active_learning:
   use_al: True
-  output_dir: "../data/datasets/sample/sequence_classification/active_learning"
+  output_dir: "../output/active_learning/output"
   output_file: "active_learning_queried_data"
   query_method: "prediction_entropy"
   query_size: 1
   # Below setting can be removed, it is for running experiment only
   run_al_exp: False
-  result_file: "../active_learning_result/result.pkl"
+  result_file: "../output/active_learning/result/result.pkl"
   iteration: 0
-mlops:
-  neptune:
-    project: wisemen/spam-classification
-    api_token: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwY2E2NjE2My02Mjg1LTRkNGYtOWY0Yy1kYTFlZTU3M2NjMjcifQ==
-    name:  # default uses the folder name of experiment
-    description: "Sequence Classification - Active Learning"
-    mode: "async" # 'async' or 'debug' or 'offline' or 'read-only' or 'sync'
-    log: False
-    tags: 
-      - "log"
-    capture_hardware_metrics: True # default True
+#mlops:
+#  neptune:
+#    project: wisemen/spam-classification
+#    api_token: eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIwY2E2NjE2My02Mjg1LTRkNGYtOWY0Yy1kYTFlZTU3M2NjMjcifQ==
+#    name:  # default uses the folder name of experiment
+#    description: "Sequence Classification - Active Learning"
+#    mode: "async" # 'async' or 'debug' or 'offline' or 'read-only' or 'sync'
+#    log: False
+#    tags: 
+#      - "log"
+#    capture_hardware_metrics: True # default True

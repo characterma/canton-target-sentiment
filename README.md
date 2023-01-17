@@ -236,17 +236,17 @@ Reference: https://jira.wisers.com:18090/display/RES/Proposed+Module2
 ...
 data:
   al_unlabel: al_sample.json  # File name of the unlabel data set
-  additional_train_dir: "../data/datasets/sample/spam_classification/active_learning" # Dir for the folder that stores additional training data
-
+  additional_train_dir: "../data/datasets/sample/sequence_classification/active_learning" # Dir for the folder that stores additional training data
+...
 active_learning:
   use_al: True # use active learning to query data to label
-  output_dir: "../data/datasets/sample/spam_classification/active_learning" # Dir for the folder that stores query active learning data
+  output_dir: "../output/active_learning/output" # Dir for the folder that stores query active learning data
   output_file: "active_learning_queried_data" # File name for the query active learning data, a number will be added to the end automaticaly, e.g. "active_learning_queried_data_0.json"
   query_method: "prediction_entropy" # Method for quering data, see below
   query_size: 10 # Number of data to query
   # Below setting can be removed, it is for running experiment only
   run_al_exp: False # Please set it to False if you are not trying to run active learning iteration experiment
-  result_file: "iteration_results.pkl" # File name for the training result of each iteration, will be stored in ../active_learning_result folder
+  result_file: "../output/active_learning/result/iteration_results.pkl" # File name for the training result of each iteration, will be stored in ../active_learning_result folder
   iteration: 10 # Number of active learning result to run 
 ...
 ```

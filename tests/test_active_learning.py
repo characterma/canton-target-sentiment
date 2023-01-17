@@ -6,8 +6,8 @@ import pathlib as pl
 
 class TestActiveLearning(unittest.TestCase):
     test_dir = Path(PurePath(__file__).parent).resolve()
-    al_data_dir = test_dir.parent / "data/datasets/sample/sequence_classification/active_learning"
-    al_result_dir = test_dir.parent / "active_learning_result"
+    al_data_dir = test_dir.parent / "output/active_learning/output"
+    al_result_dir = test_dir.parent / "output/active_learning/result"
     src_dir = test_dir.parent / "nlp_pipeline"
     config_dir = test_dir.parent / "config"
     

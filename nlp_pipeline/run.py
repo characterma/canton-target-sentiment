@@ -369,7 +369,7 @@ if __name__ == "__main__":
     parser.add_argument("--suffix", type=str, default="")
     args = parser.parse_args()
 
-    args = load_config(args)
+    args = load_config(args) 
     set_log_path(args.output_dir)
     log_args(logger, args)
     set_seed(args.train_config["seed"])
